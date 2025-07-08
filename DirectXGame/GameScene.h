@@ -1,13 +1,22 @@
 #pragma once
 
-#include "3D/WorldTransform.h"
-#include "3D/Camera.h"
+#include <KamataEngine.h>
 
 using namespace KamataEngine;
 
 class GameScene
 {
 public:
+
+    /// <summary>
+    /// コンストラクタ
+    /// </summary>
+    GameScene();
+
+    /// <summary>
+    /// デストラクタ
+    /// </summary>
+    ~GameScene();
 
     /// <summary>
     /// 初期化処理
@@ -26,6 +35,11 @@ public:
 
 private:
 
-    KamataEngine::WorldTransform* worldTransform_;
-    KamataEngine::Camera* camera_;
+    KamataEngine::DirectXCommon* dxCommon_ = nullptr;
+    KamataEngine::Input* input_ = nullptr;
+    KamataEngine::Audio* audio_ = nullptr;
+
+    KamataEngine::WorldTransform worldTransform_;
+    KamataEngine::Camera camera_;
+    KamataEngine::Model* model_ = nullptr;
 };
