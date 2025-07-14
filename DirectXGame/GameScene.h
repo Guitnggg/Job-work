@@ -2,9 +2,9 @@
 
 #include <KamataEngine.h>
 
-using namespace KamataEngine;
+#include "IScene.h"
 
-class GameScene
+class GameScene : public IScene
 {
 public:
 
@@ -32,6 +32,21 @@ public:
     /// 描画処理
     /// </summary>
     void Draw();
+
+    /// <summary>
+    /// シーン終了フラグ
+    /// </summary>
+    bool isEnd_ = false;
+
+public:
+
+    /// <summary>
+    /// シーン変遷
+    /// </summary>    
+    bool IsEnd() const override { return isEnd_; }
+    IScene* NextScene() const override { return nullptr; }  // 一旦ゲームが終了するようになっている
+
+    SceneName GetSceneName() const override { return SceneName::InGame; }  // シーン名
 
 private:
 

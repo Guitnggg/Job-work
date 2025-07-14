@@ -1,5 +1,7 @@
 #include "GameScene.h"
 
+using namespace KamataEngine;
+
 GameScene::GameScene(){}
 
 GameScene::~GameScene()
