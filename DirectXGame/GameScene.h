@@ -3,9 +3,9 @@
 #include <KamataEngine.h>
 
 #include "IScene.h"
+class FinishScene;
 
-class GameScene : public IScene
-{
+class GameScene : public IScene {
 public:
 
     /// <summary>
@@ -21,22 +21,17 @@ public:
     /// <summary>
     /// 初期化処理
     /// </summary>
-    void Initialize();
+    void Initialize()override;
 
     /// <summary>
     /// 更新処理
     /// </summary>
-    void Update();
+    void Update()override;
 
     /// <summary>
     /// 描画処理
     /// </summary>
-    void Draw();
-
-    /// <summary>
-    /// シーン終了フラグ
-    /// </summary>
-    bool isEnd_ = false;
+    void Draw()override;
 
 public:
 
@@ -44,7 +39,7 @@ public:
     /// シーン変遷
     /// </summary>    
     bool IsEnd() const override { return isEnd_; }
-    IScene* NextScene() const override { return nullptr; }  // 一旦ゲームが終了するようになっている
+    IScene* NextScene() const override;
 
     SceneName GetSceneName() const override { return SceneName::InGame; }  // シーン名
 
@@ -57,4 +52,7 @@ private:
     KamataEngine::WorldTransform worldTransform_;
     KamataEngine::Camera camera_;
     KamataEngine::Model* model_ = nullptr;
+
+    // シーン終了フラグ
+    bool isEnd_ = false;
 };

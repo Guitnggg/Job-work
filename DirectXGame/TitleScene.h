@@ -3,7 +3,7 @@
 #include <KamataEngine.h>
 
 #include "IScene.h"
-#include "GameScene.h"
+class GameScene;
 
 class TitleScene : public IScene {
 public:
@@ -39,7 +39,7 @@ public:
     /// GameSceneへのシーン変遷
     /// </summary>
     bool IsEnd()const override { return isEnd_; }
-    IScene* NextScene()const override { return new GameScene(); }
+    IScene* NextScene()const override;
 
     SceneName GetSceneName() const override { return SceneName::Title; }  // シーン名
 
