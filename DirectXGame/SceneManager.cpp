@@ -4,12 +4,12 @@ using namespace KamataEngine;
 
 SceneManager::SceneManager() {
     fadeSprite_ = Sprite::Create(
-        0,                      // テクスチャハンドル（不要なら0でOK）
-        { 0.0f, 0.0f },           // 位置
-        { 0.0f, 0.0f, 0.0f, 0.0f }, // 色（透明）
-        { 0.0f, 0.0f },           // アンカーポイント
-        false,                  // FlipX
-        false                   // FlipY
+        0,                           // テクスチャハンドル（不要なら0でOK）
+        { 0.0f, 0.0f },              // 位置
+        { 0.0f, 0.0f, 0.0f, 0.0f },  // 色（透明）
+        { 0.0f, 0.0f },              // アンカーポイント
+        false,                       // FlipX
+        false                        // FlipY
     );
     fadeSprite_->SetSize({ 1280, 720 });
 }
