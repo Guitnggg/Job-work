@@ -22,6 +22,8 @@ void GameScene::Initialize()
     // モデルの生成
     model_ = Model::Create();
 
+    // 入力を受け付けるようにする
+    input_ = Input::GetInstance();
 }
 
 void GameScene::Update() {
@@ -36,8 +38,7 @@ void GameScene::Update() {
 
 
 
-    // 入力を受け付けるようにする
-    //input_ = Input::GetInstance();
+    
 
     //if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
     //    isEnd_ = true;
