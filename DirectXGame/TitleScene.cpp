@@ -1,6 +1,6 @@
 #include "TitleScene.h"
 
-#include "GameScene.h"
+#include "IntroductionScene.h"
 
 using namespace KamataEngine;
 
@@ -49,5 +49,5 @@ void TitleScene::Draw() {
 }
 
 IScene* TitleScene::NextScene() const {
-    return new GameScene();
+    return new IntroductionScene();
 }

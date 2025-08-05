@@ -156,6 +156,7 @@
   <ItemGroup>
     <ClCompile Include="FinishScene.cpp" />
     <ClCompile Include="GameScene.cpp" />
+    <ClCompile Include="IntroductionScene.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="TitleScene.cpp" />
@@ -260,6 +261,7 @@
   <ItemGroup>
     <ClInclude Include="FinishScene.h" />
     <ClInclude Include="GameScene.h" />
+    <ClInclude Include="IntroductionScene.h" />
     <ClInclude Include="IScene.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="SceneName.h" />

@@ -3,20 +3,20 @@
 #include <KamataEngine.h>
 
 #include "IScene.h"
-class IntroductionScene;
+class GameScene;
 
-class TitleScene : public IScene {
+class IntroductionScene :public IScene {
 public:
 
     /// <summary>
-    /// コンストラクタ
+    /// インストラクタ
     /// </summary>
-    TitleScene();
+    IntroductionScene();
 
     /// <summary>
     /// デストラクタ
     /// </summary>
-    ~TitleScene();
+    ~IntroductionScene();
 
     /// <summary>
     /// 初期化処理
@@ -41,22 +41,14 @@ public:
     bool IsEnd()const override { return isEnd_; }
     IScene* NextScene()const override;
 
-    SceneName GetSceneName() const override { return SceneName::Title; }  // シーン名
+    SceneName GetSceneName() const override { return SceneName::InGame; }
 
 private:
 
-    KamataEngine::DirectXCommon* dxCommon_ = nullptr;
-    KamataEngine::Input* input_ = nullptr;
-    KamataEngine::WorldTransform* worldTransform_;
-    KamataEngine::Camera* camera_;
+    KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // 
+    KamataEngine::Input* input_ = nullptr;             // 
 
-
-    KamataEngine::Model* model_ = nullptr;
-
-    uint32_t textureHandle_ = 0;
-    KamataEngine::Sprite* sprite_ = nullptr;
-
-    // 終了フラグ
+    // シーン終了フラグ
     bool isEnd_ = false;
 };
 
