@@ -55,8 +55,8 @@ private:
     KamataEngine::Camera camera_;
     KamataEngine::Model* model_ = nullptr;
 
-    // 
-    Skydome skydome_;
+    // 天球
+    Skydome* skydome_ = nullptr;
 
     // シーン終了フラグ
     bool isEnd_ = false;
