@@ -25,12 +25,23 @@ void GameScene::Initialize()
 }
 
 void GameScene::Update() {
-    // 入力を受け付けるようにする
-    input_ = Input::GetInstance();
 
-    if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
-        isEnd_ = true;
-    }
+
+
+
+
+
+
+
+
+
+
+    // 入力を受け付けるようにする
+    //input_ = Input::GetInstance();
+
+    //if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+    //    isEnd_ = true;
+    //}
 }
 
 void GameScene::Draw() {
