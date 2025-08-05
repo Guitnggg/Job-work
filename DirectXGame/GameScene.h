@@ -2,6 +2,8 @@
 
 #include <KamataEngine.h>
 
+#include "Skydome.h"
+
 #include "IScene.h"
 class FinishScene;
 
@@ -52,6 +54,9 @@ private:
     KamataEngine::WorldTransform worldTransform_;
     KamataEngine::Camera camera_;
     KamataEngine::Model* model_ = nullptr;
+
+    // 
+    Skydome skydome_;
 
     // シーン終了フラグ
     bool isEnd_ = false;
