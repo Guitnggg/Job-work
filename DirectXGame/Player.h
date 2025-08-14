@@ -36,6 +36,11 @@ public:
 public:
 
     /// <summary>
+    /// ペアレント
+    /// </summary>
+    void SetParent(const KamataEngine::WorldTransform* parent);
+
+    /// <summary>
     /// HPを減らす
     /// </summary>
     void TakeDamage(int amount);

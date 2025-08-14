@@ -4,6 +4,7 @@
 
 #include "Skydome.h"
 #include "Player.h"
+#include "RailCamera.h"
 
 #include "IScene.h"
 class FinishScene;
@@ -61,6 +62,10 @@ private:
 
     // Player
     Player* player_ = nullptr;
+
+    // レールカメラ
+    bool isRailCamera_ = false;
+    RailCamera* railCamera_ = nullptr;
 
     // シーン終了フラグ
     bool isEnd_ = false;

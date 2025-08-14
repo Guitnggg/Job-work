@@ -10,6 +10,7 @@ GameScene::~GameScene() {
     delete model_;
     delete skydome_;
     delete player_;
+    delete railCamera_;
 }
 
 void GameScene::Initialize()
@@ -25,12 +26,17 @@ void GameScene::Initialize()
     // モデルの生成
     model_ = Model::Create();
 
+    // レールカメラ
+    railCamera_ = new RailCamera();
+    railCamera_->Initialize();
+
     // 天球
     skydome_ = new Skydome();
     skydome_->Initialize(&camera_);
 
     // Player
     player_ = new Player();
+    player_->SetParent(&railCamera_->GetWorldTransform());
     player_->Initialize(&camera_);
 
     // 入力を受け付けるようにする

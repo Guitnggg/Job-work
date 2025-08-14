@@ -55,6 +55,10 @@ void Player::Draw() {
     model_->Draw(worldTransform_, *camera_, textureHandle_);
 }
 
+void Player::SetParent(const KamataEngine::WorldTransform* parent){
+    worldTransform_.parent_ = parent;
+}
+
 void Player::TakeDamage(int amount) {
     currentHP_ -= amount;
     if (currentHP_ < 0) {
