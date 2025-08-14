@@ -3,6 +3,7 @@
 #include <KamataEngine.h>
 
 #include "Skydome.h"
+#include "Player.h"
 
 #include "IScene.h"
 class FinishScene;
@@ -57,6 +58,9 @@ private:
 
     // 天球
     Skydome* skydome_ = nullptr;
+
+    // Player
+    Player* player_ = nullptr;
 
     // シーン終了フラグ
     bool isEnd_ = false;

@@ -158,9 +158,12 @@
     <ClCompile Include="GameScene.cpp" />
     <ClCompile Include="IntroductionScene.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MyMath.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Skydome.cpp" />
     <ClCompile Include="TitleScene.cpp" />
+    <ClCompile Include="WorldTransformEx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\TerrainPS.hlsl">
@@ -264,6 +267,8 @@
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="IntroductionScene.h" />
     <ClInclude Include="IScene.h" />
+    <ClInclude Include="MyMath.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="SceneName.h" />
     <ClInclude Include="Skydome.h" />

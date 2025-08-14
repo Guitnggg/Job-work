@@ -7,6 +7,9 @@ using namespace KamataEngine;
 GameScene::GameScene() {}
 
 GameScene::~GameScene() {
+    delete model_;
+    delete skydome_;
+    delete player_;
 }
 
 void GameScene::Initialize()
@@ -22,9 +25,13 @@ void GameScene::Initialize()
     // モデルの生成
     model_ = Model::Create();
 
-    // 
+    // 天球
     skydome_ = new Skydome();
     skydome_->Initialize(&camera_);
+
+    // Player
+    player_ = new Player();
+    player_->Initialize(&camera_);
 
     // 入力を受け付けるようにする
     input_ = Input::GetInstance();
@@ -33,6 +40,8 @@ void GameScene::Initialize()
 void GameScene::Update() {
 
     skydome_->Update();
+
+    player_->Update();
 
 
 
@@ -54,6 +63,8 @@ void GameScene::Draw() {
     Model::PreDraw();
 
     skydome_->Draw();
+
+    player_->Draw();
 
     // 3Dオブジェクト描画後処理
     Model::PostDraw();
