@@ -12,7 +12,8 @@ enum class SceneTransitionState {
     None,
     FadeOut,
     LoadNextScene,
-    FadeIn
+    FadeIn,
+    FlashOut
 };
 
 class SceneManager {
@@ -72,4 +73,12 @@ private:
     float transitionSpeed_ = 0.02f;
 
     KamataEngine::Sprite* fadeSprite_ = nullptr;
+    KamataEngine::Sprite* flashSprite_ = nullptr;
+
+    float flashTimer_ = 0.0f;
+    float flashTime_ = 0.16f;
+
+    bool pendingWhiteFlash_ = false;
+
+    bool ShouldUseWhiteFlash(SceneName form, SceneName n) const;
 };
