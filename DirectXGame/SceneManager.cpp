@@ -72,7 +72,7 @@ void SceneManager::Update() {
     // 白フラッシュ
     case SceneTransitionState::FlashOut: {
         flashTimer_ += 1.0f / 60.0f;
-        float t = std::clamp(flashTimer_/flashTimer_, 0.0f, 1.0f);
+        float t = std::clamp(flashTimer_/flashTime_, 0.0f, 1.0f);
         float alpha = (t < 0.5f) ? (t * 2.0f) : (2.0f - t * 2.0f);
         flashSprite_->SetColor({ 1.0f, 1.0f ,1.0f, alpha });
 

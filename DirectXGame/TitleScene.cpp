@@ -10,7 +10,6 @@ TitleScene::~TitleScene() {
     delete BackgroundSprite_;
     delete TitleSprite_;
     delete StartSprite_;
-    delete fadeSprite_;
 }
 
 void TitleScene::Initialize() {
@@ -25,15 +24,6 @@ void TitleScene::Initialize() {
 
     StartTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
     StartSprite_ = Sprite::Create(StartTextureHandle_, { 150.0f,550.0f });
-
-    // FadeIn
-    uint32_t whiteHandle_ = TextureManager::Load("./Resources/white1x1.png");
-    fadeSprite_ = Sprite::Create(whiteHandle_, { 0.0f, 0.0f });
-    fadeSprite_->SetSize({
-        (float)dxCommon_->GetBackBufferWidth(),
-        (float)dxCommon_->GetBackBufferHeight()
-    });
-    fadeSprite_->SetColor({ 0.0f, 0.0f, 0.0f, fadeAlpha_ });
 }
 
 void TitleScene::Update() {
@@ -41,41 +31,32 @@ void TitleScene::Update() {
     // 入力を受け付けるようにする
     input_ = Input::GetInstance();
 
-    if (isFadingIn_) {
-        fadeAlpha_ -= fadeSpeed_;
-        if (fadeAlpha_ <= 0.0f) {
-            fadeAlpha_ = 0.0f;
-            isFadingIn_ = false;
+    // Title落下用
+    if (titlePosition_.y < titleTargetPosition_.y) {
+        titlePosition_.y += titleFallSpeed_;
+        if (titlePosition_.y > titleTargetPosition_.y) {
+            titlePosition_.y = titleTargetPosition_.y; // 超えたら固定
+            isTitleFallFinished_ = true;
         }
-        fadeSprite_->SetColor({ 0.0f, 0.0f, 0.0f, fadeAlpha_ });
+        TitleSprite_->SetPosition(titlePosition_);
     }
-    else {
-        // Title落下用
-        if (titlePosition_.y < titleTargetPosition_.y) {
-            titlePosition_.y += titleFallSpeed_;
-            if (titlePosition_.y > titleTargetPosition_.y) {
-                titlePosition_.y = titleTargetPosition_.y; // 超えたら固定
-                isTitleFallFinished_ = true;
-            }
-            TitleSprite_->SetPosition(titlePosition_);
-        }
 
-        // Start点滅
-        blinkTimer_ += 1.0f / 60.0f;  // 点滅タイマー更新
+    // Start点滅
+    blinkTimer_ += 1.0f / 60.0f;  // 点滅タイマー更新
 
-        if (blinkTimer_ >= blinkInterval_) {
-            blinkTimer_ -= blinkInterval_;
-        }
+    if (blinkTimer_ >= blinkInterval_) {
+        blinkTimer_ -= blinkInterval_;
+    }
 
-        // アルファをサイン波で変化させる
-        float alpha = 0.5f + 0.5f * sinf(blinkTimer_ / blinkInterval_ * 2.0f * 3.14159265f);
-        StartSprite_->SetColor({ 1.0f,1.0f,1.0f,alpha });
+    // アルファをサイン波で変化させる
+    float alpha = 0.5f + 0.5f * sinf(blinkTimer_ / blinkInterval_ * 2.0f * 3.14159265f);
+    StartSprite_->SetColor({ 1.0f,1.0f,1.0f,alpha });
 
-        // シーン変遷
-        if (isTitleFallFinished_ && input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
-            isEnd_ = true;
-        }
-    } 
+    // シーン変遷
+    if (isTitleFallFinished_ && input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+        isEnd_ = true;
+    }
+
 }
 
 void TitleScene::Draw() {
@@ -93,10 +74,6 @@ void TitleScene::Draw() {
     BackgroundSprite_->Draw();
     TitleSprite_->Draw();
     StartSprite_->Draw();
-    
-    if (fadeSprite_) {
-        fadeSprite_->Draw();
-    }
 
     // スプライト描画後処理
     Sprite::PostDraw();

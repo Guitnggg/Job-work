@@ -69,12 +69,6 @@ private:
     float titleFallSpeed_ = 3.0f;       // 移動速度
     bool isTitleFallFinished_ = false;  // 移動終了判定
 
-    // フェード用
-    KamataEngine::Sprite* fadeSprite_ = nullptr;
-    float fadeAlpha_ = 1.0f;
-    float fadeSpeed_ = 0.005f;
-    bool isFadingIn_ = true;
-
     // 終了フラグ
     bool isEnd_ = false;
 };
