@@ -45,15 +45,31 @@ public:
 
 private:
 
-    KamataEngine::DirectXCommon* dxCommon_ = nullptr;
-    KamataEngine::Input* input_ = nullptr;
-    KamataEngine::WorldTransform* worldTransform_;
-    KamataEngine::Camera* camera_;
-    KamataEngine::Model* model_ = nullptr;
+    KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連の管理クラス
+    KamataEngine::Input* input_ = nullptr;             // 入力管理クラス
+    KamataEngine::WorldTransform* worldTransform_;     // ワールド変換管理クラス
+    KamataEngine::Camera* camera_;                     // カメラ管理クラス
+    KamataEngine::Model* model_ = nullptr;             // モデル管理クラス
 
-    uint32_t textureHandle_ = 0;
-    KamataEngine::Sprite* sprite_ = nullptr;
+    // 各種テクスチャ
+    uint32_t BackgroundTextureHandle_ = 0;
+    KamataEngine::Sprite* BackgroundSprite_ = nullptr;
+    uint32_t TitleTextureHandle_ = 0;
+    KamataEngine::Sprite* TitleSprite_ = nullptr;
+    uint32_t StartTextureHandle_ = 0;
+    KamataEngine::Sprite* StartSprite_ = nullptr;
 
+    // スタート点滅用
+    float blinkTimer_ = 0.0f;     // 点滅タイマー
+    float blinkInterval_ = 1.0f;  // 点滅間隔
+
+    // タイトル移動用
+    KamataEngine::Vector2 titlePosition_ = { 110.0f,-500.0f };       // 初期位置
+    KamataEngine::Vector2 titleTargetPosition_ = { 110.0f,150.0f };  // ゴール位置
+    float titleFallSpeed_ = 3.0f;       // 移動速度
+    bool isTitleFallFinished_ = false;  // 移動終了判定
+
+    // フェード用
     KamataEngine::Sprite* fadeSprite_ = nullptr;
     float fadeAlpha_ = 1.0f;
     float fadeSpeed_ = 0.005f;

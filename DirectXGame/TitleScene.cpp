@@ -7,15 +7,24 @@ using namespace KamataEngine;
 TitleScene::TitleScene() {}
 
 TitleScene::~TitleScene() {
-    delete sprite_;
+    delete BackgroundSprite_;
+    delete TitleSprite_;
+    delete StartSprite_;
     delete fadeSprite_;
 }
 
 void TitleScene::Initialize() {
     dxCommon_ = DirectXCommon::GetInstance();
 
-    textureHandle_ = TextureManager::Load("./Resources/title/title.png");
-    sprite_ = Sprite::Create(textureHandle_, { 0.0f,0.0f });
+    // 各種テクスチャ
+    BackgroundTextureHandle_ = TextureManager::Load("./Resources/title/Wood.png");
+    BackgroundSprite_ = Sprite::Create(BackgroundTextureHandle_, { 0.0f,0.0f });
+
+    TitleTextureHandle_ = TextureManager::Load("./Resources/title/GameTitle.png");
+    TitleSprite_ = Sprite::Create(TitleTextureHandle_, titlePosition_);
+
+    StartTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
+    StartSprite_ = Sprite::Create(StartTextureHandle_, { 150.0f,550.0f });
 
     // FadeIn
     uint32_t whiteHandle_ = TextureManager::Load("./Resources/white1x1.png");
@@ -34,7 +43,6 @@ void TitleScene::Update() {
 
     if (isFadingIn_) {
         fadeAlpha_ -= fadeSpeed_;
-
         if (fadeAlpha_ <= 0.0f) {
             fadeAlpha_ = 0.0f;
             isFadingIn_ = false;
@@ -42,7 +50,29 @@ void TitleScene::Update() {
         fadeSprite_->SetColor({ 0.0f, 0.0f, 0.0f, fadeAlpha_ });
     }
     else {
-        if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+        // Title落下用
+        if (titlePosition_.y < titleTargetPosition_.y) {
+            titlePosition_.y += titleFallSpeed_;
+            if (titlePosition_.y > titleTargetPosition_.y) {
+                titlePosition_.y = titleTargetPosition_.y; // 超えたら固定
+                isTitleFallFinished_ = true;
+            }
+            TitleSprite_->SetPosition(titlePosition_);
+        }
+
+        // Start点滅
+        blinkTimer_ += 1.0f / 60.0f;  // 点滅タイマー更新
+
+        if (blinkTimer_ >= blinkInterval_) {
+            blinkTimer_ -= blinkInterval_;
+        }
+
+        // アルファをサイン波で変化させる
+        float alpha = 0.5f + 0.5f * sinf(blinkTimer_ / blinkInterval_ * 2.0f * 3.14159265f);
+        StartSprite_->SetColor({ 1.0f,1.0f,1.0f,alpha });
+
+        // シーン変遷
+        if (isTitleFallFinished_ && input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
             isEnd_ = true;
         }
     } 
@@ -60,7 +90,9 @@ void TitleScene::Draw() {
     /// ここに背景スプライトの描画処理を追加できる
     /// </summary>
 
-    sprite_->Draw();
+    BackgroundSprite_->Draw();
+    TitleSprite_->Draw();
+    StartSprite_->Draw();
     
     if (fadeSprite_) {
         fadeSprite_->Draw();
