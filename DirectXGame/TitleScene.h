@@ -2,6 +2,7 @@
 
 #include <KamataEngine.h>
 
+#include "Skydome.h"
 #include "IScene.h"
 class IntroductionScene;
 
@@ -48,12 +49,10 @@ private:
     KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連の管理クラス
     KamataEngine::Input* input_ = nullptr;             // 入力管理クラス
     KamataEngine::WorldTransform* worldTransform_;     // ワールド変換管理クラス
-    KamataEngine::Camera* camera_;                     // カメラ管理クラス
+    KamataEngine::Camera camera_;                      // カメラ管理クラス
     KamataEngine::Model* model_ = nullptr;             // モデル管理クラス
 
     // 各種テクスチャ
-    uint32_t BackgroundTextureHandle_ = 0;
-    KamataEngine::Sprite* BackgroundSprite_ = nullptr;
     uint32_t TitleTextureHandle_ = 0;
     KamataEngine::Sprite* TitleSprite_ = nullptr;
     uint32_t StartTextureHandle_ = 0;
@@ -68,6 +67,9 @@ private:
     KamataEngine::Vector2 titleTargetPosition_ = { 110.0f,150.0f };  // ゴール位置
     float titleFallSpeed_ = 3.0f;       // 移動速度
     bool isTitleFallFinished_ = false;  // 移動終了判定
+
+    // 天球
+    Skydome* skydome_ = nullptr;
 
     // 終了フラグ
     bool isEnd_ = false;

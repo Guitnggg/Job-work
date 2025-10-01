@@ -7,29 +7,39 @@ using namespace KamataEngine;
 TitleScene::TitleScene() {}
 
 TitleScene::~TitleScene() {
-    delete BackgroundSprite_;
     delete TitleSprite_;
     delete StartSprite_;
+    delete model_;
+    delete skydome_;
 }
 
 void TitleScene::Initialize() {
     dxCommon_ = DirectXCommon::GetInstance();
 
     // 各種テクスチャ
-    BackgroundTextureHandle_ = TextureManager::Load("./Resources/title/Wood.png");
-    BackgroundSprite_ = Sprite::Create(BackgroundTextureHandle_, { 0.0f,0.0f });
-
     TitleTextureHandle_ = TextureManager::Load("./Resources/title/GameTitle.png");
     TitleSprite_ = Sprite::Create(TitleTextureHandle_, titlePosition_);
 
     StartTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
     StartSprite_ = Sprite::Create(StartTextureHandle_, { 150.0f,550.0f });
+
+    // モデルの生成
+    model_ = Model::Create();
+
+    // カメラ
+    camera_.Initialize();
+
+    // 天球
+    skydome_ = new Skydome();
+    skydome_->Initialize(&camera_);
 }
 
 void TitleScene::Update() {
 
     // 入力を受け付けるようにする
     input_ = Input::GetInstance();
+
+    skydome_->Update();
 
     // Title落下用
     if (titlePosition_.y < titleTargetPosition_.y) {
@@ -70,16 +80,45 @@ void TitleScene::Draw() {
     /// <summary>
     /// ここに背景スプライトの描画処理を追加できる
     /// </summary>
+    
+   
 
-    BackgroundSprite_->Draw();
+    // スプライト描画後処理
+    Sprite::PostDraw();
+
+    // 深度バッファクリア
+    dxCommon_->ClearDepthBuffer();
+#pragma endregion
+
+#pragma region 3Dオブジェクト描画
+    // 3Dオブジェクト描画前処理
+    Model::PreDraw();
+
+    /// <summary>
+    /// ここに3Dオブジェクトの描画処理を追加できる
+    /// </summary>
+    
+    skydome_->Draw();
+
+    // 3Dオブジェクト描画後処理
+    Model::PostDraw();
+#pragma endregion
+
+#pragma region 前景スプライト描画
+    // 前景スプライト描画前処理
+    Sprite::PreDraw(commandList);
+
+    /// <summary>
+    /// ここに前景スプライトの描画処理を追加できる
+    /// </summary>
+
     TitleSprite_->Draw();
     StartSprite_->Draw();
 
     // スプライト描画後処理
     Sprite::PostDraw();
-    // 深度バッファクリア
-    dxCommon_->ClearDepthBuffer();
 #pragma endregion
+
 }
 
 IScene* TitleScene::NextScene() const {
