@@ -49,12 +49,15 @@ private:
     KamataEngine::Input* input_ = nullptr;
     KamataEngine::WorldTransform* worldTransform_;
     KamataEngine::Camera* camera_;
-
-
     KamataEngine::Model* model_ = nullptr;
 
     uint32_t textureHandle_ = 0;
     KamataEngine::Sprite* sprite_ = nullptr;
+
+    KamataEngine::Sprite* fadeSprite_ = nullptr;
+    float fadeAlpha_ = 1.0f;
+    float fadeSpeed_ = 0.005f;
+    bool isFadingIn_ = true;
 
     // 終了フラグ
     bool isEnd_ = false;

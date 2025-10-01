@@ -8,6 +8,7 @@ TitleScene::TitleScene() {}
 
 TitleScene::~TitleScene() {
     delete sprite_;
+    delete fadeSprite_;
 }
 
 void TitleScene::Initialize() {
@@ -15,6 +16,15 @@ void TitleScene::Initialize() {
 
     textureHandle_ = TextureManager::Load("./Resources/title/title.png");
     sprite_ = Sprite::Create(textureHandle_, { 0.0f,0.0f });
+
+    // FadeIn
+    uint32_t whiteHandle_ = TextureManager::Load("./Resources/white1x1.png");
+    fadeSprite_ = Sprite::Create(whiteHandle_, { 0.0f, 0.0f });
+    fadeSprite_->SetSize({
+        (float)dxCommon_->GetBackBufferWidth(),
+        (float)dxCommon_->GetBackBufferHeight()
+    });
+    fadeSprite_->SetColor({ 0.0f, 0.0f, 0.0f, fadeAlpha_ });
 }
 
 void TitleScene::Update() {
@@ -22,9 +32,20 @@ void TitleScene::Update() {
     // 入力を受け付けるようにする
     input_ = Input::GetInstance();
 
-    if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
-        isEnd_ = true;
+    if (isFadingIn_) {
+        fadeAlpha_ -= fadeSpeed_;
+
+        if (fadeAlpha_ <= 0.0f) {
+            fadeAlpha_ = 0.0f;
+            isFadingIn_ = false;
+        }
+        fadeSprite_->SetColor({ 0.0f, 0.0f, 0.0f, fadeAlpha_ });
     }
+    else {
+        if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+            isEnd_ = true;
+        }
+    } 
 }
 
 void TitleScene::Draw() {
@@ -40,6 +61,10 @@ void TitleScene::Draw() {
     /// </summary>
 
     sprite_->Draw();
+    
+    if (fadeSprite_) {
+        fadeSprite_->Draw();
+    }
 
     // スプライト描画後処理
     Sprite::PostDraw();
