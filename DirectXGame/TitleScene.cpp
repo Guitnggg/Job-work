@@ -47,6 +47,22 @@ void TitleScene::Update() {
 
     skydome_->Update();
 
+    // 小惑星更新
+    for (auto asteroid : asteroids_) {
+        asteroid->Update();
+        // カメラを超えたら再出現
+        if (asteroid->GetZ() > recycleZ_) {
+            Vector3 pos = {
+                Rand(-25.0f,25.0f),
+                Rand(-15.0f,15.0f),
+                Rand(spawnZMin_,spawnZMax_)
+            };
+            Vector3 velocity = { 0.0f,0.0f,Rand(-0.6f,-0.18f) };
+            Vector3 rotate = { Rand(0.01f,0.03f),Rand(0.01f,0.03f),Rand(0.01f,0.03f) };
+            asteroid->Respawn(pos, velocity, rotate);
+        }
+    }
+
     // Title落下用
     if (titlePosition_.y < titleTargetPosition_.y) {
         titlePosition_.y += titleFallSpeed_;
