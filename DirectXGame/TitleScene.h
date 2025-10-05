@@ -1,8 +1,12 @@
 #pragma once
 
 #include <KamataEngine.h>
+#include <vector>
+#include <random>
 
 #include "Skydome.h"
+#include "Asteroid.h"
+
 #include "IScene.h"
 class IntroductionScene;
 
@@ -50,7 +54,6 @@ private:
     KamataEngine::Input* input_ = nullptr;             // 入力管理クラス
     KamataEngine::WorldTransform* worldTransform_;     // ワールド変換管理クラス
     KamataEngine::Camera camera_;                      // カメラ管理クラス
-    KamataEngine::Model* model_ = nullptr;             // モデル管理クラス
 
     // 各種テクスチャ
     uint32_t TitleTextureHandle_ = 0;
@@ -71,7 +74,26 @@ private:
     // 天球
     Skydome* skydome_ = nullptr;
 
+    // 小惑星
+    KamataEngine::Model* asteroidModel_ = nullptr;
+    std::vector<Asteroid*> asteroids_;
+    int   asteroidCount_ = 12;     // 背景に流す数
+    float spawnZMin_ = 40.0f;  // 出現Z（奥）
+    float spawnZMax_ = 140.0f;
+    float recycleZ_ = -5.0f;  // カメラを超えたら再出現
+
+    // ランダム生成器
+    std::mt19937 mt_{ std::random_device{}() };
+
     // 終了フラグ
     bool isEnd_ = false;
+
+private:
+    
+    // 生成
+    Asteroid* SpawnAsteroid();
+
+    // 乱数
+    float Rand(float min, float max);
 };
 

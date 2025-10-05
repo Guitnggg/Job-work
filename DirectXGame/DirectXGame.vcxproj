@@ -154,6 +154,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Asteroid.cpp" />
     <ClCompile Include="FinishScene.cpp" />
     <ClCompile Include="GameScene.cpp" />
     <ClCompile Include="IntroductionScene.cpp" />
@@ -262,6 +263,7 @@
     <None Include="Resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Asteroid.h" />
     <ClInclude Include="FinishScene.h" />
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="IntroductionScene.h" />

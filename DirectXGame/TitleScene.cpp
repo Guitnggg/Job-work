@@ -9,7 +9,10 @@ TitleScene::TitleScene() {}
 TitleScene::~TitleScene() {
     delete TitleSprite_;
     delete StartSprite_;
-    delete model_;
+    delete asteroidModel_;
+    for (auto asteroid : asteroids_) {
+        delete asteroid;
+    }
     delete skydome_;
 }
 
@@ -24,7 +27,7 @@ void TitleScene::Initialize() {
     StartSprite_ = Sprite::Create(StartTextureHandle_, { 150.0f,550.0f });
 
     // モデルの生成
-    model_ = Model::Create();
+    asteroidModel_ = Model::CreateFromOBJ("Asteroid", true);
 
     // カメラ
     camera_.Initialize();
@@ -80,8 +83,8 @@ void TitleScene::Draw() {
     /// <summary>
     /// ここに背景スプライトの描画処理を追加できる
     /// </summary>
-    
-   
+
+
 
     // スプライト描画後処理
     Sprite::PostDraw();
@@ -97,7 +100,12 @@ void TitleScene::Draw() {
     /// <summary>
     /// ここに3Dオブジェクトの描画処理を追加できる
     /// </summary>
-    
+
+    // 小惑星描画
+
+  
+
+    // 天球描画
     skydome_->Draw();
 
     // 3Dオブジェクト描画後処理
@@ -123,4 +131,20 @@ void TitleScene::Draw() {
 
 IScene* TitleScene::NextScene() const {
     return new IntroductionScene();
+}
+
+Asteroid* TitleScene::SpawnAsteroid() {
+    asteroids_.push_back(SpawnAsteroid());
+    Vector3 pos = { 
+        Rand(-25.0f,25.0f),
+        Rand(-15.0f,15.0f),
+        Rand(spawnZMin_,spawnZMax_)
+    };
+
+    Vector3 velocity = { 0.0f,0.0f,Rand(-0.6f,-0.18f) };
+}
+
+float TitleScene::Rand(float min, float max){
+    std::uniform_real_distribution<float> dist(min, max);
+    return dist(mt_);
 }
