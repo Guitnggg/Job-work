@@ -2,7 +2,9 @@
 
 #include <KamataEngine.h>
 
+#include "SceneName.h"
 #include "Skydome.h"
+
 #include "IScene.h"
 class GameScene;
 
@@ -58,6 +60,8 @@ private:
     // 天球
     Skydome* skydome_ = nullptr;
 
+    // 次のシーン
+    SceneName nextScene_ = SceneName::None;
 
     // シーン終了フラグ
     bool isEnd_ = false;

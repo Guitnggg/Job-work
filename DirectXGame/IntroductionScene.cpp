@@ -1,5 +1,7 @@
 #include "IntroductionScene.h"
 
+
+#include "TitleScene.h"
 #include "GameScene.h"
 
 using namespace KamataEngine;
@@ -12,6 +14,9 @@ IntroductionScene::~IntroductionScene() {
 
 void IntroductionScene::Initialize() {
     dxCommon_ = DirectXCommon::GetInstance();
+
+    // シーン変遷の初期化
+    nextScene_ = SceneName::None;
 
     // 各種サウンド
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
@@ -32,8 +37,17 @@ void IntroductionScene::Update() {
     // 入力を受け付けるようにする
     input_ = Input::GetInstance();
 
-    if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+    // １つ前のシーンへ
+    if (input_->PushKey(DIK_ESCAPE)) {
         Audio::GetInstance()->PlayWave(changeSEHandle_);
+        nextScene_ = SceneName::Title;
+        isEnd_ = true;
+    }
+
+    // 次のシーンへ
+    if (input_->PushKey(DIK_SPACE)) {
+        Audio::GetInstance()->PlayWave(changeSEHandle_);
+        nextScene_ = SceneName::InGame;
         isEnd_ = true;
     }
 }
@@ -88,5 +102,17 @@ void IntroductionScene::Draw() {
 }
 
 IScene* IntroductionScene::NextScene() const {
-    return new GameScene();
+    switch (nextScene_) {
+    case SceneName::Title:
+        return new TitleScene();
+        break;
+
+    case SceneName::InGame:
+        return new GameScene();
+        break;
+
+    default:
+        return nullptr;
+        break;
+    }
 }
