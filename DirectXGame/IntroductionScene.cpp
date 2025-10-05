@@ -1,6 +1,5 @@
 #include "IntroductionScene.h"
 
-
 #include "TitleScene.h"
 #include "GameScene.h"
 
@@ -8,9 +7,7 @@ using namespace KamataEngine;
 
 IntroductionScene::IntroductionScene() {}
 
-IntroductionScene::~IntroductionScene() {
- 
-}
+IntroductionScene::~IntroductionScene() {}
 
 void IntroductionScene::Initialize() {
     dxCommon_ = DirectXCommon::GetInstance();
