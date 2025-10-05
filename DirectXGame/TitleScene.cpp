@@ -127,8 +127,9 @@ void TitleScene::Draw() {
     /// </summary>
 
     // 小惑星描画
-
-  
+    for (auto asteroid : asteroids_) {
+        asteroid->Draw(camera_);
+    }  
 
     // 天球描画
     skydome_->Draw();
