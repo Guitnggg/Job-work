@@ -56,6 +56,7 @@ void TitleScene::Update() {
     // 小惑星更新
     for (auto asteroid : asteroids_) {
         asteroid->Update();
+
         // カメラを超えたら再出現
         if (asteroid->GetZ() > recycleZ_) {
             Vector3 pos = {
@@ -65,6 +66,7 @@ void TitleScene::Update() {
             };
             Vector3 velocity = { 0.0f,0.0f,Rand(-0.6f,-0.18f) };
             Vector3 rotate = { Rand(0.01f,0.03f),Rand(0.01f,0.03f),Rand(0.01f,0.03f) };
+
             asteroid->Respawn(pos, velocity, rotate);
         }
     }
