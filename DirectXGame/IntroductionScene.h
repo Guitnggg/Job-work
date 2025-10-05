@@ -2,6 +2,7 @@
 
 #include <KamataEngine.h>
 
+#include "Skydome.h"
 #include "IScene.h"
 class GameScene;
 
