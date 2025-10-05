@@ -25,6 +25,7 @@ void TitleScene::Initialize() {
 
     StartTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
     StartSprite_ = Sprite::Create(StartTextureHandle_, { 150.0f,550.0f });
+    StartSprite_->SetColor({ 1.0f,1.0f,1.0f,0.0f });  // 最初は透明
 
     // 各種サウンド
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
@@ -41,7 +42,6 @@ void TitleScene::Initialize() {
 }
 
 void TitleScene::Update() {
-
     // 入力を受け付けるようにする
     input_ = Input::GetInstance();
 
@@ -53,27 +53,32 @@ void TitleScene::Update() {
         if (titlePosition_.y > titleTargetPosition_.y) {
             titlePosition_.y = titleTargetPosition_.y; // 超えたら固定
             isTitleFallFinished_ = true;
+
+            // 点滅の初期化
+            blinkTimer_ = 0.0f;
         }
         TitleSprite_->SetPosition(titlePosition_);
     }
 
     // Start点滅
-    blinkTimer_ += 1.0f / 60.0f;  // 点滅タイマー更新
-
-    if (blinkTimer_ >= blinkInterval_) {
-        blinkTimer_ -= blinkInterval_;
+    if (isTitleFallFinished_) {
+        blinkTimer_ += 1.0f / 60.0f;
+        if (blinkTimer_ >= blinkInterval_) {
+            blinkTimer_ -= blinkInterval_;
+        }
+        const float alpha = 0.5f + 0.5f * sinf(blinkTimer_ / blinkInterval_ * 2.0f * 3.14159265f);
+        StartSprite_->SetColor({ 1.0f, 1.0f, 1.0f, alpha });
+    }
+    else {
+        // 完了前は常に透明のまま
+        StartSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 0.0f });
     }
 
-    // アルファをサイン波で変化させる
-    float alpha = 0.5f + 0.5f * sinf(blinkTimer_ / blinkInterval_ * 2.0f * 3.14159265f);
-    StartSprite_->SetColor({ 1.0f,1.0f,1.0f,alpha });
-
-    // シーン変遷
-    if (isTitleFallFinished_ && input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+    // シーン遷移（落下完了後のみ）
+    if (isTitleFallFinished_ && input_->PushKey(DIK_SPACE)) {
         Audio::GetInstance()->PlayWave(changeSEHandle_);
         isEnd_ = true;
     }
-
 }
 
 void TitleScene::Draw() {
