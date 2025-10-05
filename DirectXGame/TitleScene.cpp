@@ -36,6 +36,12 @@ void TitleScene::Initialize() {
     // カメラ
     camera_.Initialize();
 
+    // 小惑星生成
+    asteroids_.reserve(asteroidCount_);
+    for(int i = 0; i < asteroidCount_; i++) {
+        SpawnAsteroid();
+    }
+
     // 天球
     skydome_ = new Skydome();
     skydome_->Initialize(&camera_);
@@ -160,14 +166,22 @@ IScene* TitleScene::NextScene() const {
 }
 
 Asteroid* TitleScene::SpawnAsteroid() {
-    asteroids_.push_back(SpawnAsteroid());
+    // 位置、速度、回転をランダムに決定
     Vector3 pos = { 
         Rand(-25.0f,25.0f),
         Rand(-15.0f,15.0f),
         Rand(spawnZMin_,spawnZMax_)
     };
-
     Vector3 velocity = { 0.0f,0.0f,Rand(-0.6f,-0.18f) };
+    Vector3 rotate = { Rand(0.01f,0.03f),Rand(0.01f,0.03f),Rand(0.01f,0.03f) };
+
+    // インスタンス生成
+    Asteroid* asteroid = new Asteroid();
+    asteroid->Initialize(asteroidModel_, pos, velocity, rotate);
+
+    // 配列に登録
+    asteroids_.push_back(asteroid);
+    return asteroid;
 }
 
 float TitleScene::Rand(float min, float max){

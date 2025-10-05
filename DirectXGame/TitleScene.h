@@ -82,7 +82,7 @@ private:
     KamataEngine::Model* asteroidModel_ = nullptr;
     std::vector<Asteroid*> asteroids_;
     int   asteroidCount_ = 12;     // 背景に流す数
-    float spawnZMin_ = 40.0f;  // 出現Z（奥）
+    float spawnZMin_ = 0.0f;  // 出現Z（奥）
     float spawnZMax_ = 140.0f;
     float recycleZ_ = -5.0f;  // カメラを超えたら再出現
 
