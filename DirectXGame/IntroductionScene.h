@@ -46,8 +46,18 @@ public:
 
 private:
 
-    KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // 
-    KamataEngine::Input* input_ = nullptr;             // 
+    KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連の管理クラス
+    KamataEngine::Input* input_ = nullptr;             // 入力管理クラス
+    KamataEngine::Model* model_ = nullptr;             // モデル管理クラス
+    KamataEngine::Camera camera_;                      // カメラ管理クラス
+
+    // 各種サウンド
+    uint32_t changeSEHandle_ = 0;  // シーン変遷SE
+    KamataEngine::Audio* changeSE_ = nullptr;
+
+    // 天球
+    Skydome* skydome_ = nullptr;
+
 
     // シーン終了フラグ
     bool isEnd_ = false;
