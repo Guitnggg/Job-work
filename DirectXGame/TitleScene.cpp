@@ -23,6 +23,9 @@ void TitleScene::Initialize() {
     StartTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
     StartSprite_ = Sprite::Create(StartTextureHandle_, { 150.0f,550.0f });
 
+    // 各種サウンド
+    changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
+
     // モデルの生成
     model_ = Model::Create();
 
@@ -64,6 +67,7 @@ void TitleScene::Update() {
 
     // シーン変遷
     if (isTitleFallFinished_ && input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+        Audio::GetInstance()->PlayWave(changeSEHandle_);
         isEnd_ = true;
     }
 

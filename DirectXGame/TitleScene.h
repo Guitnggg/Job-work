@@ -58,6 +58,10 @@ private:
     uint32_t StartTextureHandle_ = 0;
     KamataEngine::Sprite* StartSprite_ = nullptr;
 
+    // 各種サウンド
+    uint32_t changeSEHandle_ = 0;  // シーン変遷SE
+    KamataEngine::Audio* changeSE_ = nullptr;
+
     // スタート点滅用
     float blinkTimer_ = 0.0f;     // 点滅タイマー
     float blinkInterval_ = 1.0f;  // 点滅間隔
