@@ -53,18 +53,23 @@ void TitleScene::Update() {
 
     skydome_->Update();
 
+    const float dt = 1.0f / 60.0f;
+    spawnTimer_ += dt;
+
     // 小惑星更新
-    for (auto asteroid : asteroids_) {
+    for (auto* asteroid : asteroids_) {
         asteroid->Update();
 
-        // カメラを超えたら再出現
-        if (asteroid->GetZ() > recycleZ_) {
+        // 画面から見えなくなったらリスポーン
+        if (asteroid->GetZ() < recycleZ_ && spawnTimer_ >= spawnInterval_) {
+            spawnTimer_ = 0.0f;
+
             Vector3 pos = {
                 Rand(-25.0f,25.0f),
                 Rand(-15.0f,15.0f),
                 Rand(spawnZMin_,spawnZMax_)
             };
-            Vector3 velocity = { 0.0f,0.0f,Rand(-0.6f,-0.18f) };
+            Vector3 velocity = { 0.0f,0.0f,Rand(-0.3f,-0.1f) };
             Vector3 rotate = { Rand(0.01f,0.03f),Rand(0.01f,0.03f),Rand(0.01f,0.03f) };
 
             asteroid->Respawn(pos, velocity, rotate);
@@ -174,7 +179,7 @@ Asteroid* TitleScene::SpawnAsteroid() {
         Rand(-15.0f,15.0f),
         Rand(spawnZMin_,spawnZMax_)
     };
-    Vector3 velocity = { 0.0f,0.0f,Rand(-0.6f,-0.18f) };
+    Vector3 velocity = { 0.0f,0.0f,Rand(-0.3f,-0.1f) };
     Vector3 rotate = { Rand(0.01f,0.03f),Rand(0.01f,0.03f),Rand(0.01f,0.03f) };
 
     // インスタンス生成

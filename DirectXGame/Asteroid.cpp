@@ -35,9 +35,6 @@ void Asteroid::Update() {
     float scale = 1.0f / (1.0f + distance * 0.05f);
     worldTransform_.scale_ = { scale, scale, scale };
 
-    // ちょっとだけ加速
-    velocity_.z *= 1.01f;
-
     // 行列更新
     worldTransform_.UpdateMatrix();
 }
