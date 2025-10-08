@@ -1,4 +1,7 @@
 #include "Asteroid.h"
+
+#include "Player.h"
+
 #include <cassert>
 
 Asteroid::Asteroid() {}

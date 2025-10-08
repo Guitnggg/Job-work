@@ -38,9 +38,9 @@ void GameScene::Initialize() {
     skydome_->Initialize(&camera_);
 
     // プレイヤー
-    player_ = new Player();
-    player_->SetParent(&railCamera_->GetWorldTransform());
+    player_ = new Player();    
     player_->Initialize(model_, &camera_);
+    player_->SetParent(&railCamera_->GetWorldTransform());
 
     // 小惑星生成
     asteroidModel_ = Model::CreateFromOBJ("Asteroid", true);

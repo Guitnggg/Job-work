@@ -4,6 +4,9 @@
 #include <3d/Model.h>
 #include <3d/Camera.h>
 
+// Playerの前方宣言
+class Player;
+
 class Asteroid{
 public:
 
@@ -44,6 +47,11 @@ public:
     /// </summary>
     void Respawn(const KamataEngine::Vector3 pos, const KamataEngine::Vector3 velocity, KamataEngine::Vector3 rotate);
 
+    /// <summary>
+    /// Playerのアドレスを取得
+    /// </summary>
+    void SetPlayer(Player* player) { player_ = player; }
+
 private:
     // ワールド変換情報
     KamataEngine::WorldTransform worldTransform_;
@@ -53,6 +61,9 @@ private:
     KamataEngine::Vector3 velocity_ = {0,0,0};
     // 回転速度
     KamataEngine::Vector3 rotate_ = { 0,0,0 };
+
+    // Playerのアドレス
+    Player* player_ = nullptr;
 
 };
 

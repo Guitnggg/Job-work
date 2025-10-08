@@ -23,7 +23,7 @@ void Player::Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera
     model_ = Model::CreateFromOBJ("Player", true); // モデルの生成
 
     // Playerの初期座標を設定
-    worldTransform_->translation_ = { 0.0f,0.0f,-30.0f };
+    worldTransform_->translation_ = { 0.0f,-2.0f,20.0f };
 
     // 入力を受け付けるように
     input_ = Input::GetInstance();
