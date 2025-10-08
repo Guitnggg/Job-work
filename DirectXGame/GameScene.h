@@ -6,6 +6,7 @@
 
 #include "Skydome.h"
 #include "Asteroid.h"
+#include "Player.h"
 
 #include "IScene.h"
 class FinishScene;
