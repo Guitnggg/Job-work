@@ -29,11 +29,8 @@ void Player::Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera
     input_ = Input::GetInstance();
 }
 
-void Player::Update() {    
-    const float kMoveSpeed = 0.5f;  // 移動速度
-    const float kRotSpeed = 0.05f;  // 回転速度
-
-    // バレルロールしながら移動
+void Player::Update() {
+    // 横移動
     if (input_->PushKey(DIK_D)) {
         worldTransform_->rotation_.z -= kRotSpeed;
         worldTransform_->translation_.x += kMoveSpeed;
@@ -42,9 +39,8 @@ void Player::Update() {
     if (input_->PushKey(DIK_A)) {
         worldTransform_->rotation_.z += kRotSpeed;
         worldTransform_->translation_.x -= kMoveSpeed;
-
     }
-    
+
     // 行列更新
     worldTransform_->UpdateMatrix();
 }

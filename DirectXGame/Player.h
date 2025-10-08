@@ -5,7 +5,7 @@
 #include "3d/Camera.h"
 #include "input/Input.h"
 
-class Player{
+class Player {
 public:
 
     /// <summary>
@@ -44,17 +44,7 @@ private:
     KamataEngine::Model* model_ = nullptr;
     KamataEngine::Input* input_ = nullptr;
 
-
-
-
-
-
-
-
-
-
-
-
-
+    const float kMoveSpeed = 0.5f;  // 移動速度
+    const float kRotSpeed = 0.05f;  // 回転速度
 };
 
