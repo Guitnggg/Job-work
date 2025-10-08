@@ -8,6 +8,7 @@ GameScene::GameScene() {}
 
 GameScene::~GameScene() {
     delete skydome_;
+    delete player_;
     delete asteroidModel_;
     for (auto asteroid : asteroids_) {
         delete asteroid;
@@ -25,7 +26,15 @@ void GameScene::Initialize() {
     camera_.Initialize();                      // カメラ（ビューポート）
 
     // モデルの生成
-    model_ = Model::Create();
+    model_ = Model::Create();   
+
+    // 天球
+    skydome_ = new Skydome();
+    skydome_->Initialize(&camera_);
+
+    // プレイヤー
+    player_ = new Player();
+    player_->Initialize(model_, &camera_);
 
     // 小惑星生成
     asteroidModel_ = Model::CreateFromOBJ("Asteroid", true);
@@ -33,16 +42,14 @@ void GameScene::Initialize() {
     for (int i = 0; i < asteroidCount_; i++) {
         SpawnAsteroid();
     }
-
-    // 天球
-    skydome_ = new Skydome();
-    skydome_->Initialize(&camera_);
-
 }
 
 void GameScene::Update() {
     // 天球更新
     skydome_->Update();
+
+    // プレイヤー更新
+    player_->Update();
 
     // 小惑星出現タイマー更新
     const float dt = 1.0f / 60.0f;
@@ -68,17 +75,9 @@ void GameScene::Update() {
         }
     }
 
-
-
-
-
-
-
-
-
-    if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
-        isEnd_ = true;
-    }
+    //if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+    //    isEnd_ = true;
+    //}
 }
 
 void GameScene::Draw() {
@@ -109,13 +108,16 @@ void GameScene::Draw() {
     /// ここに3Dオブジェクトの描画処理を追加できる
     /// </summary>
 
+    // 天球描画
+    skydome_->Draw();
+
+    // プレイヤー描画
+    player_->Draw();
+
     // 小惑星描画
     for (auto* asteroid : asteroids_) {
         asteroid->Draw(camera_);
     }
-
-    // 天球描画
-    skydome_->Draw();
 
     // 3Dオブジェクト描画後処理
     Model::PostDraw();

@@ -62,6 +62,9 @@ private:
     // 天球
     Skydome* skydome_ = nullptr;
 
+    // プレイヤー
+    Player* player_ = nullptr;
+
     // 小惑星
     KamataEngine::Model* asteroidModel_ = nullptr;
     std::vector<Asteroid*> asteroids_;
