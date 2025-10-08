@@ -81,12 +81,12 @@ private:
     // 小惑星
     KamataEngine::Model* asteroidModel_ = nullptr;
     std::vector<Asteroid*> asteroids_;
-    int   asteroidCount_ = 10;     // 背景に流す数
-    float spawnZMin_ = 0.0f;  // 出現Z（奥）
+    int   asteroidCount_ = 10;    // 背景に流す数
+    float spawnZMin_ = 0.0f;      // 出現Z（奥）
     float spawnZMax_ = 140.0f;
-    float recycleZ_ = -50.0f;  // カメラを超えたら再出現
-    float spawnInterval_ = 1.0f;
-    float spawnTimer_=0.0f;
+    float recycleZ_ = -50.0f;     // カメラを超えたら再出現
+    float spawnInterval_ = 1.0f;  // 出現間隔
+    float spawnTimer_ = 0.0f;     // 出現タイマー
 
     // ランダム生成器
     std::mt19937 mt_{ std::random_device{}() };

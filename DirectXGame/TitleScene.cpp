@@ -17,7 +17,18 @@ TitleScene::~TitleScene() {
 }
 
 void TitleScene::Initialize() {
+    // 各初期化処理
     dxCommon_ = DirectXCommon::GetInstance();
+
+    // 入力を受け付けるようにする
+    worldTransform_ = new WorldTransform();
+    worldTransform_->Initialize();
+
+    // カメラ
+    camera_.Initialize();
+
+    // 入力を受け付けるようにする
+    input_ = Input::GetInstance();
 
     // 各種テクスチャ
     TitleTextureHandle_ = TextureManager::Load("./Resources/title/GameTitle.png");
@@ -30,13 +41,8 @@ void TitleScene::Initialize() {
     // 各種サウンド
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
 
-    // モデルの生成
-    asteroidModel_ = Model::CreateFromOBJ("Asteroid", true);
-
-    // カメラ
-    camera_.Initialize();
-
     // 小惑星生成
+    asteroidModel_ = Model::CreateFromOBJ("Asteroid", true);
     asteroids_.reserve(asteroidCount_);
     for(int i = 0; i < asteroidCount_; i++) {
         SpawnAsteroid();
@@ -47,12 +53,11 @@ void TitleScene::Initialize() {
     skydome_->Initialize(&camera_);
 }
 
-void TitleScene::Update() {
-    // 入力を受け付けるようにする
-    input_ = Input::GetInstance();
-
+void TitleScene::Update() {    
+    // 天球更新
     skydome_->Update();
 
+    // 小惑星出現タイマー更新
     const float dt = 1.0f / 60.0f;
     spawnTimer_ += dt;
 
