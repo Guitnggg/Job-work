@@ -7,6 +7,7 @@ using namespace KamataEngine;
 GameScene::GameScene() {}
 
 GameScene::~GameScene() {
+    delete railCamera_;
     delete skydome_;
     delete player_;
     delete asteroidModel_;
@@ -26,7 +27,11 @@ void GameScene::Initialize() {
     camera_.Initialize();                      // カメラ（ビューポート）
 
     // モデルの生成
-    model_ = Model::Create();   
+    model_ = Model::Create();
+
+    // レールカメラ
+    railCamera_ = new RailCamera();
+    railCamera_->Initialize();
 
     // 天球
     skydome_ = new Skydome();
@@ -34,6 +39,7 @@ void GameScene::Initialize() {
 
     // プレイヤー
     player_ = new Player();
+    player_->SetParent(&railCamera_->GetWorldTransform());
     player_->Initialize(model_, &camera_);
 
     // 小惑星生成
@@ -73,6 +79,18 @@ void GameScene::Update() {
 
             asteroid->Respawn(pos, velocity, rotate);
         }
+    }
+
+    // レールカメラ更新
+    if (isRailCameraActive_) {
+        railCamera_->Update();
+
+        camera_.matView = railCamera_->GetCamera()->matView;
+        camera_.matProjection = railCamera_->GetCamera()->matProjection;
+        camera_.TransferMatrix();
+    }
+    else {
+        camera_.UpdateMatrix();
     }
 
     //if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く

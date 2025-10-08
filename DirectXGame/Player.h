@@ -35,7 +35,10 @@ public:
 
 public:
 
-
+    /// <summary>
+    /// 親となるワールドトランスフォーム
+    /// </summary>
+    void SetParent(const KamataEngine::WorldTransform* parent);
 
 private:
 

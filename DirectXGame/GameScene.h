@@ -7,6 +7,7 @@
 #include "Skydome.h"
 #include "Asteroid.h"
 #include "Player.h"
+#include "RailCamera.h"
 
 #include "IScene.h"
 class FinishScene;
@@ -58,6 +59,10 @@ private:
     KamataEngine::WorldTransform* worldTransform_;
     KamataEngine::Camera camera_;
     KamataEngine::Model* model_ = nullptr;
+
+    // レールカメラ
+    bool isRailCameraActive_ = true;
+    RailCamera* railCamera_ = nullptr;
 
     // 天球
     Skydome* skydome_ = nullptr;

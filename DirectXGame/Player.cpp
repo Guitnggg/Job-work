@@ -48,3 +48,7 @@ void Player::Update() {
 void Player::Draw() {
     model_->Draw(*worldTransform_, *camera_);
 }
+
+void Player::SetParent(const KamataEngine::WorldTransform* parent) {
+    worldTransform_->parent_ = parent;
+}
