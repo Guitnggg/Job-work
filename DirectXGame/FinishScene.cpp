@@ -87,7 +87,7 @@ void FinishScene::Update() {
 
     /// シーン変遷 ///
     if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
-        Audio::GetInstance()->PauseWave(changeSEHandle_);
+        Audio::GetInstance()->PlayWave(changeSEHandle_);
         isEnd_ = true;
     }
 }

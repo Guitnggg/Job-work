@@ -39,7 +39,7 @@ void GameScene::Initialize() {
 
     // プレイヤー
     player_ = new Player();    
-    player_->Initialize(model_, &camera_);
+    player_->Initialize(&camera_);
     player_->SetParent(&railCamera_->GetWorldTransform());
 
     // 小惑星生成

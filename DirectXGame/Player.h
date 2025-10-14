@@ -21,7 +21,7 @@ public:
     /// <summary>
     /// 初期化処理
     /// </summary>
-    void Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera);
+    void Initialize(KamataEngine::Camera* camera);
 
     /// <summary>
     /// 更新処理

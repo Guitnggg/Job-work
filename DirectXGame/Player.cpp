@@ -12,8 +12,7 @@ Player::~Player() {
     delete worldTransform_;
 }
 
-void Player::Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera) {
-    assert(model);
+void Player::Initialize(KamataEngine::Camera* camera) {
 
     // 各初期化処理
     worldTransform_ = new WorldTransform();
