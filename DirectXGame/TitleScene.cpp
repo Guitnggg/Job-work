@@ -20,7 +20,7 @@ void TitleScene::Initialize() {
     // 各初期化処理
     dxCommon_ = DirectXCommon::GetInstance();
 
-    // 入力を受け付けるようにする
+    // ワールド変換データ
     worldTransform_ = new WorldTransform();
     worldTransform_->Initialize();
 

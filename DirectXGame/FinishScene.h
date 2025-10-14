@@ -1,6 +1,11 @@
 #pragma once
 
 #include <KamataEngine.h>
+#include <vector>
+#include <random>
+
+#include "Skydome.h"
+#include "Asteroid.h"
 
 #include "IScene.h"
 class TitleScene;
@@ -48,20 +53,46 @@ private:
     KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連
     KamataEngine::Input* input_ = nullptr;             // 入力関連
     KamataEngine::WorldTransform* worldTransform_;     // ワールド変換管理クラス
-    KamataEngine::Camera* camera_;                     // カメラ管理クラス
+    KamataEngine::Camera camera_;                      // カメラ管理クラス
 
     // 各テクスチャ
-    uint32_t BackgroundTextureHandle_ = 0;
-    KamataEngine::Sprite* BackgroundSprite_ = nullptr;
     uint32_t FinishTextureHandle_ = 0;
     KamataEngine::Sprite* FinishSprite_ = nullptr;
     uint32_t ReturnTextureHandle_ = 0;
     KamataEngine::Sprite* ReturnSprite_ = nullptr;
 
-    // 終了フラグ
-    bool isEnd_ = false;
+    // 各種サウンド
+    uint32_t changeSEHandle_ = 0;  // シーン変遷SE
+    KamataEngine::Audio* changeSE_ = nullptr;
 
     // 点滅用
     float blinkTimer_ = 0.0f;     // 点滅タイマー
     float blinkInterval_ = 1.0f;  // 点滅間隔
+
+    // 天球
+    Skydome* skydome_ = nullptr;
+
+    // 小惑星
+    KamataEngine::Model* asteroidModel_ = nullptr;
+    std::vector<Asteroid*> asteroids_;
+    int   asteroidCount_ = 10;    // 背景に流す数
+    float spawnZMin_ = 0.0f;      // 出現Z（奥）
+    float spawnZMax_ = 140.0f;
+    float recycleZ_ = -50.0f;     // カメラを超えたら再出現
+    float spawnInterval_ = 1.0f;  // 出現間隔
+    float spawnTimer_ = 0.0f;     // 出現タイマー
+
+    // ランダム生成器
+    std::mt19937 mt_{ std::random_device{}() };
+
+    // 終了フラグ
+    bool isEnd_ = false;
+
+private:
+
+    // 生成
+    Asteroid* SpawnAsteroid();
+
+    // 乱数
+    float Rand(float min, float max);
 };

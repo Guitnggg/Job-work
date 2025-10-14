@@ -93,9 +93,9 @@ void GameScene::Update() {
         camera_.UpdateMatrix();
     }
 
-    //if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
-    //    isEnd_ = true;
-    //}
+    if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+        isEnd_ = true;
+    }
 }
 
 void GameScene::Draw() {
