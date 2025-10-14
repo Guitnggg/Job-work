@@ -8,6 +8,7 @@ using namespace KamataEngine;
 IntroductionScene::IntroductionScene() {}
 
 IntroductionScene::~IntroductionScene() {
+    delete ReturnTitleSprite_;
     delete asteroidModel_;
     for (auto asteroid : asteroids_) {
         delete asteroid;
@@ -19,6 +20,10 @@ void IntroductionScene::Initialize() {
 
     // シーン変遷の初期化
     nextScene_ = SceneName::None;
+
+    // 各種テクスチャ
+    ReturnTitleTextureHandle_ = TextureManager::Load("./Resources/introduction/Esc-export.png");
+    ReturnTitleSprite_ = Sprite::Create(ReturnTitleTextureHandle_, { 20.0f,20.0f });
 
     // 各種サウンド
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
@@ -136,6 +141,7 @@ void IntroductionScene::Draw() {
     /// ここに前景スプライトの描画処理を追加できる
     /// </summary>
 
+    ReturnTitleSprite_->Draw();
 
     // スプライト描画後処理
     Sprite::PostDraw();

@@ -56,6 +56,10 @@ private:
     KamataEngine::Model* model_ = nullptr;             // モデル管理クラス
     KamataEngine::Camera camera_;                      // カメラ管理クラス
 
+    // 各種テクスチャ
+    uint32_t ReturnTitleTextureHandle_ = 0;
+    KamataEngine::Sprite* ReturnTitleSprite_ = nullptr;
+
     // 各種サウンド
     uint32_t changeSEHandle_ = 0;  // シーン変遷SE
     KamataEngine::Audio* changeSE_ = nullptr;
