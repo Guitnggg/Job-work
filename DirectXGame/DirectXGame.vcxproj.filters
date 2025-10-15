@@ -16,40 +16,64 @@
     <Filter Include="シェーダー ファイル">
       <UniqueIdentifier>{718c7f4c-fc51-40ad-a221-b9456a7a1a3c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="externals">
+      <UniqueIdentifier>{1c31aa85-b671-4016-9e74-2a88e7078e57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="scenes">
+      <UniqueIdentifier>{c3028fdf-f1ec-4ffc-b627-f4f08ea5d11b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="scenes\ヘッダーファイル">
+      <UniqueIdentifier>{51b565ed-b2b8-4811-8152-601905ccbc59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="scenes\ソースファイル">
+      <UniqueIdentifier>{f5fe57d0-bd2b-462b-8d74-c381b140a2fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math">
+      <UniqueIdentifier>{d8f42d9f-5af4-44cd-89b0-b0dc41bd4a59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math\ヘッダーファイル">
+      <UniqueIdentifier>{84a10e3f-fab1-4e22-905b-2cceab3a1e1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math\ソースファイル">
+      <UniqueIdentifier>{d8a77ef9-5159-471d-be8f-e980b24bb9fc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="GameScene.cpp">
+    <ClCompile Include="Skydome.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="TitleScene.cpp">
+    <ClCompile Include="Player.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="RailCamera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Asteroid.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="FinishScene.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>scenes\ソースファイル</Filter>
     </ClCompile>
-    <ClCompile Include="IntroductionScene.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="MyMath.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="GameScene.cpp">
+      <Filter>scenes\ソースファイル</Filter>
     </ClCompile>
     <ClCompile Include="SceneManager.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>scenes\ソースファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Skydome.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="TitleScene.cpp">
+      <Filter>scenes\ソースファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="IntroductionScene.cpp">
+      <Filter>scenes\ソースファイル</Filter>
     </ClCompile>
     <ClCompile Include="WorldTransformEx.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>math\ソースファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Player.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="MyMath.cpp">
+      <Filter>math\ソースファイル</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -102,31 +126,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GameScene.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="IScene.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneManager.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneName.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="TitleScene.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Asteroid.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="FinishScene.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="IntroductionScene.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="MyMath.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Skydome.h">
@@ -134,6 +134,33 @@
     </ClInclude>
     <ClInclude Include="Player.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="RailCamera.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="TitleScene.h">
+      <Filter>scenes\ヘッダーファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneManager.h">
+      <Filter>scenes\ヘッダーファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneName.h">
+      <Filter>scenes\ヘッダーファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="IntroductionScene.h">
+      <Filter>scenes\ヘッダーファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="FinishScene.h">
+      <Filter>scenes\ヘッダーファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScene.h">
+      <Filter>scenes\ヘッダーファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="IScene.h">
+      <Filter>scenes\ヘッダーファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="MyMath.h">
+      <Filter>math\ヘッダーファイル</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
