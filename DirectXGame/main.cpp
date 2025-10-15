@@ -12,7 +12,7 @@ using namespace KamataEngine;
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
     // KamataEngineの初期化
-    KamataEngine::Initialize(L"LE3C_14_タカキ_ケンゴ_タイトル");
+    KamataEngine::Initialize(L"LE3C_10_タカキ_ケンゴ_AstroWing");
 
     // DirectXCommonのインスタンスの取得
     DirectXCommon* dxCommon = DirectXCommon::GetInstance();
