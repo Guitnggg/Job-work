@@ -93,9 +93,20 @@ void Player::StartRoll(float dir){
     rollStartRotZ_ = worldTransform_->rotation_.z;
     rollStartPos_ = worldTransform_->translation_;
 
-    // 
-    rollEndPos_ = rollStartPos_;
-    rollEndPos_.x += rollMoveDistance_ * rollDir_;
+    // 真ん中から端まで一回で届くように
+    const float x = rollStartPos_.x;
+    const bool nearCenter = std::fabs(x - kCenterX_) < kCenterThreshold_;
+
+    float targetX = x;
+
+    if (nearCenter) {
+        targetX = (dir > 0.0f) ? kMaxX_ : kMinX_;
+    }
+    else {
+        // 中央以外
+        // 反対方向なら中央へ
+    }
+
 }
 
 float Player::EaseOutCubic(float t) const{
