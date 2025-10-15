@@ -68,9 +68,5 @@ private:
     KamataEngine::Vector3 rollStartPos_{};
     KamataEngine::Vector3 rollEndPos_{};
     float rollMoveDistance_ = 5.0f;          // 横にどれだけ移動するか
-    float kMinX_ = -8.0f;
-    float kMaxX_ = 8.0f;
-    float kCenterX_ = 0.0f;
-    float kCenterThreshold_ = 0.3f; // この範囲内なら“中央扱い”
 };
 
