@@ -42,12 +42,31 @@ public:
 
 private:
 
+    /// <summary>
+    /// ロール制御
+    /// </summary>
+    /// <param name="dir">ロール方向</param>
+    void StartRoll(float dir);
+    float EaseOutCubic(float t)const;
+
+private:
+
     KamataEngine::WorldTransform* worldTransform_;
     KamataEngine::Camera* camera_;
     KamataEngine::Model* model_ = nullptr;
     KamataEngine::Input* input_ = nullptr;
 
-    const float kMoveSpeed = 0.5f;  // 移動速度
+    const float kMoveSpeed = 10.0f;  // 移動速度
     const float kRotSpeed = 0.05f;  // 回転速度
+
+    // ロール制御パラメータ
+    bool isRolling_ = false;
+    float rollFrame_ = 0.0f;
+    float rollDurationFrames_ = 24.0f;
+    float rollDir_ = 0.0f;                   // +1 or -1
+    float rollStartRotZ_ = 0.0f;
+    KamataEngine::Vector3 rollStartPos_{};
+    KamataEngine::Vector3 rollEndPos_{};
+    float rollMoveDistance_ = 5.0f;          // 横にどれだけ移動するか
 };
 
