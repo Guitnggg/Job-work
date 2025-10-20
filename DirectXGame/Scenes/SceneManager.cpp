@@ -45,17 +45,58 @@ void SceneManager::ChangeScene(IScene* newScene) {
     SceneName from = currentScene_ ? currentScene_->GetSceneName() : SceneName::None;
     SceneName to = nextScene_ ? nextScene_->GetSceneName() : SceneName::None;
 
-    pendingWhiteFlash_ = ShouldUseWhiteFlash(from, to);
-
-    if (pendingWhiteFlash_) {
-        // 白フラッシュから開始
-        flashTimer_ = 0.0f;
-        flashSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 0.0f });
-        transitionState_ = SceneTransitionState::FlashOut;
+    // シーン側の演出ヒントを取得
+    TransitionHint hint{};
+    if (currentScene_) {
+        hint = currentScene_->GetTransitionHint(to);
     }
-    else {
+
+    // 使うパラメータ
+    float useFlashTime = (hint.frashTime > 0.0f) ? hint.frashTime : baseFlashTime_;
+    float useFadeSpeed = (hint.fadeSpeed > 0.0f) ? hint.fadeSpeed : baseTransitionSpeed_;
+
+    // どのスタイルを使うか決定
+    TransitionStyle style = hint.style;
+    if (style == TransitionStyle::Auto) {
+        pendingWhiteFlash_ = ShouldUseWhiteFlash(from, to);
+        style = pendingWhiteFlash_ ? TransitionStyle::WhiteFlash : TransitionStyle::BlackFade;
+    }
+
+    // 状態遷移の初期設定
+    switch (style) {
+    case TransitionStyle::None:
+        if (currentScene_) {
+            delete currentScene_;
+        }
+        currentScene_ = nextScene_;
+        nextScene_ = nullptr;
+
+        if (currentScene_) {
+            currentScene_->Initialize();
+        }
+        transitionState_ = SceneTransitionState::None;
+        break;
+
+    case TransitionStyle::WhiteFlash:
+        flashTimer_ = 0.0f;
+        flashTime_ = useFlashTime;
+        flashSprite_->SetColor({ 1.0f,1.0f,1.0f,1.0f });
+        transitionState_ = SceneTransitionState::FlashOut;
+        break;
+
+    case TransitionStyle::BlackFade:
+        transitionAlpha_ = 0.0f;
+        transitionSpeed_ = 0.0f;
         transitionState_ = SceneTransitionState::FadeOut;
-    }   
+        break;
+
+    default:
+        // 念のためにフォールバック
+        transitionAlpha_ = 0.0f;
+        transitionSpeed_ = baseTransitionSpeed_;
+        transitionState_ = SceneTransitionState::FadeOut;
+        break;
+    }
 }
 
 void SceneManager::Update() {
@@ -69,43 +110,55 @@ void SceneManager::Update() {
         }
         break;
 
-    // 白フラッシュ
+        // 白フラッシュ
     case SceneTransitionState::FlashOut: {
         flashTimer_ += 1.0f / 60.0f;
-        float t = std::clamp(flashTimer_/flashTime_, 0.0f, 1.0f);
+        float t = std::clamp(flashTimer_ / flashTime_, 0.0f, 1.0f);
         float alpha = (t < 0.5f) ? (t * 2.0f) : (2.0f - t * 2.0f);
-        flashSprite_->SetColor({ 1.0f, 1.0f ,1.0f, alpha });
+        flashSprite_->SetColor({ 1.0f, 1.0f, 1.0f, alpha });
 
         if (flashTimer_ >= flashTime_) {
-            // 白が消えたら黒フェードアウトへバトンタッチ
+            // 白が消えたら黒フェードアウトへ
             transitionAlpha_ = 0.0f;
             transitionState_ = SceneTransitionState::FadeOut;
+            // フェード速度は（White指定時でも）既定値を使う
+            transitionSpeed_ = baseTransitionSpeed_;
         }
     } break;
 
-    // 黒フェードアウト
+                                       // 黒フェードアウト
     case SceneTransitionState::FadeOut: {
         transitionAlpha_ += transitionSpeed_;
         fadeSprite_->SetColor({ 0, 0, 0, std::clamp(transitionAlpha_, 0.0f, 1.0f) });
 
         if (transitionAlpha_ >= 1.0f) {
+            // シーン差し替え
             delete currentScene_;
             currentScene_ = nextScene_;
             nextScene_ = nullptr;
-            currentScene_->Initialize();
+
+            if (currentScene_) {
+                currentScene_->Initialize();
+            }
             transitionState_ = SceneTransitionState::FadeIn;
         }
     } break;
 
-    // 黒フェードイン
-    case SceneTransitionState::FadeIn:{
+                                      // 黒フェードイン
+    case SceneTransitionState::FadeIn: {
         transitionAlpha_ -= transitionSpeed_;
         fadeSprite_->SetColor({ 0, 0, 0, std::clamp(transitionAlpha_, 0.0f, 1.0f) });
 
         if (transitionAlpha_ <= 0.0f) {
+            // 終了：演出パラメータをベース値に戻す
+            transitionSpeed_ = baseTransitionSpeed_;
+            flashTime_ = baseFlashTime_;
             transitionState_ = SceneTransitionState::None;
         }
-    }break;
+    } break;
+
+    default:
+        break;
     }
 }
 
@@ -117,14 +170,14 @@ void SceneManager::Draw() {
     if (transitionState_ != SceneTransitionState::None) {
         auto commandList = DirectXCommon::GetInstance()->GetCommandList();
         Sprite::PreDraw(commandList);
-        
+
         // 白フラッシュ
         if (transitionState_ == SceneTransitionState::FlashOut) {
             flashSprite_->Draw();
         }
 
         // 黒フェード
-        if (transitionState_ == SceneTransitionState::FadeOut || 
+        if (transitionState_ == SceneTransitionState::FadeOut ||
             transitionState_ == SceneTransitionState::FadeIn) {
             fadeSprite_->Draw();
         }
@@ -146,10 +199,12 @@ void SceneManager::SetInitialScene(IScene* scene) {
     if (currentScene_) {
         currentScene_->Initialize();
     }
-
     transitionState_ = SceneTransitionState::None;
-
     transitionAlpha_ = 0.0f;
+
+    // 念のための初期化
+    transitionSpeed_ = baseTransitionSpeed_;
+    flashTime_ = baseFlashTime_;
 
     fadeSprite_->SetColor({ 0, 0, 0, 0 });
 }

@@ -2,6 +2,19 @@
 
 #include "SceneName.h"
 
+enum class TransitionStyle {
+    Auto,
+    BlackFade,
+    WhiteFlash,
+    None
+};
+
+struct TransitionHint {
+    TransitionStyle style = TransitionStyle::Auto;
+    float fadeSpeed = -1.0f;
+    float frashTime = -1.0f;
+};
+
 class IScene {
 public:
     virtual ~IScene() = default;
@@ -35,4 +48,10 @@ public:
     /// 現在のシーン名を返す（デバッグや切替の判定に使える）
     /// </summary>
     virtual SceneName GetSceneName() const = 0;
+
+    /// <summary>
+    /// このシーンからtoへ遷移するときに使ってほしい演出ヒント
+    /// 規定は　Auto
+    /// </summary>
+    virtual TransitionHint GetTransitionHint(SceneName /*to*/)const { return {}; }
 };

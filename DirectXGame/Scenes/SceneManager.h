@@ -78,6 +78,10 @@ private:
     float flashTimer_ = 0.0f;
     float flashTime_ = 0.16f;
 
+    // ベース値
+    float baseTransitionSpeed_ = 0.02f;
+    float baseFlashTime_ = 0.16f;
+
     bool pendingWhiteFlash_ = false;
 
     bool ShouldUseWhiteFlash(SceneName form, SceneName n) const;
