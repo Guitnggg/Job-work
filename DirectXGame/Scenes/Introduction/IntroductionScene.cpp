@@ -187,3 +187,13 @@ float IntroductionScene::Rand(float min, float max) {
     std::uniform_real_distribution<float>dist(min, max);
     return dist(mt_);
 }
+
+TransitionHint IntroductionScene::GetTransitionHint(SceneName to) const {
+    TransitionHint h{};
+    if (to == SceneName::InGame) {
+        h.style = TransitionStyle::WhiteFlash;
+        h.frashTime = 0.35f;   // 既定0.16fより長め（好みに合わせて調整）
+        // h.fadeSpeed = 0.03f; // 必要なら黒フェード速度も上書き可能
+    }
+    return h;
+}

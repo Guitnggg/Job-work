@@ -86,7 +86,7 @@ void SceneManager::ChangeScene(IScene* newScene) {
 
     case TransitionStyle::BlackFade:
         transitionAlpha_ = 0.0f;
-        transitionSpeed_ = 0.0f;
+        transitionSpeed_ = useFadeSpeed;
         transitionState_ = SceneTransitionState::FadeOut;
         break;
 

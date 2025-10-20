@@ -49,6 +49,8 @@ public:
 
     SceneName GetSceneName() const override { return SceneName::InGame; }
 
+    TransitionHint GetTransitionHint(SceneName to)const override;
+
 private:
 
     KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連の管理クラス
