@@ -126,7 +126,7 @@ void SceneManager::Update() {
         }
     } break;
 
-                                       // 黒フェードアウト
+        // 黒フェードアウト
     case SceneTransitionState::FadeOut: {
         transitionAlpha_ += transitionSpeed_;
         fadeSprite_->SetColor({ 0, 0, 0, std::clamp(transitionAlpha_, 0.0f, 1.0f) });
