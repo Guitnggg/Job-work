@@ -84,7 +84,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -107,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>MinSpace</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -155,16 +155,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Asteroid.cpp" />
-    <ClCompile Include="FinishScene.cpp" />
-    <ClCompile Include="GameScene.cpp" />
-    <ClCompile Include="IntroductionScene.cpp" />
+    <ClCompile Include="Scenes\Finish\FinishScene.cpp" />
+    <ClCompile Include="Scenes\InGame\GameScene.cpp" />
+    <ClCompile Include="Scenes\Introduction\IntroductionScene.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyMath.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="RailCamera.cpp" />
-    <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="Scenes\SceneManager.cpp" />
     <ClCompile Include="Skydome.cpp" />
-    <ClCompile Include="TitleScene.cpp" />
+    <ClCompile Include="Scenes\Title\TitleScene.cpp" />
     <ClCompile Include="WorldTransformEx.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -266,17 +266,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Asteroid.h" />
-    <ClInclude Include="FinishScene.h" />
-    <ClInclude Include="GameScene.h" />
-    <ClInclude Include="IntroductionScene.h" />
-    <ClInclude Include="IScene.h" />
+    <ClInclude Include="Scenes\Finish\FinishScene.h" />
+    <ClInclude Include="Scenes\InGame\GameScene.h" />
+    <ClInclude Include="Scenes\Introduction\IntroductionScene.h" />
+    <ClInclude Include="Scenes\IScene.h" />
     <ClInclude Include="MyMath.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="RailCamera.h" />
-    <ClInclude Include="SceneManager.h" />
-    <ClInclude Include="SceneName.h" />
+    <ClInclude Include="Scenes\SceneManager.h" />
+    <ClInclude Include="Scenes\SceneName.h" />
     <ClInclude Include="Skydome.h" />
-    <ClInclude Include="TitleScene.h" />
+    <ClInclude Include="Scenes\Title\TitleScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
