@@ -74,6 +74,10 @@ private:
     enum class StartPhase { ReadyDelay, Count3, Count2, Count1, Go, Done };
     StartPhase startPhase_ = StartPhase::ReadyDelay;
 
+    // 基本サイズ
+    KamataEngine::Vector2 countBaseSize_ = { 256.0f, 256.0f };
+    KamataEngine::Vector2 goBaseSize_ = { 320.0f, 160.0f };
+
     // タイミング（秒）
     float readyDelay_ = 0.10f;  // 着地後の“間”
     float countUnit_ = 0.50f;   // 3,2,1 の各表示時間

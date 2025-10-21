@@ -10,6 +10,14 @@ GameScene::~GameScene() {
     delete railCamera_;
     delete skydome_;
     delete player_;
+
+    delete count1Sprite_;
+    delete count2Sprite_;
+    delete count3Sprite_;
+    delete startSprite_;
+
+    delete worldTransform_;
+    delete model_;
 }
 
 void GameScene::Initialize() {
@@ -42,12 +50,25 @@ void GameScene::Initialize() {
     count1TextureHandle_ = TextureManager::Load("./Resources/InGame/1.png");
     count2TextureHandle_ = TextureManager::Load("./Resources/InGame/2.png");
     count3TextureHandle_ = TextureManager::Load("./Resources/InGame/3.png");
-    startTextureHandle_ = TextureManager::Load("./Reosurces/InGame/Go.png");
+    startTextureHandle_ = TextureManager::Load("./Resources/InGame/Go.png");
 
     // アンカー中央、画面中央へ
     auto makeCenterd = [](uint32_t tex) {
         return Sprite::Create(tex, { 640.0f,360.0f }, { 1,1,1,0 }, { 0.5f,0.5f }, false, false);
         };
+
+    count1Sprite_ = makeCenterd(count1TextureHandle_);
+    count2Sprite_ = makeCenterd(count2TextureHandle_);
+    count3Sprite_ = makeCenterd(count3TextureHandle_);
+    startSprite_ = makeCenterd(startTextureHandle_);
+
+    // サウンド読み込み
+
+
+    // フェーズ初期化
+    startPhase_ = StartPhase::ReadyDelay;
+    phaseTimer_ = 0.0f;
+    inputLocked_ = true;
 
 }
 
@@ -56,11 +77,11 @@ void GameScene::Update() {
     skydome_->Update();
 
     // プレイヤー更新
-    player_->Update();
+    if (!inputLocked_) {
+        player_->Update();
+    } 
 
-
-
-    // レールカメラ更新
+    // ========== レールカメラ更新 ==========
     if (isRailCameraActive_) {
         railCamera_->Update();
 
@@ -72,6 +93,32 @@ void GameScene::Update() {
         camera_.UpdateMatrix();
     }
 
+    // ========== 3カウント制御 ==========
+    const float dt = 1.0f / 60.0f;
+    phaseTimer_ += dt;
+
+    const float duration = CurrentPhaseDuration();
+    if (phaseTimer_ >= duration) {
+        // フェーズ終了時のSE：3/2/1の頭でビープを鳴らす設計にする場合は
+        // AdvancePhase() 内で鳴らすと自然。ここでは単純に進める。
+        AdvancePhase();
+    }
+    else {
+        // フェーズ途中でのSE（3/2/1の頭だけ鳴らす）
+        if (startPhase_ == StartPhase::Count3 && phaseTimer_ == dt) { audio_->PlayWave(seBeepHandle_); }
+        if (startPhase_ == StartPhase::Count2 && phaseTimer_ == dt) { audio_->PlayWave(seBeepHandle_); }
+        if (startPhase_ == StartPhase::Count1 && phaseTimer_ == dt) { audio_->PlayWave(seBeepHandle_); }
+
+        // GO!! は開始瞬間に別SE
+        if (startPhase_ == StartPhase::Go && !goPlayed_) {
+            audio_->PlayWave(seGoHandle_);
+            goPlayed_ = true;
+            // 入力解禁のタイミングはここ（GO!!開始と同時）か、GO!!終了時にするか好みで
+            inputLocked_ = false;
+        }
+    }
+
+    // ========== シーン変遷条件 ==========
     if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
         isEnd_ = true;
     }
@@ -123,7 +170,20 @@ void GameScene::Draw() {
     /// ここに前景スプライトの描画処理を追加できる
     /// </summary>
 
-    count1Sprite_->Draw();
+    const float duration = CurrentPhaseDuration();
+    float t01 = (duration > 0.0f) ? std::clamp(phaseTimer_ / duration, 0.0f, 1.0f) : 1.0f;
+
+    if (startPhase_ != StartPhase::Done) {
+        if (auto* spr = CurrentPhaseSprite()) {
+            float alpha = CurrentPhaseAlpha(t01);
+            float scale = CurrentPhaseScale(t01);
+            spr->SetColor({ 1.0f,1.0f,1.0f,alpha });
+            Vector2 base =
+                (startPhase_ == StartPhase::Go) ? goBaseSize_ : countBaseSize_;
+            spr->SetSize({ base.x * scale, base.y * scale });
+            spr->Draw();
+        }
+    }
 
     // スプライト描画後処理
     Sprite::PostDraw();
@@ -161,8 +221,7 @@ KamataEngine::Sprite* GameScene::CurrentPhaseSprite() const {
     }
 }
 
-float GameScene::CurrentPhaseAlpha(float t01) const
-{
+float GameScene::CurrentPhaseAlpha(float t01) const {
     // 0→1→0 の三角波（前半フェードイン、後半フェードアウト）
     if (t01 < 0.5f) {
         return t01 / 0.5f;
