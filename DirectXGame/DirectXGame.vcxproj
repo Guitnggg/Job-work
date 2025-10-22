@@ -155,6 +155,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application\Asteroid\Asteroid.cpp" />
+    <ClCompile Include="CountDown.cpp" />
     <ClCompile Include="Scenes\Finish\FinishScene.cpp" />
     <ClCompile Include="Scenes\InGame\GameScene.cpp" />
     <ClCompile Include="Scenes\Introduction\IntroductionScene.cpp" />
@@ -266,6 +267,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Asteroid\Asteroid.h" />
+    <ClInclude Include="CountDown.h" />
     <ClInclude Include="Scenes\Finish\FinishScene.h" />
     <ClInclude Include="Scenes\InGame\GameScene.h" />
     <ClInclude Include="Scenes\Introduction\IntroductionScene.h" />
