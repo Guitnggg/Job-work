@@ -152,6 +152,25 @@ float CountDown::CurrentPhaseDuraction() const{
     }
 }
 
+Sprite* CountDown::CurrentPhaseSprite()const {
+    switch (phase_) {
+    case Phase::Count3:
+        return sp3_;
+
+    case Phase::Count2:
+        return sp2_;
+
+    case Phase::Count1:
+        return sp1_;
+
+    case Phase::Go:
+        return spGo_;
+
+    default:
+        return nullptr;
+    }
+}
+
 float CountDown::CurrentPhaseAlpha(float t01) const{
     // 0->1->0の三角波
     if (t01 > 0.5f) {
