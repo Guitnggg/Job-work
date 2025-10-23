@@ -183,6 +183,7 @@ float CountDown::CurrentPhaseAlpha(float t01) const{
 float CountDown::CurrentPhaseScale(float t01)const {
     // easeOutBackで1.20->1.00
     float e = EaseoutBack(std::clamp(t01, 0.0f, 1.0f), backS_);
+
     return scaleStart_ + (scaleEnd_ - scaleStart_) * e;
 }
 
