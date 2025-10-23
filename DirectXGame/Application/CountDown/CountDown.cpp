@@ -173,11 +173,12 @@ Sprite* CountDown::CurrentPhaseSprite()const {
 
 float CountDown::CurrentPhaseAlpha(float t01) const{
     // 0->1->0の三角波
-    if (t01 > 0.5f) {
-        return t01 / 0.5f;
+    if (t01 < 0.5f) {
+        return t01 / 0.5f;                  // 0→1
     }
-
-    return 1.0f - (t01 / 0.5f) / 0.5f;
+    else {
+        return 1.0f - (t01 - 0.5f) / 0.5f;  // 1→0
+    }
 }
 
 float CountDown::CurrentPhaseScale(float t01)const {
