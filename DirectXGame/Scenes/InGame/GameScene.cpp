@@ -128,7 +128,10 @@ void GameScene::Draw() {
     skydome_->Draw();
 
     // プレイヤー描画
-    player_->Draw();
+    if (!countDown_.IsInputLocked()) {
+        player_->Draw();
+    }
+   
 
     // 3Dオブジェクト描画後処理
     Model::PostDraw();
