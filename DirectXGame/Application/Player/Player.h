@@ -9,11 +9,6 @@ class Player {
 public:
 
     /// <summary>
-    /// コンストラクタ
-    /// </summary>
-    Player();
-
-    /// <summary>
     /// デストラクタ
     /// </summary>
     ~Player();
@@ -39,6 +34,12 @@ public:
     /// 親となるワールドトランスフォーム
     /// </summary>
     void SetParent(const KamataEngine::WorldTransform* parent);
+
+    /// <summary>
+    /// ワールド座標の取得
+    /// </summary>
+    /// <returns></returns>
+    KamataEngine::Vector3 GetWorldTranslation()const;
 
 private:
 
@@ -69,4 +70,3 @@ private:
     KamataEngine::Vector3 rollEndPos_{};
     float rollMoveDistance_ = 5.0f;          // 横にどれだけ移動するか
 };
-

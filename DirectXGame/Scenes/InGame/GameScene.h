@@ -9,6 +9,7 @@
 #include "Application/Player/Player.h"
 #include "Application/RailCamera/RailCamera.h"
 #include "Application/CountDown/CountDown.h"
+#include "Application/Enemy/SeekerEnemy.h"
 
 #include "IScene.h"
 class FinishScene;
@@ -65,16 +66,20 @@ private:
     // ========== ３カウントUI ==========
     CountDown countDown_;
 
-    // ========== 各オブジェクト ==========
-    // レールカメラ
+    // ========== レールカメラ ==========
     bool isRailCameraActive_ = true;
     RailCamera* railCamera_ = nullptr;
 
-    // 天球
+    // ========== 天球 ==========
     Skydome* skydome_ = nullptr;
 
-    // プレイヤー
+    // ========== プレイヤー ==========
     Player* player_ = nullptr;
+
+    // ========== 敵 ==========
+    std::vector<std::unique_ptr<SeekerEnemy>> enemies_;
+    float enemySpawnTimer_ = 0.0f;
+    const float kEnemySpawnInterval_ = 2.0f; // 敵出現間隔（秒）
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;

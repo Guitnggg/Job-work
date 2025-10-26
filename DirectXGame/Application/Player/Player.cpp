@@ -6,8 +6,6 @@
 
 using namespace KamataEngine;
 
-Player::Player() {}
-
 Player::~Player() {
     delete worldTransform_;
 }
@@ -34,7 +32,7 @@ void Player::Update() {
         rollFrame_ += 1;
         if (rollFrame_ > rollDurationFrames_) {
             rollFrame_ = rollDurationFrames_;
-        }   
+        }
 
         // 位置はイージングで補間
         float t = rollFrame_ / rollDurationFrames_;
@@ -83,7 +81,17 @@ void Player::SetParent(const KamataEngine::WorldTransform* parent) {
     worldTransform_->parent_ = parent;
 }
 
-void Player::StartRoll(float dir){
+KamataEngine::Vector3 Player::GetWorldTranslation() const {
+    KamataEngine::Vector3 p;
+
+    p.x = worldTransform_->matWorld_.m[3][0];
+    p.y = worldTransform_->matWorld_.m[3][1];
+    p.z = worldTransform_->matWorld_.m[3][2];
+
+    return p;
+}
+
+void Player::StartRoll(float dir) {
     if (isRolling_) { return; }
 
     isRolling_ = true;
@@ -98,7 +106,7 @@ void Player::StartRoll(float dir){
     rollEndPos_.x += rollMoveDistance_ * rollDir_;
 }
 
-float Player::EaseOutCubic(float t) const{
+float Player::EaseOutCubic(float t) const {
     float inv = 1.0f - t;
     return 1.0f - inv * inv * inv;
 }

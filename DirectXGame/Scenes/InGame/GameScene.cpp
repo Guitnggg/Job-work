@@ -22,7 +22,7 @@ void GameScene::Initialize() {
     audio_ = Audio::GetInstance();             // サウンド
 
     worldTransform_ = new WorldTransform();
-    worldTransform_->Initialize();              // ワールド変換データ
+    worldTransform_->Initialize();             // ワールド変換データ
     camera_.Initialize();                      // カメラ（ビューポート）
 
     // モデルの生成
@@ -61,6 +61,10 @@ void GameScene::Initialize() {
         audio->LoadWave("./Resources/SE/Start.wav")
     );
 
+    // ========== 敵スポーン用 ==========
+    enemies_.clear();
+    enemySpawnTimer_ = 0.0f;
+
     // 開始
     countDown_.Start();
 }
@@ -72,7 +76,7 @@ void GameScene::Update() {
     // プレイヤー更新
     if (!countDown_.IsInputLocked()) {
         player_->Update();
-    } 
+    }
 
     // ========== レールカメラ更新 ==========
     if (isRailCameraActive_) {
@@ -89,6 +93,47 @@ void GameScene::Update() {
     // ========== 3カウント制御 ==========
     const float dt = 1.0f / 60.0f;
     countDown_.Update(dt);
+
+    // ========== 敵スポーン制御 ==========
+    if (!countDown_.IsInputLocked()) {
+        // タイマー更新
+        enemySpawnTimer_ += dt;
+
+        // スポーン判定
+        if (enemySpawnTimer_ >= kEnemySpawnInterval_) {
+            enemySpawnTimer_ = 0.0f;
+
+            // 敵生成
+            auto enemy = std::make_unique<SeekerEnemy>();
+
+            // 出現位置をちょっとランダムに（必要なら固定でもOK）
+            static std::mt19937_64 rng{ 1234567 };
+            std::uniform_real_distribution<float> rx(-8.0f, 8.0f);
+            std::uniform_real_distribution<float> ry(-3.0f, 3.0f);
+
+            enemy->SetInitialPosition({ rx(rng), ry(rng), 100.0f });
+            enemy->SetSpeed(0.9f);
+            enemy->SetTurnRate(0.12f);
+            enemy->SetColliderRadius(1.2f);
+            enemy->SetInitialHP(3);
+            enemy->Initialize();
+
+            enemies_.push_back(std::move(enemy));
+        }
+
+        // 追尾：プレイヤーのワールド座標を毎フレーム渡す
+        const Vector3 playerPos = player_->GetWorldTranslation(); // ★ プレイヤー座標取得（既存API）
+        for (auto& enemy : enemies_) {
+            enemy->SetTarget(playerPos);
+            enemy->Update();
+        }
+
+        // 死亡した敵を消す
+        enemies_.erase(
+            std::remove_if(enemies_.begin(), enemies_.end(),
+                [](const std::unique_ptr<SeekerEnemy>& e) { return e->IsDead(); }),
+            enemies_.end());
+    }
 
     // ========== シーン変遷条件 ==========
     if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
@@ -127,11 +172,15 @@ void GameScene::Draw() {
     // 天球描画
     skydome_->Draw();
 
+    // 敵描画
+    for(auto& enemy : enemies_) {
+        enemy->Draw(&camera_);
+    }
+
     // プレイヤー描画
     if (!countDown_.IsInputLocked()) {
         player_->Draw();
     }
-   
 
     // 3Dオブジェクト描画後処理
     Model::PostDraw();
