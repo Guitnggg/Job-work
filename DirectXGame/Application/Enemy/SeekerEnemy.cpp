@@ -103,14 +103,9 @@ void SeekerEnemy::Draw(KamataEngine::Camera* camera)
     // if (collider_) { collider_->Draw(*camera); }
 }
 
-void SeekerEnemy::OnCollision(EnemyBase* /*enemy*/)
-{
-    // 単純に1ダメージ想定
-    HP_ -= 1;
-    if (HP_ <= 0) {
-        isDead_ = true;
-        // TODO: 爆発・スコア・SE など
-    }
+void SeekerEnemy::OnCollision(EnemyBase* /*enemy*/){
+    // １回当たったら削除
+    isDead_ = true;
 }
 
 void SeekerEnemy::ClampDeathByBounds_() {
