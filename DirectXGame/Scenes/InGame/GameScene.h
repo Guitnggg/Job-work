@@ -6,10 +6,10 @@
 
 #include "Application/Skydome/Skydome.h"
 #include "Application/Asteroid/Asteroid.h"
-#include "Application/Player/Player.h"
+#include "Application/Charactor/Player/Player.h"
 #include "Application/RailCamera/RailCamera.h"
 #include "Application/CountDown/CountDown.h"
-#include "Application/Enemy/SeekerEnemy.h"
+#include "Application/Charactor/Enemy/SeekerEnemy.h"
 
 #include "IScene.h"
 class FinishScene;
