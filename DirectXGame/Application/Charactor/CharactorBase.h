@@ -7,13 +7,13 @@
 
 #include "Collider.h"
 
-class EnemyBase {
+class CharactorBase {
 public:
 
     /// <summary>
     /// 仮想デストラクタ
     /// </summary>
-    virtual ~EnemyBase() = default;
+    virtual ~CharactorBase() = default;
 
     /// <summary>
     /// 初期化
@@ -35,7 +35,7 @@ public:
     /// 当たり判定時の処理
     /// </summary>
     /// <param name="enemy"></param>
-    virtual void OnCollision(EnemyBase* enemy) = 0;
+    virtual void OnCollision(CharactorBase* enemy) = 0;
 
 public:  /// === Getters === ///
 
@@ -124,4 +124,3 @@ protected:
     // 最大体力
     int maxHp_ = 0;
 };
-

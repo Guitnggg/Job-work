@@ -68,7 +68,6 @@ void Player::Update() {
     // 補間後の X に対して
     worldTransform_->translation_.x = std::clamp(worldTransform_->translation_.x, -8.0f, 8.0f);
 
-
     // 行列更新
     worldTransform_->UpdateMatrix();
 }

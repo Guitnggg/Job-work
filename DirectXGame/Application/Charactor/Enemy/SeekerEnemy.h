@@ -6,9 +6,9 @@
 #include "3d/Model.h"
 #include "3d/Camera.h"
 
-#include "Enemy/EnemyBase.h"
+#include "Application/Charactor/CharactorBase.h"
 
-class SeekerEnemy : public EnemyBase {
+class SeekerEnemy : public CharactorBase {
 public:
 
     /// <summary>
@@ -31,7 +31,7 @@ public:
     /// 当たり判定時の処理
     /// </summary>
     /// <param name="enemy"></param>
-    void OnCollision(EnemyBase* enemy) override;
+    void OnCollision(CharactorBase* enemy) override;
 
     /// <summary>
     /// 
@@ -42,43 +42,43 @@ public:
 public:
 
     /// <summary>
-    /// 
+    /// ターゲットの設定
     /// </summary>
     /// <param name="worldTarget"></param>
     void SetTarget(const KamataEngine::Vector3& worldTarget) { targetPos_ = worldTarget; hasTarget_ = true; }
 
     /// <summary>
-    /// 
+    /// 速度の設定
     /// </summary>
     /// <param name="s"></param>
     void SetSpeed(float s) { speed_ = s; }
 
     /// <summary>
-    /// 
+    /// 旋回率の設定
     /// </summary>
     /// <param name="r"></param>
     void SetTurnRate(float r) { turnRate_ = r; }
 
     /// <summary>
-    /// 
+    /// 当たり判定半径の設定
     /// </summary>
     /// <param name="r"></param>
     void SetColliderRadius(float r) { colliderRadius_ = r; if (collider_) collider_->SetRadius(r); }
 
     /// <summary>
-    /// 
+    /// HPの設定
     /// </summary>
     /// <param name="hp"></param>
     void SetInitialHP(int hp) { initialHP_ = hp; }
 
     /// <summary>
-    /// 
+    /// 寿命の設定
     /// </summary>
     /// <param name="sec"></param>
     void SetLifeTime(float sec) { lifeTimeSec_ = sec; }
 
     /// <summary>
-    /// 
+    /// 初期位置の設定
     /// </summary>
     /// <param name="p"></param>
     void SetInitialPosition(const KamataEngine::Vector3& p) { initialPosition_ = p; }

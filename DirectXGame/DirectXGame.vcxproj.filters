@@ -57,9 +57,6 @@
     <ClCompile Include="Application\MyMath\MyMath.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Player\Player.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Application\RailCamera\RailCamera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -78,13 +75,16 @@
     <ClCompile Include="Application\CountDown\CountDown.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Enemy\EnemyBase.cpp">
+    <ClCompile Include="Application\Charactor\CharactorBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Enemy\Collider.cpp">
+    <ClCompile Include="Application\Charactor\Collider.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Enemy\SeekerEnemy.cpp">
+    <ClCompile Include="Application\Charactor\Player\Player.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Charactor\Enemy\SeekerEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -156,9 +156,6 @@
     <ClInclude Include="Application\MyMath\MyMath.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Player\Player.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Application\RailCamera\RailCamera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -177,13 +174,16 @@
     <ClInclude Include="Application\CountDown\CountDown.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Enemy\EnemyBase.h">
+    <ClInclude Include="Application\Charactor\CharactorBase.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Enemy\Collider.h">
+    <ClInclude Include="Application\Charactor\Collider.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Enemy\SeekerEnemy.h">
+    <ClInclude Include="Application\Charactor\Player\Player.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Charactor\Enemy\SeekerEnemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

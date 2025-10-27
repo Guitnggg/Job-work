@@ -1,9 +1,9 @@
-#include "EnemyBase.h"
+#include "CharactorBase.h"
 
 using namespace KamataEngine;
 
-void EnemyBase::Initialize() {
-    // ワールド変換の初期化
+void CharactorBase::Initialize() {
+   //  // ワールド変換の初期化
     worldTransform_.Initialize();
 
     // 移動量の初期化
@@ -22,7 +22,7 @@ void EnemyBase::Initialize() {
     collider_->SetTranslate(GetWorldTranslation());
 }
 
-void EnemyBase::Update() {
+void CharactorBase::Update() {
     // ワールド変換行列の更新
     worldTransform_.UpdateMatrix();
 
@@ -33,7 +33,7 @@ void EnemyBase::Update() {
     collider_->Update();
 }
 
-KamataEngine::Vector3 EnemyBase::GetWorldTranslation() {
+KamataEngine::Vector3 CharactorBase::GetWorldTranslation() {
     Vector3 result;
 
     result.x = worldTransform_.matWorld_.m[3][0];

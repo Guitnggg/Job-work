@@ -6,7 +6,7 @@ using namespace KamataEngine;
 void SeekerEnemy::Initialize() {
 
     // 親の初期化処理を呼び出す（worldTransform_ / collider_ の生成まで）
-    EnemyBase::Initialize();
+    CharactorBase::Initialize();
 
     // 見た目モデル（OBJがなければSphereにフォールバック）
     model_.reset(Model::CreateFromOBJ("Enemy", true));
@@ -103,7 +103,7 @@ void SeekerEnemy::Draw(KamataEngine::Camera* camera)
     // if (collider_) { collider_->Draw(*camera); }
 }
 
-void SeekerEnemy::OnCollision(EnemyBase* /*enemy*/){
+void SeekerEnemy::OnCollision(CharactorBase* /*enemy*/){
     // １回当たったら削除
     isDead_ = true;
 }
