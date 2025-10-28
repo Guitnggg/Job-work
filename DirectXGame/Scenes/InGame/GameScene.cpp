@@ -136,7 +136,12 @@ void GameScene::Update() {
     }
 
     // ========== シーン変遷条件 ==========
-    if (input_->PushKey(DIK_SPACE)) {  // シーン変遷の条件を書く
+    if (input_->TriggerKey(DIK_SPACE)) {
+        player_->Kill();
+    }
+
+    // 爆発演出が終わったらシーン終了
+    if (player_->IsExplosionFinished()) {
         isEnd_ = true;
     }
 }
@@ -173,9 +178,9 @@ void GameScene::Draw() {
     skydome_->Draw();
 
     // 敵描画
-    for(auto& enemy : enemies_) {
+    /*for(auto& enemy : enemies_) {
         enemy->Draw(&camera_);
-    }
+    }*/
 
     // プレイヤー描画
     if (!countDown_.IsInputLocked()) {

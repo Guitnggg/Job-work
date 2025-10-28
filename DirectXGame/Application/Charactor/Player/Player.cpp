@@ -19,14 +19,35 @@ void Player::Initialize(KamataEngine::Camera* camera) {
 
     model_ = Model::CreateFromOBJ("Player", true); // モデルの生成
 
+    audio_ = Audio::GetInstance();
+    // ★ ここは必要に応じてパスを合わせてください
+    seExplosion_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
+
     // Playerの初期座標を設定
     worldTransform_->translation_ = { 0.0f,-2.0f,20.0f };
 
     // 入力を受け付けるように
     input_ = Input::GetInstance();
+
+    hp_ = 100;
+    isDead_ = false;
+    isExploding_ = false;
+    isExplosionFinished_ = false;
+    explosionFrame_ = 0;
 }
 
 void Player::Update() {
+    // 爆発中の演出を優先
+    if (isExploding_) {
+        UpdateExplosion_();
+        worldTransform_->UpdateMatrix();
+        return; // 爆発中は操作不可
+    }
+    if (isDead_) {
+        // 消滅後は何もしない（描画もしない）
+        return;
+    }
+
     // ロールのアニメーション
     if (isRolling_) {
         rollFrame_ += 1;
@@ -57,13 +78,9 @@ void Player::Update() {
     }
 
     // 移動処理
-    if (input_->TriggerKey(DIK_D)) {
-        StartRoll(1.0f);
-    }
+    if (input_->TriggerKey(DIK_D)) { StartRoll(1.0f); }
 
-    if (input_->TriggerKey(DIK_A)) {
-        StartRoll(-1.0f);
-    }
+    if (input_->TriggerKey(DIK_A)) { StartRoll(-1.0f); }
 
     // 補間後の X に対して
     worldTransform_->translation_.x = std::clamp(worldTransform_->translation_.x, -8.0f, 8.0f);
@@ -73,6 +90,7 @@ void Player::Update() {
 }
 
 void Player::Draw() {
+    if (isExplosionFinished_) { return; }
     model_->Draw(*worldTransform_, *camera_);
 }
 
@@ -108,4 +126,50 @@ void Player::StartRoll(float dir) {
 float Player::EaseOutCubic(float t) const {
     float inv = 1.0f - t;
     return 1.0f - inv * inv * inv;
+}
+
+void Player::Damage(int amount) {
+    if (isExploding_ || isDead_) { return; }
+    hp_ -= amount;
+    if (hp_ <= 0) {
+        Kill();
+    }
+}
+
+void Player::Kill() {
+    if (isExploding_ || isDead_) { return; }
+    // 爆発開始
+    isExploding_ = true;
+    explosionFrame_ = 0;
+
+    if(audio_&&seExplosion_>=0){
+        audio_->PlayWave(seExplosion_);
+    }
+}
+
+void Player::UpdateExplosion_() {
+   // 0.0 → 1.0
+    float t = static_cast<float>(explosionFrame_) / static_cast<float>(explosionDurationFrames_);
+    if (t < 0.0f) t = 0.0f; 
+    if (t > 1.0f) t = 1.0f;
+
+    // 縮小：1.0 → 0.0（EaseOutで最後スッと消える）
+    float et = EaseOutCubic(t);              // 0→1（後半速く）
+    float scaleMul = 1.0f - et;        // 1→0 に縮小
+    if (scaleMul < 0.0f) scaleMul = 0.0f;   // ← ここで下限クランプ
+
+    worldTransform_->translation_.y -= 0.1f; // 
+
+    // 回転はそのまま付与（お好みで速度調整OK）
+    worldTransform_->rotation_.y += 0.2f;
+
+    explosionFrame_++;
+    if (explosionFrame_ >= explosionDurationFrames_) {
+        isExploding_ = false;
+        isDead_ = true;
+        isExplosionFinished_ = true;
+
+        // 最終的に描画しない（消滅）
+        worldTransform_->scale_ = { 0.0f, 0.0f, 0.0f };
+    }
 }

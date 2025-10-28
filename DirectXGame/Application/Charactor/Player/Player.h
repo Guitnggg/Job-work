@@ -4,6 +4,7 @@
 #include "3d/Model.h"
 #include "3d/Camera.h"
 #include "input/Input.h"
+#include "audio/Audio.h"
 
 class Player {
 public:
@@ -41,6 +42,17 @@ public:
     /// <returns></returns>
     KamataEngine::Vector3 GetWorldTranslation()const;
 
+    // ===== HP / ライフ制御 =====
+    void SetHP(int hp) { hp_ = hp; }
+    int  GetHP() const { return hp_; }
+    void Damage(int amount);     // HPを減らし、0以下ならKill
+    void Kill();                 // 即爆発開始
+
+    // 状態取得
+    bool IsDead() const { return isDead_; }
+    bool IsExploding() const { return isExploding_; }
+    bool IsExplosionFinished() const { return isExplosionFinished_; }
+
 private:
 
     /// <summary>
@@ -50,12 +62,16 @@ private:
     void StartRoll(float dir);
     float EaseOutCubic(float t)const;
 
+
+    void UpdateExplosion_();
+
 private:
 
     KamataEngine::WorldTransform* worldTransform_;
     KamataEngine::Camera* camera_;
     KamataEngine::Model* model_ = nullptr;
     KamataEngine::Input* input_ = nullptr;
+    KamataEngine::Audio* audio_ = nullptr;
 
     const float kMoveSpeed = 10.0f;  // 移動速度
     const float kRotSpeed = 0.05f;  // 回転速度
@@ -69,4 +85,14 @@ private:
     KamataEngine::Vector3 rollStartPos_{};
     KamataEngine::Vector3 rollEndPos_{};
     float rollMoveDistance_ = 5.0f;          // 横にどれだけ移動するか
+
+    // 爆発制御パラメータ
+    int seExplosion_ = -1;
+    int hp_ = 100;
+    bool isDead_ = false;
+    bool isExploding_ = false;
+    bool isExplosionFinished_ = false;
+    int  explosionFrame_ = 0;
+    int  explosionDurationFrames_ = 60; // 1秒想定(60fps)
+    KamataEngine::Vector3 initialScale_ = { 1.0f, 1.0f, 1.0f };
 };

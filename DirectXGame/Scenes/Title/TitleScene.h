@@ -8,7 +8,7 @@
 #include "Asteroid.h"
 
 #include "IScene.h"
-class IntroductionScene;
+class GameScene;
 
 class TitleScene : public IScene {
 public:

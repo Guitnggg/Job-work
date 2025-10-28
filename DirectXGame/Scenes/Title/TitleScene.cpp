@@ -1,6 +1,6 @@
 #include "TitleScene.h"
 
-#include "IntroductionScene.h"
+#include "GameScene.h"
 
 using namespace KamataEngine;
 
@@ -174,7 +174,7 @@ void TitleScene::Draw() {
 }
 
 IScene* TitleScene::NextScene() const {
-    return new IntroductionScene();
+    return new GameScene();
 }
 
 Asteroid* TitleScene::SpawnAsteroid() {

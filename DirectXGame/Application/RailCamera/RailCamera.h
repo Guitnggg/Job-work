@@ -36,7 +36,7 @@ public:
     /// <summary>
     /// Getter
     /// </summary>
-    const KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
+    KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
 
 private:
 
