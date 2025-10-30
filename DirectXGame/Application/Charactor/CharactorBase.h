@@ -46,6 +46,12 @@ public:  /// === Getters === ///
     KamataEngine::Vector3 GetWorldTranslation();
 
     /// <summary>
+    /// WorldTransform の参照取得（編集や親子付けに使用）
+    /// </summary>
+    /// <returns>内部の WorldTransform 参照</returns>
+    KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
+
+    /// <summary>
     /// 座標の取得
     /// </summary>
     /// <returns>modelの座標</returns>
@@ -82,6 +88,12 @@ public:  /// === Getters === ///
     int GetMaxHP() { return maxHp_; }
 
 public:  /// === Setters === ///
+
+    /// <summary>
+    /// 親の設定（RailCamera などの WT を渡す）
+    /// </summary>
+    /// <param name="parent">親となる WorldTransform（保持は非所有）</param>
+    void SetParent(KamataEngine::WorldTransform* parent) { worldTransform_.parent_ = parent; }
 
     /// <summary>
     /// 座標の設定
