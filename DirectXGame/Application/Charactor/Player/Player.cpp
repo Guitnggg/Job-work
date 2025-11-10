@@ -100,6 +100,8 @@ void Player::Draw(Camera* camera) {
     if (!model_ || !camera_) { return; }
 
     model_->Draw(worldTransform_, *camera);
+
+
 }
 
 void Player::OnCollision(CharactorBase* /*enemy*/) {

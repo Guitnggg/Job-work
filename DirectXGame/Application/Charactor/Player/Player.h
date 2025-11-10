@@ -27,6 +27,7 @@ public:
     bool IsDead() const { return isDead_; }
     bool IsExploding() const { return isExploding_; }
     bool IsExplosionFinished() const { return isExplosionFinished_; }
+    void SetInputEnabled(bool enabled) { inputEnabled_ = enabled; }
 
 private:
     void StartRoll(float dir);
@@ -42,6 +43,7 @@ private:
     const float kMoveSpeed = 10.0f;
     const float kRotSpeed = 0.05f;
 
+    bool inputEnabled_ = true;
     bool isRolling_ = false;
     float rollFrame_ = 0.0f;
     float rollDurationFrames_ = 24.0f;

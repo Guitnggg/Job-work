@@ -100,7 +100,7 @@ void SeekerEnemy::Draw(KamataEngine::Camera* camera)
         model_->Draw(worldTransform_, *camera, textureHandle_);
     }
     // デバッグ可視化したければ
-    // if (collider_) { collider_->Draw(*camera); }
+    //if (collider_) { collider_->Draw(*camera); }
 }
 
 void SeekerEnemy::OnCollision(CharactorBase* /*enemy*/){

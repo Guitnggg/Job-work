@@ -37,6 +37,18 @@ public:
     /// <param name="enemy"></param>
     virtual void OnCollision(CharactorBase* enemy) = 0;
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    virtual bool IsDead()const { return false; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    virtual bool IsCollidable()const { return true; }
+
 public:  /// === Getters === ///
 
     /// <summary>

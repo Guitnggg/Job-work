@@ -104,34 +104,42 @@ void GameScene::Update() {
             enemySpawnTimer_ = 0.0f;
 
             // 敵生成
-            auto enemy = std::make_unique<SeekerEnemy>();
+            auto s = std::make_unique<SeekerEnemy>();
 
             // 出現位置をちょっとランダムに（必要なら固定でもOK）
             static std::mt19937_64 rng{ 1234567 };
             std::uniform_real_distribution<float> rx(-8.0f, 8.0f);
             std::uniform_real_distribution<float> ry(-3.0f, 3.0f);
 
-            enemy->SetInitialPosition({ rx(rng), ry(rng), 100.0f });
-            enemy->SetSpeed(0.9f);
-            enemy->SetTurnRate(0.12f);
-            enemy->SetColliderRadius(1.2f);
-            enemy->SetInitialHP(3);
-            enemy->Initialize();
+            s->SetInitialPosition({ rx(rng),ry(rng),100.0f });
+            s->SetSpeed(0.8f);
+            s->SetTurnRate(0.12f);
+            s->SetColliderRadius(1.2f);
+            s->SetInitialHP(3);
+            s->Initialize();
 
-            enemies_.push_back(std::move(enemy));
+            enemies_.push_back(std::move(s));
         }
 
         // 追尾：プレイヤーのワールド座標を毎フレーム渡す
-        const Vector3 playerPos = player_->GetWorldTranslation(); // ★ プレイヤー座標取得（既存API）
-        for (auto& enemy : enemies_) {
-            enemy->SetTarget(playerPos);
-            enemy->Update();
+        const Vector3 playerPos = player_->GetWorldTranslation();
+        for (auto& e : enemies_) {
+            if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
+                s->SetTarget(playerPos);
+           }
+            e->Update();
         }
+
+        // プレイヤーとの当たり判定
+        ResolvePlayerEnemyCollisions();
 
         // 死亡した敵を消す
         enemies_.erase(
             std::remove_if(enemies_.begin(), enemies_.end(),
-                [](const std::unique_ptr<SeekerEnemy>& e) { return e->IsDead(); }),
+                [](const std::unique_ptr<CharactorBase>& e) { 
+                    if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) { return s->IsDead(); }
+                    return false;
+                }),
             enemies_.end());
     }
 
@@ -178,9 +186,9 @@ void GameScene::Draw() {
     skydome_->Draw();
 
     // 敵描画
-    /*for(auto& enemy : enemies_) {
+    for(auto& enemy : enemies_) {
         enemy->Draw(&camera_);
-    }*/
+    }
 
     // プレイヤー描画
     if (!countDown_.IsInputLocked()) {
@@ -208,4 +216,32 @@ void GameScene::Draw() {
 
 IScene* GameScene::NextScene() const {
     return new FinishScene();
+}
+
+void GameScene::ResolvePlayerEnemyCollisions(){
+    if (!player_ || countDown_.IsInputLocked() || player_->IsExplosionFinished()) { return; }
+
+    Collider* pc = player_->GetCollider().get();
+    if (!pc) { return; }
+
+    const auto p = pc->GetTranslate();
+    const float pr = pc->GetRadius();
+
+    for (auto& e : enemies_) {
+        if (!e) { continue; }
+        Collider* ec = e->GetCollider().get();
+        if (!ec) { continue; }
+
+        const auto q = ec->GetTranslate();
+        const float er = ec->GetRadius();
+
+        const float dx = p.x - q.x, dy = p.y - q.y, dz = p.z - q.z;
+        const float dist2 = dx * dx + dy * dy + dz * dz;
+        const float r = pr + er;
+
+        if (dist2 <= r * r) {
+            player_->OnCollision(e.get());
+            e->OnCollision(player_);
+        }
+    }
 }

@@ -3,13 +3,16 @@
 #include <KamataEngine.h>
 #include <vector>
 #include <random>
+#include <memory>
+#include <algorithm>
 
 #include "Application/Skydome/Skydome.h"
 #include "Application/Asteroid/Asteroid.h"
-#include "Application/Charactor/Player/Player.h"
 #include "Application/RailCamera/RailCamera.h"
 #include "Application/CountDown/CountDown.h"
+#include "Application/Charactor/Player/Player.h"
 #include "Application/Charactor/Enemy/SeekerEnemy.h"
+
 
 #include "IScene.h"
 class FinishScene;
@@ -54,6 +57,13 @@ public:
 
 private:
 
+    /// <summary>
+    /// 当たり判定
+    /// </summary>
+    void ResolvePlayerEnemyCollisions();
+
+private:
+
     // ========== 基本 ==========
     KamataEngine::DirectXCommon* dxCommon_ = nullptr;
     KamataEngine::Input* input_ = nullptr;
@@ -77,9 +87,9 @@ private:
     Player* player_ = nullptr;
 
     // ========== 敵 ==========
-    std::vector<std::unique_ptr<SeekerEnemy>> enemies_;
+    std::vector<std::unique_ptr<CharactorBase>> enemies_;
     float enemySpawnTimer_ = 0.0f;
-    const float kEnemySpawnInterval_ = 2.0f; // 敵出現間隔（秒）
+    const float kEnemySpawnInterval_ = 5.0f; // 敵出現間隔（秒）
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;
