@@ -36,17 +36,30 @@ void Player::Initialize(Camera* camera) {
 void Player::Update() {
     // 爆発中は演出優先
     if (isExploding_) {
-        UpdateExplosion_();
+        UpdateExplosion();
         worldTransform_.UpdateMatrix();
+
         // Collider追従
-        if (collider_) { 
-            collider_->SetTranslate(GetWorldTranslation()); 
-        }
+        if (collider_) { collider_->SetTranslate(GetWorldTranslation()); }
         return;
     }
-    if (isDead_) {
-        // 消滅後：何もしない
-        return;
+
+    if (isDead_) { return; }
+
+    // --- ヒット演出/無敵タイマー更新 ---
+    if (hitFlashFrames_ > 0) { --hitFlashFrames_; }
+    if (invincibleFrames_ > 0) { --invincibleFrames_; }
+
+    // --- ヒット中の軽い揺れ（Zロール + スケール脈動） ---
+    if (hitFlashFrames_ > 0) {
+        float t = 1.0f - (float)hitFlashFrames_ / (float)kHitFlashDuration_; // 0→1
+        float wobble = std::sin(t * 10.0f) * 0.06f; // 小さめロール
+        float pulse = 1.0f + std::sin(t * 18.0f) * 0.04f;
+        worldTransform_.rotation_.z += wobble;
+        worldTransform_.scale_ = { initialScale_.x * pulse, initialScale_.y * pulse, initialScale_.z * pulse };
+    }
+    else {
+        worldTransform_.scale_ = initialScale_;
     }
 
     // ロールアニメ中
@@ -78,7 +91,6 @@ void Player::Update() {
         if (collider_) {
             collider_->SetTranslate(GetWorldTranslation());
         }
-        return;
     }
 
     // 入力（今回はA/Dでロール）
@@ -90,7 +102,7 @@ void Player::Update() {
 
     // 行列更新 & コライダー追従
     worldTransform_.UpdateMatrix();
-    if (collider_) { 
+    if (collider_) {
         collider_->SetTranslate(GetWorldTranslation());
     }
 }
@@ -98,6 +110,8 @@ void Player::Update() {
 void Player::Draw(Camera* camera) {
     if (isExplosionFinished_) { return; }
     if (!model_ || !camera_) { return; }
+
+    if (invincibleFrames_ > 0 && ((invincibleFrames_ / 2) % 2 == 0)) { return; }
 
     model_->Draw(worldTransform_, *camera);
 
@@ -110,13 +124,16 @@ void Player::OnCollision(CharactorBase* /*enemy*/) {
 }
 
 void Player::Damage(int amount) {
-    if (isExploding_ || isDead_) { return;}
+    if (isExploding_ || isDead_) { return; }
+
+    tookDamageEvent_ = true;             // GameSceneのシェイク起動用フラグ
+    hitFlashFrames_ = kHitFlashDuration_;
+    invincibleFrames_ = kInvincibleDuration_;
+
     int hp = GetHP();
     hp -= amount;
     SetHP(hp);
-    if (hp <= 0) {
-        Kill();
-    }
+    if (hp <= 0) { Kill(); }
 }
 
 void Player::Kill() {
@@ -147,7 +164,7 @@ float Player::EaseOutCubic(float t) const {
     return 1.0f - inv * inv * inv;
 }
 
-void Player::UpdateExplosion_() {
+void Player::UpdateExplosion() {
     // 0.0 → 1.0
     float t = static_cast<float>(explosionFrame_) / static_cast<float>(explosionDurationFrames_);
     if (t < 0.0f) t = 0.0f;

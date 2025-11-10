@@ -29,10 +29,16 @@ public:
     bool IsExplosionFinished() const { return isExplosionFinished_; }
     void SetInputEnabled(bool enabled) { inputEnabled_ = enabled; }
 
+    bool ConsumeTookDamageEvent() { bool f = tookDamageEvent_; tookDamageEvent_ = false; return f; }
+    bool IsInvincible() const { return invincibleFrames_ > 0; }
+    float HitFlashT() const {
+        return hitFlashFrames_ > 0 ? (float)hitFlashFrames_ / (float)kHitFlashDuration_ : 0.0f;
+    }
+
 private:
     void StartRoll(float dir);
     float EaseOutCubic(float t) const;
-    void UpdateExplosion_();
+    void UpdateExplosion();
 
 private:
     KamataEngine::Camera* camera_ = nullptr;
@@ -60,4 +66,10 @@ private:
     int explosionFrame_ = 0;
     int explosionDurationFrames_ = 60;
     KamataEngine::Vector3 initialScale_ = { 1.0f, 1.0f, 1.0f };
+
+    bool tookDamageEvent_ = false;          // このフレームで被弾したか（GameSceneのシェイク起動用）
+    int  hitFlashFrames_ = 0;               // ヒット演出（モデル揺れ/スケール脈動）の残りフレーム
+    int  invincibleFrames_ = 0;             // 無敵残りフレーム（点滅制御）
+    const int kHitFlashDuration_ = 18;      // 0.3秒@60fps
+    const int kInvincibleDuration_ = 30;    // 0.5秒@60fps
 };
