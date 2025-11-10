@@ -91,11 +91,11 @@ private:
 
     // 動作パラメータ（デフォルト値）
     KamataEngine::Vector3 initialPosition_ = { 0.0f, 0.0f, 80.0f };
-    float speed_ = 0.2f;   // 前進速度（単位: units/sec）
-    float turnRate_ = 0.15f;  // 旋回追従率（0〜1、小さいほど鈍い）
-    float colliderRadius_ = 1.0f;   // 球コライダー半径
-    int   initialHP_ = 1;      // 初期HP
-    float lifeTimeSec_ = 30.0f;  // 寿命
+    float speed_ = 0.2f;           // 前進速度（単位: units/sec）
+    float turnRate_ = 0.15f;       // 旋回追従率（0〜1、小さいほど鈍い）
+    float colliderRadius_ = 1.0f;  // 球コライダー半径
+    int   initialHP_ = 1;          // 初期HP
+    float lifeTimeSec_ = 30.0f;    // 寿命
 
     // 目標
     KamataEngine::Vector3 targetPos_ = { 0.0f, 0.0f, 0.0f };

@@ -184,7 +184,7 @@ void GameScene::Draw() {
 
     // プレイヤー描画
     if (!countDown_.IsInputLocked()) {
-        player_->Draw();
+        player_->Draw(&camera_);
     }
 
     // 3Dオブジェクト描画後処理
