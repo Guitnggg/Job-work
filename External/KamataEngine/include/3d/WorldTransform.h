@@ -54,6 +54,18 @@ public:
 	/// <returns>定数バッファ</returns>
 	const Microsoft::WRL::ComPtr<ID3D12Resource>& GetConstBuffer() const { return constBuffer_; }
 
+public:
+	/// <summary>
+	/// 行列更新
+	/// </summary>
+	void UpdateMatrix();
+
+	/// <summary>
+	/// 親の設定
+	/// </summary>
+	/// <param name="parent">親オブジェクト</param>
+	void SetParent(const WorldTransform* parent);
+
 private:
 	// 定数バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> constBuffer_;
