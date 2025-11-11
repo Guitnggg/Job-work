@@ -158,6 +158,7 @@
     <ClCompile Include="Application\CountDown\CountDown.cpp" />
     <ClCompile Include="Application\Charactor\CharactorBase.cpp" />
     <ClCompile Include="Application\Charactor\Collider.cpp" />
+    <ClCompile Include="Application\Charactor\Player\Graph.cpp" />
     <ClCompile Include="Scenes\Finish\FinishScene.cpp" />
     <ClCompile Include="Scenes\InGame\GameScene.cpp" />
     <ClCompile Include="Scenes\Introduction\IntroductionScene.cpp" />
@@ -273,6 +274,7 @@
     <ClInclude Include="Application\CountDown\CountDown.h" />
     <ClInclude Include="Application\Charactor\CharactorBase.h" />
     <ClInclude Include="Application\Charactor\Collider.h" />
+    <ClInclude Include="Application\Charactor\Player\Graph.h" />
     <ClInclude Include="Scenes\Finish\FinishScene.h" />
     <ClInclude Include="Scenes\InGame\GameScene.h" />
     <ClInclude Include="Scenes\Introduction\IntroductionScene.h" />

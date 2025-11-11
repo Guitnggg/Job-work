@@ -41,6 +41,11 @@ void GameScene::Initialize() {
     player_->Initialize(&camera_);
     player_->SetParent(&railCamera_->GetWorldTransform());
 
+    hpGraph_ = std::make_unique<Graph>();
+    hpGraph_->Initialize((TextureManager::Load("./Resources/white1x1.png")));
+    hpGraph_->SetLayout({ 20.0f, 20.0f }, { 240.0f, 12.0f });
+    hpGraph_->SetColors({ 0.15f,0.15f,0.15f,0.80f }, { 0.20f,0.85f,0.35f,1.00f });
+
     // ========== 3カウント用 ==========
     countDown_.InitializeFromPaths(
         "./Resources/InGame/3.png",
@@ -70,24 +75,12 @@ void GameScene::Initialize() {
 }
 
 void GameScene::Update() {
-    // 天球更新
+    // ========== 天球更新 ==========
     skydome_->Update();
 
-    // プレイヤー更新
+    // ========== プレイヤー更新 ==========
     if (!countDown_.IsInputLocked()) {
         player_->Update();
-    }
-
-    // ========== レールカメラ更新 ==========
-    if (isRailCameraActive_) {
-        railCamera_->Update();
-
-        camera_.matView = railCamera_->GetCamera()->matView;
-        camera_.matProjection = railCamera_->GetCamera()->matProjection;
-        camera_.TransferMatrix();
-    }
-    else {
-        camera_.UpdateMatrix();
     }
 
     // ========== 3カウント制御 ==========
@@ -126,26 +119,43 @@ void GameScene::Update() {
         for (auto& e : enemies_) {
             if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
                 s->SetTarget(playerPos);
-           }
+            }
             e->Update();
         }
 
         // プレイヤーとの当たり判定
         ResolvePlayerEnemyCollisions();
 
+        if (player_ && hpGraph_) {
+            const int hp = player_->GetHP();
+            const int maxHP = (std::max)(1, player_->GetMaxHP()); // NOMINMAX対策
+
+            const float rate = static_cast<float>(hp) / static_cast<float>(maxHP);
+
+            hpGraph_->SetValue(rate);
+            hpGraph_->Update();
+        }
+
         // 死亡した敵を消す
         enemies_.erase(
             std::remove_if(enemies_.begin(), enemies_.end(),
-                [](const std::unique_ptr<CharactorBase>& e) { 
+                [](const std::unique_ptr<CharactorBase>& e) {
                     if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) { return s->IsDead(); }
                     return false;
                 }),
             enemies_.end());
     }
 
-    // ========== シーン変遷条件 ==========
-    if (input_->TriggerKey(DIK_SPACE)) {
-        player_->Kill();
+    // ========== レールカメラ更新 ==========
+    if (isRailCameraActive_) {
+        railCamera_->Update();
+
+        camera_.matView = railCamera_->GetCamera()->matView;
+        camera_.matProjection = railCamera_->GetCamera()->matProjection;
+        camera_.TransferMatrix();
+    }
+    else {
+        camera_.UpdateMatrix();
     }
 
     // 爆発演出が終わったらシーン終了
@@ -186,7 +196,7 @@ void GameScene::Draw() {
     skydome_->Draw();
 
     // 敵描画
-    for(auto& enemy : enemies_) {
+    for (auto& enemy : enemies_) {
         enemy->Draw(&camera_);
     }
 
@@ -209,6 +219,8 @@ void GameScene::Draw() {
 
     countDown_.Draw();
 
+    hpGraph_->Draw();
+
     // スプライト描画後処理
     Sprite::PostDraw();
 #pragma endregion
@@ -218,7 +230,7 @@ IScene* GameScene::NextScene() const {
     return new FinishScene();
 }
 
-void GameScene::ResolvePlayerEnemyCollisions(){
+void GameScene::ResolvePlayerEnemyCollisions() {
     if (!player_ || countDown_.IsInputLocked() || player_->IsExplosionFinished()) { return; }
 
     Collider* pc = player_->GetCollider().get();

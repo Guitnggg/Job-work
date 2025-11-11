@@ -11,6 +11,7 @@
 #include "Application/RailCamera/RailCamera.h"
 #include "Application/CountDown/CountDown.h"
 #include "Application/Charactor/Player/Player.h"
+#include "Application/Charactor/Player/Graph.h"
 #include "Application/Charactor/Enemy/SeekerEnemy.h"
 
 
@@ -85,6 +86,7 @@ private:
 
     // ========== プレイヤー ==========
     Player* player_ = nullptr;
+    std::unique_ptr<Graph>hpGraph_;
 
     // ========== 敵 ==========
     std::vector<std::unique_ptr<CharactorBase>> enemies_;

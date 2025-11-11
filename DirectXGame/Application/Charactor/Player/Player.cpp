@@ -59,7 +59,7 @@ void Player::Update() {
         // 0→1 の経過率
         float t = 1.0f - (float)hitFlashFrames_ / (float)kHitFlashDuration_;
         // ロール（視覚用の小さな揺れ）：上書きオフセットとして計算
-        newRollOffset = std::sin(t * 10.0f) * 0.06f;
+        newRollOffset = std::sin(t * 10.0f) * 0.18f;
 
         // スケールは“上書き”で適用（+= ではなく、初期値×脈動）
         float pulse = 1.0f + std::sin(t * 18.0f) * 0.06f;
