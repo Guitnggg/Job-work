@@ -51,16 +51,32 @@ void Player::Update() {
     if (invincibleFrames_ > 0) { --invincibleFrames_; }
 
     // --- ヒット中の軽い揺れ（Zロール + スケール脈動） ---
+    worldTransform_.rotation_.z -= lastHitRollOffset_;
+    lastHitRollOffset_ = 0.0f;
+
+    float newRollOffset = 0.0f;
     if (hitFlashFrames_ > 0) {
-        float t = 1.0f - (float)hitFlashFrames_ / (float)kHitFlashDuration_; // 0→1
-        float wobble = std::sin(t * 10.0f) * 0.06f; // 小さめロール
-        float pulse = 1.0f + std::sin(t * 18.0f) * 0.04f;
-        worldTransform_.rotation_.z += wobble;
-        worldTransform_.scale_ = { initialScale_.x * pulse, initialScale_.y * pulse, initialScale_.z * pulse };
+        // 0→1 の経過率
+        float t = 1.0f - (float)hitFlashFrames_ / (float)kHitFlashDuration_;
+        // ロール（視覚用の小さな揺れ）：上書きオフセットとして計算
+        newRollOffset = std::sin(t * 10.0f) * 0.06f;
+
+        // スケールは“上書き”で適用（+= ではなく、初期値×脈動）
+        float pulse = 1.0f + std::sin(t * 18.0f) * 0.06f;
+        worldTransform_.scale_ = {
+            initialScale_.x * pulse,
+            initialScale_.y * pulse,
+            initialScale_.z * pulse
+        };
     }
     else {
+        // 非被弾時は元スケールに戻す（上書き）
         worldTransform_.scale_ = initialScale_;
     }
+
+    // 新しいロールオフセットを適用して記録（次フレームで必ず差し戻す）
+    worldTransform_.rotation_.z += newRollOffset;
+    lastHitRollOffset_ = newRollOffset;
 
     // ロールアニメ中
     if (isRolling_) {
@@ -114,13 +130,11 @@ void Player::Draw(Camera* camera) {
     if (invincibleFrames_ > 0 && ((invincibleFrames_ / 2) % 2 == 0)) { return; }
 
     model_->Draw(worldTransform_, *camera);
-
-
 }
 
 void Player::OnCollision(CharactorBase* /*enemy*/) {
     // 例：衝突でダメージ
-    Damage(10);
+    Damage(20);
 }
 
 void Player::Damage(int amount) {
