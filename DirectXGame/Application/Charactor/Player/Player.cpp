@@ -1,10 +1,14 @@
 #include "Player.h"
+
 #include <algorithm>
+#include <cmath>
+
+#include "math/MathUtility.h"
 
 using namespace KamataEngine;
+using namespace KamataEngine::MathUtility;
 
 void Player::Initialize(Camera* camera) {
-    // 
     CharactorBase::Initialize();
 
     camera_ = camera;
@@ -13,20 +17,20 @@ void Player::Initialize(Camera* camera) {
     audio_ = Audio::GetInstance();
     seExplosion_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
 
-    worldTransform_.translation_ = { 0.0f,-2.0f,20.0f };
-    worldTransform_.scale_ = { 1.0f,1.0f,1.0f };
-    worldTransform_.rotation_ = { 0.0f,0.0f,0.0f };
+    worldTransform_.translation_ = { 0.0f, -2.0f, 20.0f };
+    worldTransform_.scale_ = { 1.0f,  1.0f,  1.0f };
+    worldTransform_.rotation_ = { 0.0f,  0.0f,  0.0f };
 
     input_ = Input::GetInstance();
 
-    // HP
+    // HPや状態
     SetHP(100);
     isDead_ = false;
     isExploding_ = false;
     isExplosionFinished_ = false;
     explosionFrame_ = 0;
 
-    // コライダー初期設定（必要に応じて半径調整）
+    // コライダー
     if (collider_) {
         collider_->SetRadius(1.0f);
         collider_->SetTranslate(GetWorldTranslation());
@@ -34,113 +38,173 @@ void Player::Initialize(Camera* camera) {
 }
 
 void Player::Update() {
-    // 爆発中は演出優先
+    // ===== 爆発中は演出優先 =====
     if (isExploding_) {
         UpdateExplosion();
         worldTransform_.UpdateMatrix();
+        if (collider_) { collider_->SetTranslate(GetWorldTranslation()); }
+        return;
+    }
+    if (isDead_) { return; }
 
-        // Collider追従
+    // ===== ヒット演出・無敵タイマー =====
+    if (hitFlashFrames_ > 0) { --hitFlashFrames_; }
+    if (invincibleFrames_ > 0) { --invincibleFrames_; }
+
+    // 前フレームの被弾ゆれ(Zロール)を差し戻す
+    worldTransform_.rotation_.z -= lastHitRollOffset_;
+    lastHitRollOffset_ = 0.0f;
+
+    // ===== ロール一回転（回避）中は専用関数で処理して早期return =====
+    if (UpdateRoll_()) {
+        worldTransform_.UpdateMatrix();
         if (collider_) { collider_->SetTranslate(GetWorldTranslation()); }
         return;
     }
 
-    if (isDead_) { return; }
+    // ===== 通常移動＋バンク（傾き） =====
+    const float dt = 1.0f / 60.0f;
+    UpdateMoveAndBank_(dt);
 
-    // --- ヒット演出/無敵タイマー更新 ---
-    if (hitFlashFrames_ > 0) { --hitFlashFrames_; }
-    if (invincibleFrames_ > 0) { --invincibleFrames_; }
-
-    // --- ヒット中の軽い揺れ（Zロール + スケール脈動） ---
-    worldTransform_.rotation_.z -= lastHitRollOffset_;
-    lastHitRollOffset_ = 0.0f;
-
+    // ===== 被弾時の“揺れ”を最後に上書きで足す =====
     float newRollOffset = 0.0f;
     if (hitFlashFrames_ > 0) {
-        // 0→1 の経過率
-        float t = 1.0f - (float)hitFlashFrames_ / (float)kHitFlashDuration_;
-        // ロール（視覚用の小さな揺れ）：上書きオフセットとして計算
-        newRollOffset = std::sin(t * 10.0f) * 0.18f;
-
-        // スケールは“上書き”で適用（+= ではなく、初期値×脈動）
-        float pulse = 1.0f + std::sin(t * 18.0f) * 0.06f;
-        worldTransform_.scale_ = {
-            initialScale_.x * pulse,
-            initialScale_.y * pulse,
-            initialScale_.z * pulse
-        };
+        float ht = 1.0f - (float)hitFlashFrames_ / (float)kHitFlashDuration_;
+        newRollOffset = std::sin(ht * 10.0f) * 0.18f; // 小刻みなロール
+        float pulse = 1.0f + std::sin(ht * 18.0f) * 0.06f;
+        worldTransform_.scale_ = { initialScale_.x * pulse, initialScale_.y * pulse, initialScale_.z * pulse };
     }
     else {
-        // 非被弾時は元スケールに戻す（上書き）
         worldTransform_.scale_ = initialScale_;
     }
-
-    // 新しいロールオフセットを適用して記録（次フレームで必ず差し戻す）
     worldTransform_.rotation_.z += newRollOffset;
     lastHitRollOffset_ = newRollOffset;
 
-    // ロールアニメ中
-    if (isRolling_) {
-        rollFrame_ += 1.0f;
-        if (rollFrame_ > rollDurationFrames_) {
-            rollFrame_ = rollDurationFrames_;
+    // ===== ロール回避の入力（A/D：素早く2回押し） =====
+    if (input_) {
+        // 右(D)
+        if (input_->TriggerKey(DIK_D)) {
+            if (doubleTapFrameD_ > 0 && doubleTapFrameD_ < kDoubleTapThreshold_) {
+                StartRoll(1.0f);
+                doubleTapFrameD_ = 0;
+            }
+            else {
+                doubleTapFrameD_ = 1;
+            }
         }
-
-        // イージング
-        float t = rollFrame_ / rollDurationFrames_;
-        float et = EaseOutCubic(t);
-
-        worldTransform_.translation_.x = rollStartPos_.x + (rollEndPos_.x - rollStartPos_.x) * et;
-        worldTransform_.translation_.y = rollStartPos_.y;
-        worldTransform_.translation_.z = rollStartPos_.z;
-
-        // Z回転は±2πの一回転
-        const float twoPi = 6.28318530717958647692f;
-        worldTransform_.rotation_.z = rollStartRotZ_ - rollDir_ * twoPi * t;
-
-        if (rollFrame_ >= rollDurationFrames_) {
-            // 終了で位相を元に戻す
-            worldTransform_.rotation_.z = rollStartRotZ_;
-            isRolling_ = false;
+        // 左(A)
+        if (input_->TriggerKey(DIK_A)) {
+            if (doubleTapFrameA_ > 0 && doubleTapFrameA_ < kDoubleTapThreshold_) {
+                StartRoll(-1.0f);
+                doubleTapFrameA_ = 0;
+            }
+            else {
+                doubleTapFrameA_ = 1;
+            }
         }
-
-        worldTransform_.UpdateMatrix();
-        if (collider_) {
-            collider_->SetTranslate(GetWorldTranslation());
-        }
+        // 経過
+        if (doubleTapFrameA_ > 0) { ++doubleTapFrameA_; if (doubleTapFrameA_ > kDoubleTapThreshold_) doubleTapFrameA_ = 0; }
+        if (doubleTapFrameD_ > 0) { ++doubleTapFrameD_; if (doubleTapFrameD_ > kDoubleTapThreshold_) doubleTapFrameD_ = 0; }
     }
 
-    // 入力（今回はA/Dでロール）
-    if (input_ && input_->TriggerKey(DIK_D)) { StartRoll(1.0f); }
-    if (input_ && input_->TriggerKey(DIK_A)) { StartRoll(-1.0f); }
-
-    // 画面左右クランプ
-    worldTransform_.translation_.x = std::clamp(worldTransform_.translation_.x, -8.0f, 8.0f);
-
-    // 行列更新 & コライダー追従
+    // ===== 反映 =====
     worldTransform_.UpdateMatrix();
-    if (collider_) {
-        collider_->SetTranslate(GetWorldTranslation());
+    if (collider_) { collider_->SetTranslate(GetWorldTranslation()); }
+}
+
+// --- ロール回転の処理を関数化 ---
+bool Player::UpdateRoll_() {
+    if (!isRolling_) { return false; }
+
+    rollFrame_ += 1.0f;
+    if (rollFrame_ > rollDurationFrames_) { rollFrame_ = rollDurationFrames_; }
+
+    const float t = rollFrame_ / rollDurationFrames_;
+    const float et = EaseOutCubic(t);
+
+    // 平行移動（横へスライド）
+    worldTransform_.translation_.x = rollStartPos_.x + (rollEndPos_.x - rollStartPos_.x) * et;
+    worldTransform_.translation_.y = rollStartPos_.y;
+    worldTransform_.translation_.z = rollStartPos_.z;
+
+    // Zは±2πの一回転
+    static constexpr float kTwoPi = 6.28318530717958647692f;
+    worldTransform_.rotation_.z = rollStartRotZ_ - rollDir_ * kTwoPi * t;
+
+    // 被弾中ならスケール脈動だけ適用
+    if (hitFlashFrames_ > 0) {
+        float ht = 1.0f - (float)hitFlashFrames_ / (float)kHitFlashDuration_;
+        float pulse = 1.0f + std::sin(ht * 18.0f) * 0.06f;
+        worldTransform_.scale_ = { initialScale_.x * pulse, initialScale_.y * pulse, initialScale_.z * pulse };
     }
+    else {
+        worldTransform_.scale_ = initialScale_;
+    }
+
+    if (rollFrame_ >= rollDurationFrames_) {
+        // きっちり元角度へ戻して終了
+        worldTransform_.rotation_.z = rollStartRotZ_;
+        isRolling_ = false;
+    }
+    return true;
+}
+
+void Player::UpdateMoveAndBank_(float dt) {
+    if (!inputEnabled_ || !input_) { return; }
+
+    // 入力ベクトル（矢印キー＆WASD両対応）
+    int ix = 0, iy = 0;
+    if (input_->PushKey(DIK_RIGHT) || input_->PushKey(DIK_D)) { ix += 1; }
+    if (input_->PushKey(DIK_LEFT) || input_->PushKey(DIK_A)) { ix -= 1; }
+    if (input_->PushKey(DIK_UP) || input_->PushKey(DIK_W)) { iy += 1; }
+    if (input_->PushKey(DIK_DOWN) || input_->PushKey(DIK_S)) { iy -= 1; }
+
+    // 平行移動（画面内のローカルXY）
+    worldTransform_.translation_.x += (float)ix * kMoveSpeedXY_ * dt;
+    worldTransform_.translation_.y += (float)iy * kMoveSpeedXY_ * dt;
+
+    // 画面内でクランプ
+    worldTransform_.translation_.x = std::clamp(worldTransform_.translation_.x, clampXMin_, clampXMax_);
+    worldTransform_.translation_.y = std::clamp(worldTransform_.translation_.y, clampYMin_, clampYMax_);
+
+    // 傾きの目標値
+    targetTiltZ_ = -(float)ix * kBankMaxRadZ_;  // 右入力で右にバンク（Zマイナス）
+    targetTiltX_ = (float)iy * kPitchMaxRadX_; // 上入力で少し上向き（Xプラス）
+
+    // スムーズに追従（LERP）
+    currentTiltZ_ = Lerp(currentTiltZ_, targetTiltZ_, kTiltLerp_);
+    currentTiltX_ = Lerp(currentTiltX_, targetTiltX_, kTiltLerp_);
+
+    // 回転へ適用（Yは触らない）
+    worldTransform_.rotation_.x = currentTiltX_;
+    // Zはこのあと被弾揺れを加えるので、まずはベースを設定
+    worldTransform_.rotation_.z = currentTiltZ_;
 }
 
 void Player::Draw(Camera* camera) {
     if (isExplosionFinished_) { return; }
     if (!model_ || !camera_) { return; }
 
+    // 無敵点滅（描画スキップ）
     if (invincibleFrames_ > 0 && ((invincibleFrames_ / 2) % 2 == 0)) { return; }
 
     model_->Draw(worldTransform_, *camera);
 }
 
 void Player::OnCollision(CharactorBase* /*enemy*/) {
-    // 例：衝突でダメージ
+
+    // ロール中はダメージを受けない
+    if (isRolling_ || invincibleFrames_ > 0) {
+        return;
+    }
+
     Damage(20);
 }
 
 void Player::Damage(int amount) {
     if (isExploding_ || isDead_) { return; }
 
-    tookDamageEvent_ = true;             // GameSceneのシェイク起動用フラグ
+    tookDamageEvent_ = true;
     hitFlashFrames_ = kHitFlashDuration_;
     invincibleFrames_ = kInvincibleDuration_;
 
@@ -168,7 +232,6 @@ void Player::StartRoll(float dir) {
     rollDir_ = dir;
     rollStartRotZ_ = worldTransform_.rotation_.z;
     rollStartPos_ = worldTransform_.translation_;
-
     rollEndPos_ = rollStartPos_;
     rollEndPos_.x += rollMoveDistance_ * rollDir_;
 }
@@ -179,22 +242,13 @@ float Player::EaseOutCubic(float t) const {
 }
 
 void Player::UpdateExplosion() {
-    // 0.0 → 1.0
     float t = static_cast<float>(explosionFrame_) / static_cast<float>(explosionDurationFrames_);
-    if (t < 0.0f) t = 0.0f;
-    if (t > 1.0f) t = 1.0f;
-
-    // 後半加速のEaseOut
+    t = std::clamp(t, 0.0f, 1.0f);
     float et = EaseOutCubic(t);
 
-    // 縮小：1.0 → 0.0
-    float scaleMul = 1.0f - et;
-    if (scaleMul < 0.0f) scaleMul = 0.0f;
-    worldTransform_.scale_ = { initialScale_.x * scaleMul,
-                               initialScale_.y * scaleMul,
-                               initialScale_.z * scaleMul };
+    float scaleMul = (std::max)(0.0f, 1.0f - et);
+    worldTransform_.scale_ = { initialScale_.x * scaleMul, initialScale_.y * scaleMul, initialScale_.z * scaleMul };
 
-    // 演出
     worldTransform_.translation_.y -= 0.1f;
     worldTransform_.rotation_.y += 0.2f;
 
@@ -203,8 +257,6 @@ void Player::UpdateExplosion() {
         isExploding_ = false;
         isDead_ = true;
         isExplosionFinished_ = true;
-
-        // 完全消滅
         worldTransform_.scale_ = { 0.0f, 0.0f, 0.0f };
     }
 }

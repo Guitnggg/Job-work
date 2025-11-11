@@ -8,137 +8,165 @@
 
 #include "Application/Charactor/CharactorBase.h"
 
-class Player :public CharactorBase {
+class Player : public CharactorBase {
 public:
-
     /// <summary>
     /// デストラクタ
     /// </summary>
-    ~Player()override = default;
+    ~Player() override = default;
 
     /// <summary>
     /// 初期化処理
     /// </summary>
-    /// <param name="camera">描画で使用するカメラへのポインタ</param>
+    /// <param name="camera">使用するカメラへのポインタ</param>
     void Initialize(KamataEngine::Camera* camera);
 
     /// <summary>
     /// 更新処理
     /// </summary>
-    void Update()override;
+    void Update() override;
 
     /// <summary>
     /// 描画処理
     /// </summary>
-    /// <param name="camera">描画に使用するカメラへのポインタ</param>
-    void Draw(KamataEngine::Camera* camera)override;
+    /// <param name="camera">描画に使用するカメラ</param>
+    void Draw(KamataEngine::Camera* camera) override;
 
     /// <summary>
     /// 当たり判定処理
     /// </summary>
-    /// <param name="enemy">衝突相手キャラクターへのポインタ</param>
-    void OnCollision(CharactorBase* enemy)override;
+    /// <param name="enemy">衝突した相手</param>
+    void OnCollision(CharactorBase* enemy) override;
 
+public:
     /// <summary>
-    /// ダメージ処理
+    /// ダメージを受ける
     /// </summary>
-    /// <param name="amount">減少させるHP量</param>
+    /// <param name="amount">受けるダメージ量</param>
     void Damage(int amount);
 
     /// <summary>
-    /// プレイヤー
+    /// 爆発処理を開始（HP0のとき）
     /// </summary>
     void Kill();
 
+public:
     /// <summary>
-    /// 死亡しているがどうか
+    /// 死亡状態か判定
     /// </summary>
     bool IsDead() const { return isDead_; }
 
     /// <summary>
-    /// 爆発のアニメーション
+    /// 爆発中か判定
     /// </summary>
     bool IsExploding() const { return isExploding_; }
 
     /// <summary>
-    /// 爆発のアニメーションが終了したかどうか
+    /// 爆発演出が終わったか判定
     /// </summary>
     bool IsExplosionFinished() const { return isExplosionFinished_; }
 
+public:
     /// <summary>
-    /// 入力の有効/無効を設定する
+    /// 入力を受け付けるか？
     /// </summary>
+    /// <param name="enabled">trueで入力可能にする</param>
     void SetInputEnabled(bool enabled) { inputEnabled_ = enabled; }
 
     /// <summary>
-    /// 被弾したかどうかを判定して、内部フラグをリセットする
+    /// 無敵状態か？
+    /// ロール回避中も無敵
+    /// </summary>
+    bool IsInvincible() const { return invincibleFrames_ > 0 || isRolling_; }
+
+    /// <summary>
+    /// 被弾イベントを一度だけ取得
     /// </summary>
     bool ConsumeTookDamageEvent() { bool f = tookDamageEvent_; tookDamageEvent_ = false; return f; }
 
     /// <summary>
-    /// 現在無敵状態かどうか返す
-    /// </summary>
-    bool IsInvincible() const { return invincibleFrames_ > 0; }
-
-    /// <summary>
-    /// 被弾演出の経過率を返す
+    /// 被弾エフェクトの進行具合（0～1）
     /// </summary>
     float HitFlashT() const { return hitFlashFrames_ > 0 ? (float)hitFlashFrames_ / (float)kHitFlashDuration_ : 0.0f; }
 
 private:
-
     /// <summary>
-    /// 左右ロール回避を開始する
+    /// EaseOutCubic（緩やかに減速する補間）
     /// </summary>
-    /// <param name="dir">ロール方向（-1: 左/ +1: 右）</param>
-    void StartRoll(float dir);
-
-    /// <summary>
-    /// 減速する補間関数
-    /// </summary>
-    /// <param name="t">経過率（0.0～1.0）</param>
-    /// <returns></returns>
     float EaseOutCubic(float t) const;
 
     /// <summary>
-    /// 爆発のアニメーションの更新
+    /// 爆発アニメーションの更新
     /// </summary>
     void UpdateExplosion();
 
+    /// <summary>
+    /// 通常移動と傾き処理
+    /// </summary>
+    void UpdateMoveAndBank_(float dt);
+
+    /// <summary>
+    /// ロール回転を開始（dir = +1: 右回避, -1: 左回避）
+    /// </summary>
+    void StartRoll(float dir);
+
+    /// <summary>
+    /// ロール中の更新処理
+    /// </summary>
+    bool UpdateRoll_();
+
 private:
-    // ===== 各種エンジン参照 =====
+    // ===== 参照 =====
     KamataEngine::Camera* camera_ = nullptr;  // カメラ
     KamataEngine::Model* model_ = nullptr;    // モデル
     KamataEngine::Input* input_ = nullptr;    // 入力
-    KamataEngine::Audio* audio_ = nullptr;    // サウンド
+    KamataEngine::Audio* audio_ = nullptr;    // オーディオ
 
-    // ===== 移動・ロール関連 =====
-    const float kMoveSpeed = 10.0f;         // 移動速度
-    const float kRotSpeed = 0.05f;          // 回転速度
-    bool inputEnabled_ = true;              // 入力受付
-    bool isRolling_ = false;                // ロール中フラグ
-    float rollFrame_ = 0.0f;                // ロールの経過フレーム
-    float rollDurationFrames_ = 24.0f;      // ロールにかけるフレーム数
-    float rollDir_ = 0.0f;                  // ロール方向（-1 or 1）
-    float rollStartRotZ_ = 0.0f;            // 開始時のz回転
+    // ===== 通常移動・傾き =====
+    const float kMoveSpeedXY_ = 10.0f;   // 画面内のXY移動速度
+    const float kBankMaxRadZ_ = 0.35f;   // 最大傾き角度
+    const float kPitchMaxRadX_ = 0.25f;  // 最大ピッチ角
+    const float kTiltLerp_ = 0.20f;      // 傾きの追従速度
+
+    float targetTiltZ_ = 0.0f;   // 入力から求めた目標z傾き
+    float targetTiltX_ = 0.0f;   // 入力から求めた目標x傾き
+    float currentTiltZ_ = 0.0f;  // 実際のz傾き
+    float currentTiltX_ = 0.0f;  // 実際のx傾き
+
+    float clampXMin_ = -8.0f, clampXMax_ = 8.0f;  // ｘ軸の画面端の制限
+    float clampYMin_ = -4.0f, clampYMax_ = 3.0f;  // ｙ軸の画面端の制限
+
+    // ===== ロール回避 =====
+    bool  isRolling_ = false;           // ロール中フラグ
+    float rollFrame_ = 0.0f;            // ロール経過フレーム
+    float rollDurationFrames_ = 24.0f;  // ロールにかかる時間（フレーム）
+    float rollDir_ = 0.0f;              // 回転方向（+1 = 右, -1 = 左）
+    float rollStartRotZ_ = 0.0f;        // 開始時のｚ角度
+
     KamataEngine::Vector3 rollStartPos_{};  // 開始位置
     KamataEngine::Vector3 rollEndPos_{};    // 終了位置
-    float rollMoveDistance_ = 5.0f;         // ロール中の移動距離
+    float rollMoveDistance_ = 7.0f;         // ロールで横にスライドする距離
 
-    // ===== 爆発・死亡関連 =====
-    int seExplosion_ = -1;              // 爆発SE ID
-    bool isDead_ = false;               // 死亡フラグ
-    bool isExploding_ = false;          // 爆発のアニメーション中
-    bool isExplosionFinished_ = false;  // 爆発のアニメーション完了
-    int explosionFrame_ = 0;            // 爆発経過フレーム
-    int explosionDurationFrames_ = 60;  // 爆発の継続フレーム
-    KamataEngine::Vector3 initialScale_ = { 1.0f, 1.0f, 1.0f };  // 初期スケール保持
+    // --- ダブルタップ検出（A/D）---
+    int  doubleTapFrameA_ = 0;            // Aキーの２回押し検出カウンタ
+    int  doubleTapFrameD_ = 0;            // Dキーの２回押し検出カウンタ
+    const int kDoubleTapThreshold_ = 18;  // 約0.3秒@60fps
 
-    // =====被弾・無敵関連 =====
-    bool tookDamageEvent_ = false;          // このフレームで被弾したか（GameSceneのシェイク起動用）
-    int  hitFlashFrames_ = 0;               // ヒット演出（モデル揺れ/スケール脈動）の残りフレーム
-    int  invincibleFrames_ = 0;             // 無敵残りフレーム（点滅制御）
-    const int kHitFlashDuration_ = 18;      // 0.3秒@60fps
-    const int kInvincibleDuration_ = 30;    // 0.5秒@60fps
-    float lastHitRollOffset_ = 0.0f;        // 全フレームのロールオフセット
+    // ===== 爆発・死亡 =====
+    int   seExplosion_ = -1;              // 爆発SE
+    bool  isDead_ = false;                // 死亡フラグ
+    bool  isExploding_ = false;           // 爆発中フラグ
+    bool  isExplosionFinished_ = false;   // 爆発終了フラグ
+    int   explosionFrame_ = 0;            // 爆発アニメ進行
+    int   explosionDurationFrames_ = 60;  // 爆発時間
+    KamataEngine::Vector3 initialScale_ = { 1.0f, 1.0f, 1.0f };  // 通常スケール
+
+    // ===== 被弾・無敵 =====
+    bool  inputEnabled_ = true;           // 入力有効フラグ
+    bool  tookDamageEvent_ = false;       // このフレームで被弾したか
+    int   hitFlashFrames_ = 0;            // 被弾中の演出フレーム
+    int   invincibleFrames_ = 0;          // 点滅用
+    const int kHitFlashDuration_ = 18;    // 0.3秒@60fps
+    const int kInvincibleDuration_ = 30;  // 無敵持続時間
+    float lastHitRollOffset_ = 0.0f;      // 前フレームで加えた被弾ゆれZオフセット
 };
