@@ -14,7 +14,7 @@
 #include "Application/Charactor/Player/Graph.h"
 #include "Application/Charactor/Player/Bullet.h"
 #include "Application/Charactor/Enemy/SeekerEnemy.h"
-
+#include "Application/Score/Score.h"
 
 #include "IScene.h"
 class FinishScene;
@@ -89,10 +89,11 @@ private:
     // ========== プレイヤー ==========
     Player* player_ = nullptr;
 
-    // 
-    std::unique_ptr<Graph>hpGraph_;
+    // HPバー
+    Graph* graph_ = nullptr;
+    float timer_ = 1.0f;
 
-    // 
+    // 攻撃
     std::vector<std::unique_ptr<Bullet>> bullets_;
     int fireCooldownFrames_ = 0;      // 発射クールダウン
     const int kFireCooldownMax_ = 9;  // 約0.15秒@60fps
@@ -101,6 +102,9 @@ private:
     std::vector<std::unique_ptr<CharactorBase>> enemies_;
     float enemySpawnTimer_ = 0.0f;
     const float kEnemySpawnInterval_ = 2.0f; // 敵出現間隔（秒）
+
+    // ========== スコア ==========
+    Score* score_ = nullptr;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;

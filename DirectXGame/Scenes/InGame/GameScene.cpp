@@ -41,10 +41,10 @@ void GameScene::Initialize() {
     player_->Initialize(&camera_);
     player_->SetParent(&railCamera_->GetWorldTransform());
 
-    hpGraph_ = std::make_unique<Graph>();
-    hpGraph_->Initialize((TextureManager::Load("./Resources/white1x1.png")));
-    hpGraph_->SetLayout({ 20.0f, 20.0f }, { 240.0f, 12.0f });
-    hpGraph_->SetColors({ 0.15f,0.15f,0.15f,0.80f }, { 0.20f,0.85f,0.35f,1.00f });
+    /// 2Dグラフ ///
+    graph_ = new Graph();
+    graph_->Initialize();
+    timer_ = 1.0f;
 
     bullets_.clear();
     fireCooldownFrames_ = 0;
@@ -72,6 +72,10 @@ void GameScene::Initialize() {
     // ========== 敵スポーン用 ==========
     enemies_.clear();
     enemySpawnTimer_ = 0.0f;
+
+    // ========== スコア ==========
+    score_ = new Score();
+    score_->Initialize();
 
     // 開始
     countDown_.Start();
@@ -152,16 +156,6 @@ void GameScene::Update() {
         // 弾と敵の当たり判定
         ResolveBulletEnemyCollisions();
 
-        if (player_ && hpGraph_) {
-            const int hp = player_->GetHP();
-            const int maxHP = (std::max)(1, player_->GetMaxHP()); // NOMINMAX対策
-
-            const float rate = static_cast<float>(hp) / static_cast<float>(maxHP);
-
-            hpGraph_->SetValue(rate);
-            hpGraph_->Update();
-        }
-
         // 死亡した敵を消す
         enemies_.erase(
             std::remove_if(enemies_.begin(), enemies_.end(),
@@ -170,7 +164,15 @@ void GameScene::Update() {
                     return false;
                 }),
             enemies_.end());
+
+        /// スコア ///
+        score_->Update();
     }
+
+    /// 2Dグラフ ///
+    float hpRate = static_cast<float>(player_->GetHP()) / 100.0f;
+    graph_->SetValue(hpRate);
+    graph_->Update();
 
     // ========== 弾の更新 & 後始末 ==========
     for (auto& b : bullets_) { if (b) { b->Update(); } }
@@ -254,7 +256,11 @@ void GameScene::Draw() {
 
     countDown_.Draw();
 
-    hpGraph_->Draw();
+    /// 2Dグラフ ///
+    graph_->Draw();
+
+    /// スコア ///
+    score_->Draw();
 
     // スプライト描画後処理
     Sprite::PostDraw();

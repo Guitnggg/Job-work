@@ -172,6 +172,7 @@
     <ClCompile Include="Scenes\Title\TitleScene.cpp" />
     <ClCompile Include="Application\MyMath\WorldTransformEx.cpp" />
     <ClCompile Include="Application\Charactor\Enemy\SeekerEnemy.cpp" />
+    <ClCompile Include="Application\Score\Score.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\TerrainPS.hlsl">
@@ -289,6 +290,7 @@
     <ClInclude Include="Application\Skydome\Skydome.h" />
     <ClInclude Include="Scenes\Title\TitleScene.h" />
     <ClInclude Include="Application\Charactor\Enemy\SeekerEnemy.h" />
+    <ClInclude Include="Application\Score\Score.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
