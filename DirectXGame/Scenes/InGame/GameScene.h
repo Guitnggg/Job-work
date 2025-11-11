@@ -12,6 +12,7 @@
 #include "Application/CountDown/CountDown.h"
 #include "Application/Charactor/Player/Player.h"
 #include "Application/Charactor/Player/Graph.h"
+#include "Application/Charactor/Player/Bullet.h"
 #include "Application/Charactor/Enemy/SeekerEnemy.h"
 
 
@@ -62,6 +63,7 @@ private:
     /// 当たり判定
     /// </summary>
     void ResolvePlayerEnemyCollisions();
+    void ResolveBulletEnemyCollisions();
 
 private:
 
@@ -86,7 +88,14 @@ private:
 
     // ========== プレイヤー ==========
     Player* player_ = nullptr;
+
+    // 
     std::unique_ptr<Graph>hpGraph_;
+
+    // 
+    std::vector<std::unique_ptr<Bullet>> bullets_;
+    int fireCooldownFrames_ = 0;      // 発射クールダウン
+    const int kFireCooldownMax_ = 9;  // 約0.15秒@60fps
 
     // ========== 敵 ==========
     std::vector<std::unique_ptr<CharactorBase>> enemies_;

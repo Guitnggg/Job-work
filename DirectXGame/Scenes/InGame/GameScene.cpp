@@ -46,6 +46,9 @@ void GameScene::Initialize() {
     hpGraph_->SetLayout({ 20.0f, 20.0f }, { 240.0f, 12.0f });
     hpGraph_->SetColors({ 0.15f,0.15f,0.15f,0.80f }, { 0.20f,0.85f,0.35f,1.00f });
 
+    bullets_.clear();
+    fireCooldownFrames_ = 0;
+
     // ========== 3カウント用 ==========
     countDown_.InitializeFromPaths(
         "./Resources/InGame/3.png",
@@ -75,17 +78,33 @@ void GameScene::Initialize() {
 }
 
 void GameScene::Update() {
+    // ========== 3カウント制御 ==========
+    const float dt = 1.0f / 60.0f;
+    countDown_.Update(dt);
+
     // ========== 天球更新 ==========
     skydome_->Update();
 
     // ========== プレイヤー更新 ==========
     if (!countDown_.IsInputLocked()) {
         player_->Update();
-    }
+    } 
 
-    // ========== 3カウント制御 ==========
-    const float dt = 1.0f / 60.0f;
-    countDown_.Update(dt);
+    // ========== 射撃 ==========
+    if (!countDown_.IsInputLocked()) {
+        if (fireCooldownFrames_ > 0) { --fireCooldownFrames_; }
+
+        if (input_->PushKey(DIK_SPACE) && fireCooldownFrames_ == 0) {
+            fireCooldownFrames_ = kFireCooldownMax_;
+            auto b = std::make_unique<Bullet>();
+            b->Initialize();
+            // プレイヤーのワールド位置を取得して弾の初期位置に使う
+            // （GetWorldTranslation は CharactorBase で提供）
+            const Vector3 muzzle = player_->GetWorldTranslation();
+            b->FireFrom(muzzle, { 0.0f, 0.0f, 1.0f }); // +Z方向へ
+            bullets_.push_back(std::move(b));
+        }
+    }
 
     // ========== 敵スポーン制御 ==========
     if (!countDown_.IsInputLocked()) {
@@ -126,6 +145,8 @@ void GameScene::Update() {
         // プレイヤーとの当たり判定
         ResolvePlayerEnemyCollisions();
 
+        ResolveBulletEnemyCollisions();
+
         if (player_ && hpGraph_) {
             const int hp = player_->GetHP();
             const int maxHP = (std::max)(1, player_->GetMaxHP()); // NOMINMAX対策
@@ -145,6 +166,13 @@ void GameScene::Update() {
                 }),
             enemies_.end());
     }
+
+    // ========== 弾の更新 & 後始末 ==========
+    for (auto& b : bullets_) { if (b) { b->Update(); } }
+    bullets_.erase(
+        std::remove_if(bullets_.begin(), bullets_.end(),
+            [](const std::unique_ptr<Bullet>& b) { return !b || b->IsDead(); }),
+        bullets_.end());
 
     // ========== レールカメラ更新 ==========
     if (isRailCameraActive_) {
@@ -200,6 +228,8 @@ void GameScene::Draw() {
         enemy->Draw(&camera_);
     }
 
+    for (auto& b : bullets_) { b->Draw(&camera_); }
+
     // プレイヤー描画
     if (!countDown_.IsInputLocked()) {
         player_->Draw(&camera_);
@@ -254,6 +284,44 @@ void GameScene::ResolvePlayerEnemyCollisions() {
         if (dist2 <= r * r) {
             player_->OnCollision(e.get());
             e->OnCollision(player_);
+        }
+    }
+}
+
+void GameScene::ResolveBulletEnemyCollisions() {
+    if (countDown_.IsInputLocked()) { return; }
+    // 弾×敵：単純な球同士判定
+    for (auto& b : bullets_) {
+        if (!b || b->IsDead()) { continue; }
+        Collider* bc = b->GetCollider().get();
+
+        if (!bc) { continue; }
+        const auto bp = bc->GetTranslate();
+        const float br = bc->GetRadius();
+
+        for (auto& e : enemies_) {
+            if (!e) { continue; }
+            // 既に死んだ敵は飛ばす
+            if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
+                if (s->IsDead()) { continue; }
+            }
+            Collider* ec = e->GetCollider().get();
+            if (!ec) { continue; }
+            const auto ep = ec->GetTranslate();
+            const float er = ec->GetRadius();
+
+            const float dx = bp.x - ep.x, dy = bp.y - ep.y, dz = bp.z - ep.z;
+            const float dist2 = dx * dx + dy * dy + dz * dz;
+            const float rr = br + er;
+
+            if (dist2 <= rr * rr) {
+                // 相互通知：敵は死に、弾は消える
+                e->OnCollision(b.get());
+                b->OnCollision(e.get());
+
+                // 1発で1体想定なので次の弾へ
+                break;
+            }
         }
     }
 }
