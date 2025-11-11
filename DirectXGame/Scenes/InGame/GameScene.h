@@ -51,7 +51,7 @@ public:
 
     /// <summary>
     /// シーン変遷
-    /// </summary>    
+    /// </summary>
     bool IsEnd() const override { return isEnd_; }
     IScene* NextScene() const override;
 
@@ -100,7 +100,7 @@ private:
     // ========== 敵 ==========
     std::vector<std::unique_ptr<CharactorBase>> enemies_;
     float enemySpawnTimer_ = 0.0f;
-    const float kEnemySpawnInterval_ = 5.0f; // 敵出現間隔（秒）
+    const float kEnemySpawnInterval_ = 2.0f; // 敵出現間隔（秒）
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;
