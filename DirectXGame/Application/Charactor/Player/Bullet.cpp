@@ -25,7 +25,7 @@ void Bullet::Initialize() {
 void Bullet::FireFrom(const Vector3& worldPos, const Vector3& dir) {
     worldTransform_.translation_ = worldPos;
     dir_ = dir;
-    // Z方向へ向ける簡易回転（必要なら厳密に）
+    startPos_ = worldPos; // 発射時の位置を記録
     worldTransform_.rotation_ = { 0.0f, 0.0f, 0.0f };
     worldTransform_.UpdateMatrix();
 }
@@ -49,9 +49,17 @@ void Bullet::Update() {
         collider_->Update();
     }
 
-    // 画面外や寿命で消す（ざっくり）
+    // 発射位置からの距離を計算して一定距離を超えたら消す
     const Vector3 p = GetWorldTranslation();
-    if (t_ >= lifeTimeSec_ || p.z > 220.0f || p.z < -40.0f || std::abs(p.x) > 220.0f || std::abs(p.y) > 220.0f) {
+    Vector3 diff = { p.x - startPos_.x, p.y - startPos_.y, p.z - startPos_.z };
+    float distanceSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+
+    if (distanceSq > maxDistance_ * maxDistance_) {
+        isDead_ = true;
+    }
+
+    // 寿命でも消す（保険）
+    if (t_ >= lifeTimeSec_) {
         isDead_ = true;
     }
 }

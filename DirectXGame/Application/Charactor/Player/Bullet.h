@@ -34,4 +34,7 @@ private:
     float lifeTimeSec_ = 3.0f;            // 弾の寿命
     float t_ = 0.0f;                      // 経過時間
     bool isDead_ = false;
+
+    KamataEngine::Vector3 startPos_ = { 0,0,0 };
+    float maxDistance_ = 200.0f; // Playerからの最大距離
 };

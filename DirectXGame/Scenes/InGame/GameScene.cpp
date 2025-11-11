@@ -123,7 +123,11 @@ void GameScene::Update() {
             std::uniform_real_distribution<float> rx(-8.0f, 8.0f);
             std::uniform_real_distribution<float> ry(-3.0f, 3.0f);
 
-            s->SetInitialPosition({ rx(rng),ry(rng),100.0f });
+            const Vector3 playerPos = player_->GetWorldTranslation();  // 毎回取得
+            const float aheadZ = 120.0f;                               // プレイヤー前方にどれだけ離して出すか
+            s->SetInitialPosition({ playerPos.x + rx(rng),
+                                    playerPos.y + ry(rng),
+                                    playerPos.z + aheadZ });
             s->SetSpeed(0.8f);
             s->SetTurnRate(0.12f);
             s->SetColliderRadius(1.2f);
@@ -145,6 +149,7 @@ void GameScene::Update() {
         // プレイヤーとの当たり判定
         ResolvePlayerEnemyCollisions();
 
+        // 弾と敵の当たり判定
         ResolveBulletEnemyCollisions();
 
         if (player_ && hpGraph_) {

@@ -110,9 +110,11 @@ void SeekerEnemy::OnCollision(CharactorBase* /*enemy*/){
 
 void SeekerEnemy::ClampDeathByBounds_() {
     const Vector3 p = GetWorldTranslation();
-    if (p.z < -40.0f || p.z > 220.0f || std::abs(p.x) > 220.0f || std::abs(p.y) > 220.0f) {
+
+    if (p.z < -40.0f || std::abs(p.x) > 220.0f || std::abs(p.y) > 220.0f) {
         isDead_ = true;
     }
+
     if (timeSec_ >= lifeTimeSec_) {
         isDead_ = true;
     }
