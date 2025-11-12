@@ -9,6 +9,7 @@ IntroductionScene::IntroductionScene() {}
 
 IntroductionScene::~IntroductionScene() {
     delete ReturnTitleSprite_;
+    delete IntroSprite_;
     delete asteroidModel_;
     for (auto asteroid : asteroids_) {
         delete asteroid;
@@ -24,6 +25,9 @@ void IntroductionScene::Initialize() {
     // 各種テクスチャ
     ReturnTitleTextureHandle_ = TextureManager::Load("./Resources/introduction/Esc-export.png");
     ReturnTitleSprite_ = Sprite::Create(ReturnTitleTextureHandle_, { 20.0f,20.0f });
+
+    IntroTextureHandle_ = TextureManager::Load("./Resources/Introduction/setumei.png");
+    IntroSprite_ = Sprite::Create(IntroTextureHandle_, { 0.0f,0.0f });
 
     // 各種サウンド
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
@@ -142,6 +146,8 @@ void IntroductionScene::Draw() {
     /// </summary>
 
     ReturnTitleSprite_->Draw();
+
+    IntroSprite_->Draw();
 
     // スプライト描画後処理
     Sprite::PostDraw();

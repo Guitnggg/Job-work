@@ -62,6 +62,9 @@ private:
     uint32_t ReturnTitleTextureHandle_ = 0;
     KamataEngine::Sprite* ReturnTitleSprite_ = nullptr;
 
+    uint32_t IntroTextureHandle_ = 0;
+    KamataEngine::Sprite* IntroSprite_ = nullptr;
+
     // 各種サウンド
     uint32_t changeSEHandle_ = 0;  // シーン変遷SE
     KamataEngine::Audio* changeSE_ = nullptr;
