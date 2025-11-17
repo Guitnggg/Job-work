@@ -17,6 +17,7 @@
 #include "EnemyManager.h"
 #include "BulletManager.h"
 #include "CollisionManager.h"
+#include "UIManager.h"
 
 #include "IScene.h"
 class FinishScene;
@@ -58,15 +59,12 @@ private:
     // ========== プレイヤー ==========
     Player* player_ = nullptr;
 
-    // HPバー
-    Graph* graph_ = nullptr;
-
     // ========== 弾・敵管理 ==========
     EnemyManager enemyManager_;
     BulletManager bulletManager_;
 
-    // ========== スコア ==========
-    Score* score_ = nullptr;
+    // ========== UI（HPバー／スコアなど） ==========
+    UIManager uiManager_;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;

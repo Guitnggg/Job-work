@@ -9,9 +9,7 @@ GameScene::~GameScene() {
     delete railCamera_;
     delete skydome_;
     delete player_;
-    delete graph_;
-    delete score_;
-
+   
     delete worldTransform_;
     delete model_;
 }
@@ -41,10 +39,6 @@ void GameScene::Initialize() {
     player_->Initialize(&camera_);
     player_->SetParent(&railCamera_->GetWorldTransform());
 
-    // 2Dグラフ
-    graph_ = new Graph();
-    graph_->Initialize();
-
     // カウントダウン
     countDown_.InitializeFromPaths(
         "./Resources/InGame/3.png",
@@ -62,14 +56,13 @@ void GameScene::Initialize() {
         audio->LoadWave("./Resources/SE/Start.wav")
     );
 
+    // UI（HPバー／スコア）
+    uiManager_.Initialize(player_);
+
     // 弾・敵
     bulletManager_.Initialize();
     enemyManager_.Initialize();
-    enemyManager_.LoadEnemySCV("Resources/levels/stage1.json");
-
-    // スコア
-    score_ = new Score();
-    score_->Initialize();
+    enemyManager_.LoadEnemySCV("Resources/levels/stage1.json");   
 
     // 開始
     countDown_.Start();
@@ -106,17 +99,31 @@ void GameScene::Update() {
         CollisionManager::ResolveBulletEnemyCollisions(
             bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
 
+        // ======= 死亡した敵のスコア加算 =======
+        {
+            auto& enemies = enemyManager_.GetEnemies();
+
+            int deadCount = 0;
+            for (auto& e : enemies) {
+                if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
+                    if (s->IsDead()) {
+                        deadCount++;
+                    }
+                }
+            }
+
+            // 敵1体につき 100 点（数値は好みで）
+            if (deadCount > 0) {
+                uiManager_.GetScore()->Add(deadCount * 100);
+            }
+        }
+
         // 死んだ敵の削除
         enemyManager_.RemoveDeadEnemies();
-
-        // スコア
-        score_->Update();
     }
 
-    // HPバー
-    float hpRate = static_cast<float>(player_->GetHP()) / 100.0f;
-    graph_->SetValue(hpRate);
-    graph_->Update();
+    // UI更新（HPバー、スコア）
+    uiManager_.Update();
 
     // レールカメラ更新
     if (isRailCameraActive_) {
@@ -170,8 +177,7 @@ void GameScene::Draw() {
     Sprite::PreDraw(commandList);
 
     countDown_.Draw();
-    graph_->Draw();
-    score_->Draw();
+    uiManager_.Draw();
 
     Sprite::PostDraw();
 #pragma endregion

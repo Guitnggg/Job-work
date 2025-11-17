@@ -176,6 +176,7 @@
     <ClCompile Include="Application\MyMath\WorldTransformEx.cpp" />
     <ClCompile Include="Application\Charactor\Enemy\SeekerEnemy.cpp" />
     <ClCompile Include="Application\Score\Score.cpp" />
+    <ClCompile Include="UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\TerrainPS.hlsl">
@@ -297,6 +298,7 @@
     <ClInclude Include="Scenes\Title\TitleScene.h" />
     <ClInclude Include="Application\Charactor\Enemy\SeekerEnemy.h" />
     <ClInclude Include="Application\Score\Score.h" />
+    <ClInclude Include="UIManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

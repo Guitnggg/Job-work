@@ -27,6 +27,18 @@ public:
     /// </summary>
     void Draw();
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="value"></param>
+    void Add(int value) { score_ += value; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    int GetScore()const { return score_; }
+
 private:
     uint32_t textureHandle_ = 0;
     KamataEngine::Vector2 size_ = { 32.0f, 64.0f };  // 1文字のサイズ

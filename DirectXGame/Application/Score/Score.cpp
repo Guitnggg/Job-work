@@ -20,10 +20,12 @@ void Score::Initialize() {
         sprite_[i] = Sprite::Create(textureHandle_, { startX + size_.x * i, startY });
         sprite_[i]->SetSize(size_);
     }
+
+    score_ = 0;
 }
 
 void Score::Update() {
-    score_++;  // 増やしていく
+    //score_++;  // 増やしていく
 
     int32_t number = score_;  // 表示対象のスコア値
     int32_t digit = 10000;    // 一番上の桁からスタートする
