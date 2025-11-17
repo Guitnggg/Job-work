@@ -160,6 +160,9 @@
     <ClCompile Include="Application\Charactor\Collider.cpp" />
     <ClCompile Include="Application\Charactor\Player\Graph.cpp" />
     <ClCompile Include="Application\Charactor\Player\Bullet.cpp" />
+    <ClCompile Include="BulletManager.cpp" />
+    <ClCompile Include="CollisionManager.cpp" />
+    <ClCompile Include="EnemyManager.cpp" />
     <ClCompile Include="Scenes\Finish\FinishScene.cpp" />
     <ClCompile Include="Scenes\InGame\GameScene.cpp" />
     <ClCompile Include="Scenes\Introduction\IntroductionScene.cpp" />
@@ -278,6 +281,9 @@
     <ClInclude Include="Application\Charactor\Collider.h" />
     <ClInclude Include="Application\Charactor\Player\Graph.h" />
     <ClInclude Include="Application\Charactor\Player\Bullet.h" />
+    <ClInclude Include="BulletManager.h" />
+    <ClInclude Include="CollisionManager.h" />
+    <ClInclude Include="EnemyManager.h" />
     <ClInclude Include="Scenes\Finish\FinishScene.h" />
     <ClInclude Include="Scenes\InGame\GameScene.h" />
     <ClInclude Include="Scenes\Introduction\IntroductionScene.h" />
