@@ -65,6 +65,25 @@ private:
     void ResolvePlayerEnemyCollisions();
     void ResolveBulletEnemyCollisions();
 
+
+    // == = SCV JSON敵データ == =
+        struct EnemySpawnData {
+        float time = 0.0f;
+        KamataEngine::Vector3 pos{ 0,0,0 };
+        float speed = 0.2f;
+        float turnRate = 0.15f;
+        int   hp = 1;
+        float radius = 1.0f;
+        float lifeTime = 30.0f;
+    };
+
+    // SCV関連
+    void LoadEnemySCV(const std::string& path);
+    void SpawnEnemiesBySCV();
+
+    // 敵出現リスト
+    std::vector<EnemySpawnData> enemySpawnList_;
+
 private:
 
     // ========== 基本 ==========

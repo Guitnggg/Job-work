@@ -37,7 +37,7 @@ public:
     /// 
     /// </summary>
     /// <returns></returns>
-    bool IsDead() { return isDead_; }
+    bool IsDead()const override { return isDead_; }
 
 public:
 
