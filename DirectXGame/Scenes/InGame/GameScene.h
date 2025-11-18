@@ -21,6 +21,13 @@
 
 #include "Scenes/IScene.h"
 class FinishScene;
+class ClearScene;
+
+enum class GameResult {
+    Clear,
+    Fail,
+    None
+};
 
 class GameScene : public IScene {
 public:
@@ -34,6 +41,7 @@ public:
 public:
     bool IsEnd() const override { return isEnd_; }
     IScene* NextScene() const override;
+
     SceneName GetSceneName() const override { return SceneName::InGame; }
 
 private:
@@ -68,4 +76,5 @@ private:
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;
+    GameResult result_ = GameResult::None;
 };

@@ -1,5 +1,7 @@
 #include "GameScene.h"
-#include "FinishScene.h"
+
+#include "Scenes/Finish/FinishScene.h"
+#include "Scenes/Clear/ClearScene.h"
 
 using namespace KamataEngine;
 
@@ -68,6 +70,7 @@ void GameScene::Initialize() {
     countDown_.Start();
 
     isEnd_ = false;
+    result_ = GameResult::None;
 }
 
 void GameScene::Update() {
@@ -137,9 +140,18 @@ void GameScene::Update() {
         camera_.UpdateMatrix();
     }
 
-    // 爆発演出が終わったらシーン終了
-    if (player_->IsExplosionFinished()) {
-        isEnd_ = true;
+    // ===== クリア/失敗 判定 =====
+    if (result_ == GameResult::None) {
+        // 1. 失敗判定（プレイヤー爆発が終わった）
+        if (player_->IsExplosionFinished()) {
+            result_ = GameResult::Fail;
+            isEnd_ = true;
+        }
+        // 2. クリア判定（スコア1500以上）
+        else if (uiManager_.GetScore()->GetScore() >= 1500) {  // ★ Score::GetScore 使用 :contentReference[oaicite:3]{index=3}
+            result_ = GameResult::Clear;
+            isEnd_ = true;
+        }
     }
 }
 
@@ -148,7 +160,9 @@ void GameScene::Draw() {
 
 #pragma region 背景スプライト描画
     Sprite::PreDraw(commandList);
+
     // 背景スプライトの描画があればここに
+
     Sprite::PostDraw();
     dxCommon_->ClearDepthBuffer();
 #pragma endregion 
@@ -184,5 +198,11 @@ void GameScene::Draw() {
 }
 
 IScene* GameScene::NextScene() const {
-    return new FinishScene();
+    // 結果に応じて遷移先を切り替える
+    if (result_ == GameResult::Clear) {
+        return new ClearScene();   // クリア時
+    }
+    else {
+        return new FinishScene();  // 失敗時（Fail or None）
+    }
 }

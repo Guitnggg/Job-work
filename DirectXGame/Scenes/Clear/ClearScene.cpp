@@ -88,12 +88,6 @@ void ClearScene::Draw(){
 #pragma region 3Dオブジェクト描画
     Model::PreDraw();
 
-    Model::PostDraw();
-#pragma endregion
-
-#pragma region 前景スプライト描画
-    Sprite::PreDraw(commandList);
-
     // 小惑星描画
     for (auto asteroid : asteroids_) {
         asteroid->Draw(camera_);
@@ -101,6 +95,12 @@ void ClearScene::Draw(){
 
     // 天球描画
     skydome_->Draw();
+
+    Model::PostDraw();
+#pragma endregion
+
+#pragma region 前景スプライト描画
+    Sprite::PreDraw(commandList);
 
     Sprite::PostDraw();
 #pragma endregion
