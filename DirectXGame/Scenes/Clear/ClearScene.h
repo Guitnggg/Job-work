@@ -3,17 +3,27 @@
 #include <KamataEngine.h>
 #include <vector>
 #include <random>
+#include <memory>
+#include <algorithm>
 
 #include "Application/Asteroid/Asteroid.h"
-#include "Application//Skydome/Skydome.h"
+#include "Application/Skydome/Skydome.h"
+#include "Application/Score/Score.h"
 
 #include "Scenes/IScene.h"
 class TitleScene;
 
+enum class ClearPhase {
+    CameraMove,
+    TitlePop,
+    ResultCount,
+    WaitInput
+};
+
 class ClearScene :public IScene {
 public:
 
-    ClearScene();
+    ClearScene(int finalScore);
 
     ~ClearScene();
 
@@ -41,6 +51,9 @@ private:
     uint32_t changeSEHandle_ = 0;  // シーン変遷SE
     KamataEngine::Audio* changeSE_ = nullptr;
 
+    uint32_t pointSEHandle_ = 0;
+    KamataEngine::Audio* pointSE_ = nullptr;
+
     // 天球
     Skydome* skydome_ = nullptr;
 
@@ -57,6 +70,19 @@ private:
     // ランダム生成器
     std::mt19937 mt_{ std::random_device{}() };
 
+    // ★ 追加：クリア演出用
+    ClearPhase phase_ = ClearPhase::CameraMove;
+    float phaseTimer_ = 0.0f;
+
+    // ★ 追加：最終スコアと表示用スコア
+    int finalScore_ = 0;
+    int displayedScore_ = 0;
+    Score scoreUI_;
+
+    // ★ 追加：GAME CLEAR!! テキスト
+    KamataEngine::Sprite* clearTextSprite_ = nullptr;
+    KamataEngine::Vector2 clearTextBaseSize_ = { 512.0f*2, 128.0f*2 };
+
     // 終了フラグ
     bool isEnd_ = false;
 
@@ -68,4 +94,3 @@ private:
     // 乱数
     float Rand(float min, float max);
 };
-

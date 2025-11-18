@@ -39,6 +39,13 @@ public:
     /// <returns></returns>
     int GetScore()const { return score_; }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    void SetPosition(float x, float y);
+
 private:
     uint32_t textureHandle_ = 0;
     KamataEngine::Vector2 size_ = { 32.0f, 64.0f };  // 1文字のサイズ

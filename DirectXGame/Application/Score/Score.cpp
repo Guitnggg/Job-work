@@ -45,3 +45,12 @@ void Score::Draw() {
         sprite_[i]->Draw();
     }
 }
+
+void Score::SetPosition(float x, float y){
+    startX = x;
+    startY = y;
+
+    for (int i = 0; i < kDigitCount; ++i) {
+        sprite_[i]->SetPosition({ startX + size_.x * i,startY });
+    }
+}

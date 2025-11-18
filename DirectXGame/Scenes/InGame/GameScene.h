@@ -73,6 +73,7 @@ private:
 
     // ========== UI（HPバー／スコアなど） ==========
     UIManager uiManager_;
+    int clearScore_ = 0;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;

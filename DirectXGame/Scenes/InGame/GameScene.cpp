@@ -71,6 +71,7 @@ void GameScene::Initialize() {
 
     isEnd_ = false;
     result_ = GameResult::None;
+    clearScore_ = 0;
 }
 
 void GameScene::Update() {
@@ -147,9 +148,11 @@ void GameScene::Update() {
             result_ = GameResult::Fail;
             isEnd_ = true;
         }
+
         // 2. クリア判定（スコア1500以上）
-        else if (uiManager_.GetScore()->GetScore() >= 1500) {  // ★ Score::GetScore 使用 :contentReference[oaicite:3]{index=3}
+        else if (uiManager_.GetScore()->GetScore() >= 1500) {
             result_ = GameResult::Clear;
+            clearScore_ = uiManager_.GetScore()->GetScore();
             isEnd_ = true;
         }
     }
@@ -200,7 +203,7 @@ void GameScene::Draw() {
 IScene* GameScene::NextScene() const {
     // 結果に応じて遷移先を切り替える
     if (result_ == GameResult::Clear) {
-        return new ClearScene();   // クリア時
+        return new ClearScene(clearScore_);  // クリア時
     }
     else {
         return new FinishScene();  // 失敗時（Fail or None）
