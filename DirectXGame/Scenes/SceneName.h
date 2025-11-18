@@ -5,5 +5,6 @@ enum class SceneName {
     Introduction,
     InGame,
     Finish,
+    Clear,
     None,  // 変遷なし、終了
 };

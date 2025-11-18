@@ -19,7 +19,7 @@
 #include "CollisionManager.h"
 #include "UIManager.h"
 
-#include "IScene.h"
+#include "Scenes/IScene.h"
 class FinishScene;
 
 class GameScene : public IScene {

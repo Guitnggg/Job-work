@@ -161,6 +161,7 @@
     <ClCompile Include="Application\Charactor\Player\Graph.cpp" />
     <ClCompile Include="Application\Charactor\Player\Bullet.cpp" />
     <ClCompile Include="BulletManager.cpp" />
+    <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
     <ClCompile Include="CollisionManager.cpp" />
     <ClCompile Include="EnemyManager.cpp" />
     <ClCompile Include="Scenes\Finish\FinishScene.cpp" />
@@ -283,6 +284,7 @@
     <ClInclude Include="Application\Charactor\Player\Graph.h" />
     <ClInclude Include="Application\Charactor\Player\Bullet.h" />
     <ClInclude Include="BulletManager.h" />
+    <ClInclude Include="Scenes\Clear\ClearScene.h" />
     <ClInclude Include="CollisionManager.h" />
     <ClInclude Include="EnemyManager.h" />
     <ClInclude Include="Scenes\Finish\FinishScene.h" />
