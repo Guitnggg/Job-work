@@ -150,7 +150,7 @@ void GameScene::Update() {
         }
 
         // 2. クリア判定（スコア1500以上）
-        else if (uiManager_.GetScore()->GetScore() >= 1500) {
+        else if (uiManager_.GetScore()->GetScore() >= 500) {
             result_ = GameResult::Clear;
             clearScore_ = uiManager_.GetScore()->GetScore();
             isEnd_ = true;
