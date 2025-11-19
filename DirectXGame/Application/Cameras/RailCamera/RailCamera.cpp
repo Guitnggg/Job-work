@@ -1,6 +1,6 @@
 #include "RailCamera.h"
 
-#include "MyMath.h"
+#include "Application/Utility/MyMath/MyMath.h"
 
 using namespace KamataEngine;
 
