@@ -75,6 +75,10 @@ private:
     UIManager uiManager_;
     int clearScore_ = 0;
 
+    // ========== クリア後演出用 ==========
+    bool  isClearAnimating_ = false;
+    float clearAnimTimer_ = 0.0f;
+
     // ========== シーン制御 ==========
     bool isEnd_ = false;
     GameResult result_ = GameResult::None;

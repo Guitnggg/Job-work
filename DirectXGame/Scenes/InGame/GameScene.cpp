@@ -72,6 +72,9 @@ void GameScene::Initialize() {
     isEnd_ = false;
     result_ = GameResult::None;
     clearScore_ = 0;
+
+    isClearAnimating_ = false;
+    clearAnimTimer_ = 0.0f;
 }
 
 void GameScene::Update() {
@@ -85,14 +88,18 @@ void GameScene::Update() {
 
     // プレイヤー
     if (!countDown_.IsInputLocked()) {
-        player_->Update();
+        if (!(result_ == GameResult::Clear && isClearAnimating_)) {
+            player_->Update();
+        }        
     }
 
     // 弾（入力＋更新）
-    bulletManager_.Update(input_, player_, countDown_);
+    if (result_ == GameResult::None) {
+        bulletManager_.Update(input_, player_, countDown_);
+    }
 
     // 敵スポーン & 更新
-    if (!countDown_.IsInputLocked()) {
+    if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
         const Vector3 playerPos = player_->GetWorldTranslation();
         enemyManager_.Update(dt, playerPos);
 
@@ -148,12 +155,49 @@ void GameScene::Update() {
             result_ = GameResult::Fail;
             isEnd_ = true;
         }
-
-        // 2. クリア判定（スコア1500以上）
+        // 2. クリア判定（スコア条件）
         else if (uiManager_.GetScore()->GetScore() >= 500) {
             result_ = GameResult::Clear;
             clearScore_ = uiManager_.GetScore()->GetScore();
+
+            // ★ ここでクリア演出スタート
+            isClearAnimating_ = true;
+            clearAnimTimer_ = 0.0f;
+            // ※ isEnd_ はまだ立てない
+        }
+    }
+
+    // ===== クリア演出（自機ブースト） =====
+    if (result_ == GameResult::Clear && isClearAnimating_) {
+        clearAnimTimer_ += dt;
+
+        // ★ 自機のワールド変換を直接操作
+        auto& wt = player_->GetWorldTransform();
+
+        // 前方に加速（値はあとで調整してOK）
+        float boostSpeed = 1.0f;     // 1秒で50ユニット進むイメージ
+        wt.translation_.z += boostSpeed * dt;
+
+        // ちょっと上に上がる＆少し機体を傾けると「飛び去る感」が出る
+        wt.translation_.y += 5.0f * dt;
+        wt.rotation_.x -= 0.5f * dt;  // 手前に傾ける or お好みで
+
+        // 一定時間後に縮小していく
+        if (clearAnimTimer_ > 0.5f) {
+            float shrinkT = clearAnimTimer_ - 0.5f; // 0.0 からスタート
+            float scale = 1.0f - shrinkT * 1.0f;    // 1秒で0まで
+            if (scale < 0.0f) {
+                scale = 0.0f;
+            }
+            wt.scale_ = { scale, scale, scale };
+        }
+
+        wt.UpdateMatrix();
+
+        // 1.5秒くらい経ったらシーン終了
+        if (clearAnimTimer_ >= 2.0f) {
             isEnd_ = true;
+            isClearAnimating_ = false;
         }
     }
 }
