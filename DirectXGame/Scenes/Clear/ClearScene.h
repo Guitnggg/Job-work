@@ -5,6 +5,7 @@
 #include <random>
 #include <memory>
 #include <algorithm>
+#include <cmath>
 
 #include "Application/Asteroid/Asteroid.h"
 #include "Application/Skydome/Skydome.h"
@@ -82,6 +83,9 @@ private:
     // ★ 追加：GAME CLEAR!! テキスト
     KamataEngine::Sprite* clearTextSprite_ = nullptr;
     KamataEngine::Vector2 clearTextBaseSize_ = { 512.0f*2, 128.0f*2 };
+
+    KamataEngine::Sprite* returnTextSprite_ = nullptr;
+    KamataEngine::Vector2 returnTextBaseSize_ = { 1024.0f,128.8f };
 
     // 終了フラグ
     bool isEnd_ = false;

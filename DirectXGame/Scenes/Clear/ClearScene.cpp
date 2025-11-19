@@ -66,6 +66,14 @@ void ClearScene::Initialize() {
     float centerY = 720.0f * 0.6f;
     scoreUI_.SetPosition(centerX, centerY);
 
+    uint32_t returnTex = TextureManager::Load("./Resources/Clear/Return.png");
+    returnTextSprite_ = Sprite::Create(returnTex, { 640.0f, 620.0f }); // 画面下中央
+    returnTextSprite_->SetAnchorPoint({ 0.5f, 0.5f });
+    returnTextSprite_->SetSize(returnTextBaseSize_);
+
+    // 最初は非表示（α=0）
+    returnTextSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 0.0f });
+
     // 演出開始フェーズ
     phase_ = ClearPhase::CameraMove;
     phaseTimer_ = 0.0f;
@@ -159,10 +167,22 @@ void ClearScene::Update() {
         if (displayedScore_ >= finalScore_ && phaseTimer_ >= 0.5f) {
             phase_ = ClearPhase::WaitInput;
             phaseTimer_ = 0.0f;
+
+            if (returnTextSprite_) {
+                returnTextSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+            }
         }
     } break;
 
     case ClearPhase::WaitInput:
+        // 点滅用タイマー
+        float blinkSpeed = 4.0f; // 数字を変えると点滅の速さが変わる
+        float a = 0.5f * (std::sin(phaseTimer_ * blinkSpeed) + 1.0f); // 0～1
+
+        if (returnTextSprite_) {
+            returnTextSprite_->SetColor({ 1.0f, 1.0f, 1.0f, a });
+        }
+
         // 入力待ち
         break;
     }
@@ -212,6 +232,10 @@ void ClearScene::Draw() {
 
     // スコア
     scoreUI_.Draw();
+
+    if (returnTextSprite_) {
+        returnTextSprite_->Draw();
+    }
 
     Sprite::PostDraw();
 #pragma endregion
