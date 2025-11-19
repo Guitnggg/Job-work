@@ -6,7 +6,7 @@
 #include "3d/Model.h"
 #include "3d/Camera.h"
 
-#include "Application/Charactor/CharactorBase.h"
+#include "Application/Charactors/CharactorBase.h"
 
 class SeekerEnemy : public CharactorBase {
 public:

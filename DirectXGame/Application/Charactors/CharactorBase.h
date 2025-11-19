@@ -5,7 +5,7 @@
 #include "math/Vector3.h"
 #include <memory>
 
-#include "Application/Charactor/Collider.h"
+#include "Application/Charactors/Collider.h"
 
 class CharactorBase {
 public:

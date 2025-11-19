@@ -4,9 +4,9 @@
 #include <vector>
 #include <memory>
 
-#include "Application/Charactor/Player/Bullet.h"
-#include "Application/Charactor/Player/Player.h"
-#include "Application/CountDown/CountDown.h"
+#include "Application/Charactors/Player/Bullet.h"
+#include "Application/Charactors/Player/Player.h"
+#include "UI/CountDown/CountDown.h"
 
 class BulletManager {
 public:

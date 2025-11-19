@@ -42,7 +42,7 @@
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Asteroid\Asteroid.cpp">
+    <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Scenes\Finish\FinishScene.cpp">
@@ -54,46 +54,61 @@
     <ClCompile Include="Scenes\Introduction\IntroductionScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\MyMath\MyMath.cpp">
+    <ClCompile Include="Application\Utility\MyMath\MyMath.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\RailCamera\RailCamera.cpp">
+    <ClCompile Include="Application\Cameras\RailCamera\RailCamera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Scenes\SceneManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Skydome\Skydome.cpp">
+    <ClCompile Include="Application\Background\Skydome\Skydome.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Scenes\Title\TitleScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\MyMath\WorldTransformEx.cpp">
+    <ClCompile Include="Application\Utility\MyMath\WorldTransformEx.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\CountDown\CountDown.cpp">
+    <ClCompile Include="UI\CountDown\CountDown.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactor\CharactorBase.cpp">
+    <ClCompile Include="Application\Charactors\CharactorBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactor\Collider.cpp">
+    <ClCompile Include="Application\Charactors\Collider.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactor\Player\Player.cpp">
+    <ClCompile Include="Application\Charactors\Player\Player.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactor\Enemy\SeekerEnemy.cpp">
+    <ClCompile Include="Application\Charactors\Enemy\SeekerEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactor\Player\Graph.cpp">
+    <ClCompile Include="UI\HPBar\Graph.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactor\Player\Bullet.cpp">
+    <ClCompile Include="Application\Charactors\Player\Bullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Score\Score.cpp">
+    <ClCompile Include="UI\Score\Score.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\BulletManager\BulletManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Scenes\Clear\ClearScene.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\CollisionManager\CollisionManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\EnemyManager\EnemyManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\UIManager\UIManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -147,7 +162,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Application\Asteroid\Asteroid.h">
+    <ClInclude Include="Application\Objects\Asteroid\Asteroid.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\Finish\FinishScene.h">
@@ -162,10 +177,10 @@
     <ClInclude Include="Scenes\IScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\MyMath\MyMath.h">
+    <ClInclude Include="Application\Utility\MyMath\MyMath.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\RailCamera\RailCamera.h">
+    <ClInclude Include="Application\Cameras\RailCamera\RailCamera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\SceneManager.h">
@@ -174,34 +189,49 @@
     <ClInclude Include="Scenes\SceneName.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Skydome\Skydome.h">
+    <ClInclude Include="Application\Background\Skydome\Skydome.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\Title\TitleScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\CountDown\CountDown.h">
+    <ClInclude Include="UI\CountDown\CountDown.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactor\CharactorBase.h">
+    <ClInclude Include="Application\Charactors\CharactorBase.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactor\Collider.h">
+    <ClInclude Include="Application\Charactors\Collider.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactor\Player\Player.h">
+    <ClInclude Include="Application\Charactors\Player\Player.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactor\Enemy\SeekerEnemy.h">
+    <ClInclude Include="Application\Charactors\Enemy\SeekerEnemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactor\Player\Graph.h">
+    <ClInclude Include="UI\HPBar\Graph.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactor\Player\Bullet.h">
+    <ClInclude Include="Application\Charactors\Player\Bullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Score\Score.h">
+    <ClInclude Include="UI\Score\Score.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\BulletManager\BulletManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Scenes\Clear\ClearScene.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\CollisionManager\CollisionManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\EnemyManager\EnemyManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\UIManager\UIManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

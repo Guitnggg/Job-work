@@ -6,7 +6,7 @@
 #include <string>
 #include <algorithm>
 
-#include "Application/Charactor/Enemy/SeekerEnemy.h"
+#include "Application/Charactors/Enemy/SeekerEnemy.h"
 
 class EnemyManager {
 public:

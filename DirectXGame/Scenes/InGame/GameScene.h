@@ -6,18 +6,19 @@
 #include <memory>
 #include <algorithm>
 
-#include "Application/Skydome/Skydome.h"
-#include "Application/Asteroid/Asteroid.h"
-#include "Application/RailCamera/RailCamera.h"
-#include "Application/CountDown/CountDown.h"
-#include "Application/Charactor/Player/Player.h"
-#include "Application/Charactor/Player/Graph.h"
-#include "Application/Score/Score.h"
+#include "Application/Background/Skydome/Skydome.h"
+#include "Application/Objects/Asteroid/Asteroid.h"
+#include "Application/Cameras/RailCamera/RailCamera.h"
+#include "Application/Charactors/Player/Player.h"
 
-#include "EnemyManager.h"
-#include "BulletManager.h"
-#include "CollisionManager.h"
-#include "UIManager.h"
+#include "UI/CountDown/CountDown.h"
+#include "UI/HPBar/Graph.h"
+#include "UI/Score/Score.h"
+
+#include "Managers/EnemyManager/EnemyManager.h"
+#include "Managers/BulletManager/BulletManager.h"
+#include "Managers/CollisionManager/CollisionManager.h"
+#include "Managers/UIManager/UIManager.h"
 
 #include "Scenes/IScene.h"
 class FinishScene;

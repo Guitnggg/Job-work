@@ -154,30 +154,30 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Application\Asteroid\Asteroid.cpp" />
-    <ClCompile Include="Application\CountDown\CountDown.cpp" />
-    <ClCompile Include="Application\Charactor\CharactorBase.cpp" />
-    <ClCompile Include="Application\Charactor\Collider.cpp" />
-    <ClCompile Include="Application\Charactor\Player\Graph.cpp" />
-    <ClCompile Include="Application\Charactor\Player\Bullet.cpp" />
-    <ClCompile Include="BulletManager.cpp" />
+    <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp" />
+    <ClCompile Include="UI\CountDown\CountDown.cpp" />
+    <ClCompile Include="Application\Charactors\CharactorBase.cpp" />
+    <ClCompile Include="Application\Charactors\Collider.cpp" />
+    <ClCompile Include="UI\HPBar\Graph.cpp" />
+    <ClCompile Include="Application\Charactors\Player\Bullet.cpp" />
+    <ClCompile Include="Managers\BulletManager\BulletManager.cpp" />
     <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
-    <ClCompile Include="CollisionManager.cpp" />
-    <ClCompile Include="EnemyManager.cpp" />
+    <ClCompile Include="Managers\CollisionManager\CollisionManager.cpp" />
+    <ClCompile Include="Managers\EnemyManager\EnemyManager.cpp" />
     <ClCompile Include="Scenes\Finish\FinishScene.cpp" />
     <ClCompile Include="Scenes\InGame\GameScene.cpp" />
     <ClCompile Include="Scenes\Introduction\IntroductionScene.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Application\MyMath\MyMath.cpp" />
-    <ClCompile Include="Application\Charactor\Player\Player.cpp" />
-    <ClCompile Include="Application\RailCamera\RailCamera.cpp" />
+    <ClCompile Include="Application\Utility\MyMath\MyMath.cpp" />
+    <ClCompile Include="Application\Charactors\Player\Player.cpp" />
+    <ClCompile Include="Application\Cameras\RailCamera\RailCamera.cpp" />
     <ClCompile Include="Scenes\SceneManager.cpp" />
-    <ClCompile Include="Application\Skydome\Skydome.cpp" />
+    <ClCompile Include="Application\Background\Skydome\Skydome.cpp" />
     <ClCompile Include="Scenes\Title\TitleScene.cpp" />
-    <ClCompile Include="Application\MyMath\WorldTransformEx.cpp" />
-    <ClCompile Include="Application\Charactor\Enemy\SeekerEnemy.cpp" />
-    <ClCompile Include="Application\Score\Score.cpp" />
-    <ClCompile Include="UIManager.cpp" />
+    <ClCompile Include="Application\Utility\MyMath\WorldTransformEx.cpp" />
+    <ClCompile Include="Application\Charactors\Enemy\SeekerEnemy.cpp" />
+    <ClCompile Include="UI\Score\Score.cpp" />
+    <ClCompile Include="Managers\UIManager\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\TerrainPS.hlsl">
@@ -277,30 +277,30 @@
     <None Include="Resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Application\Asteroid\Asteroid.h" />
-    <ClInclude Include="Application\CountDown\CountDown.h" />
-    <ClInclude Include="Application\Charactor\CharactorBase.h" />
-    <ClInclude Include="Application\Charactor\Collider.h" />
-    <ClInclude Include="Application\Charactor\Player\Graph.h" />
-    <ClInclude Include="Application\Charactor\Player\Bullet.h" />
-    <ClInclude Include="BulletManager.h" />
+    <ClInclude Include="Application\Objects\Asteroid\Asteroid.h" />
+    <ClInclude Include="UI\CountDown\CountDown.h" />
+    <ClInclude Include="Application\Charactors\CharactorBase.h" />
+    <ClInclude Include="Application\Charactors\Collider.h" />
+    <ClInclude Include="UI\HPBar\Graph.h" />
+    <ClInclude Include="Application\Charactors\Player\Bullet.h" />
+    <ClInclude Include="Managers\BulletManager\BulletManager.h" />
     <ClInclude Include="Scenes\Clear\ClearScene.h" />
-    <ClInclude Include="CollisionManager.h" />
-    <ClInclude Include="EnemyManager.h" />
+    <ClInclude Include="Managers\CollisionManager\CollisionManager.h" />
+    <ClInclude Include="Managers\EnemyManager\EnemyManager.h" />
     <ClInclude Include="Scenes\Finish\FinishScene.h" />
     <ClInclude Include="Scenes\InGame\GameScene.h" />
     <ClInclude Include="Scenes\Introduction\IntroductionScene.h" />
     <ClInclude Include="Scenes\IScene.h" />
-    <ClInclude Include="Application\MyMath\MyMath.h" />
-    <ClInclude Include="Application\Charactor\Player\Player.h" />
-    <ClInclude Include="Application\RailCamera\RailCamera.h" />
+    <ClInclude Include="Application\Utility\MyMath\MyMath.h" />
+    <ClInclude Include="Application\Charactors\Player\Player.h" />
+    <ClInclude Include="Application\Cameras\RailCamera\RailCamera.h" />
     <ClInclude Include="Scenes\SceneManager.h" />
     <ClInclude Include="Scenes\SceneName.h" />
-    <ClInclude Include="Application\Skydome\Skydome.h" />
+    <ClInclude Include="Application\Background\Skydome\Skydome.h" />
     <ClInclude Include="Scenes\Title\TitleScene.h" />
-    <ClInclude Include="Application\Charactor\Enemy\SeekerEnemy.h" />
-    <ClInclude Include="Application\Score\Score.h" />
-    <ClInclude Include="UIManager.h" />
+    <ClInclude Include="Application\Charactors\Enemy\SeekerEnemy.h" />
+    <ClInclude Include="UI\Score\Score.h" />
+    <ClInclude Include="Managers\UIManager\UIManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

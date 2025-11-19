@@ -6,7 +6,7 @@
 #include "input/Input.h"
 #include "audio/Audio.h"
 
-#include "Application/Charactor/CharactorBase.h"
+#include "Application/Charactors/CharactorBase.h"
 
 class Player : public CharactorBase {
 public:

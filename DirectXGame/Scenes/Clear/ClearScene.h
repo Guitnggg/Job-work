@@ -7,9 +7,9 @@
 #include <algorithm>
 #include <cmath>
 
-#include "Application/Asteroid/Asteroid.h"
-#include "Application/Skydome/Skydome.h"
-#include "Application/Score/Score.h"
+#include "Application/Objects/Asteroid/Asteroid.h"
+#include "Application/Background/Skydome/Skydome.h"
+#include "UI/Score/Score.h"
 
 #include "Scenes/IScene.h"
 class TitleScene;

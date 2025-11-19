@@ -4,10 +4,10 @@
 #include <vector>
 #include <random>
 
-#include "Skydome.h"
-#include "Asteroid.h"
+#include "Application/Background/Skydome/Skydome.h"
+#include "Application/Objects/Asteroid/Asteroid.h"
 
-#include "IScene.h"
+#include "Scenes/IScene.h"
 class TitleScene;
 
 class FinishScene :public IScene {
