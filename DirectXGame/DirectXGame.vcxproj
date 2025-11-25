@@ -155,6 +155,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp" />
+    <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp" />
     <ClCompile Include="UI\CountDown\CountDown.cpp" />
     <ClCompile Include="Application\Charactors\CharactorBase.cpp" />
     <ClCompile Include="Application\Charactors\Collider.cpp" />
@@ -278,6 +279,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Objects\Asteroid\Asteroid.h" />
+    <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h" />
     <ClInclude Include="UI\CountDown\CountDown.h" />
     <ClInclude Include="Application\Charactors\CharactorBase.h" />
     <ClInclude Include="Application\Charactors\Collider.h" />

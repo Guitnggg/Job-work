@@ -8,6 +8,7 @@
 
 #include "Application/Background/Skydome/Skydome.h"
 #include "Application/Objects/Asteroid/Asteroid.h"
+#include "Application/Effects/SpeedLine/SpeedLine.h"
 #include "Application/Cameras/RailCamera/RailCamera.h"
 #include "Application/Charactors/Player/Player.h"
 
@@ -71,6 +72,9 @@ private:
     // ========== 弾・敵管理 ==========
     EnemyManager enemyManager_;
     BulletManager bulletManager_;
+
+    // ========== 演出 ==========
+    SpeedLine speedLine_;
 
     // ========== UI（HPバー／スコアなど） ==========
     UIManager uiManager_;

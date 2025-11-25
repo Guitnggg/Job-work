@@ -41,6 +41,9 @@ void GameScene::Initialize() {
     player_->Initialize(&camera_);
     player_->SetParent(&railCamera_->GetWorldTransform());
 
+    // スピードライン初期化
+    speedLine_.Initialize(&camera_, 10);
+
     // カウントダウン
     countDown_.InitializeFromPaths(
         "./Resources/InGame/3.png",
@@ -64,7 +67,7 @@ void GameScene::Initialize() {
     // 弾・敵
     bulletManager_.Initialize();
     enemyManager_.Initialize();
-    enemyManager_.LoadEnemySCV("Resources/levels/stage1.json");   
+    enemyManager_.LoadEnemySCV("Resources/levels/stage1.json");
 
     // 開始
     countDown_.Start();
@@ -148,6 +151,12 @@ void GameScene::Update() {
         camera_.UpdateMatrix();
     }
 
+    // スピードライン更新
+    if (isRailCameraActive_) {
+        const auto& camWT = railCamera_->GetWorldTransform();
+        speedLine_.Update(dt, camWT.translation_);
+    }
+
     // ===== クリア/失敗 判定 =====
     if (result_ == GameResult::None) {
         // 1. 失敗判定（プレイヤー爆発が終わった）
@@ -220,11 +229,16 @@ void GameScene::Draw() {
     // 天球
     skydome_->Draw();
 
-    // 敵
-    enemyManager_.Draw(&camera_);
+    // スピードライン
+    if (!countDown_.IsInputLocked()&& result_ == GameResult::None) {
+        speedLine_.Draw();
+    }
 
-    // 弾
-    bulletManager_.Draw(&camera_);
+    // ゲーム中
+    if (result_ == GameResult::None) {
+        enemyManager_.Draw(&camera_);   // 敵
+        bulletManager_.Draw(&camera_);  // 弾
+    }
 
     // プレイヤー
     if (!countDown_.IsInputLocked()) {
