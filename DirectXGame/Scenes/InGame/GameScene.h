@@ -9,6 +9,7 @@
 #include "Application/Background/Skydome/Skydome.h"
 #include "Application/Objects/Asteroid/Asteroid.h"
 #include "Application/Effects/SpeedLine/SpeedLine.h"
+#include "Application/Effects/Smoke/Smoke.h"
 #include "Application/Cameras/RailCamera/RailCamera.h"
 #include "Application/Charactors/Player/Player.h"
 
@@ -73,8 +74,13 @@ private:
     EnemyManager enemyManager_;
     BulletManager bulletManager_;
 
-    // ========== 演出 ==========
+    // ========== スピード演出 ==========
     SpeedLine speedLine_;
+
+    // ========== エンジンスモーク ==========
+    KamataEngine::Model* smokeModel_ = nullptr;
+    std::vector<std::unique_ptr<Smoke>> engineSmokes_;
+    float smokeEmitTimer_ = 0.0f;
 
     // ========== UI（HPバー／スコアなど） ==========
     UIManager uiManager_;

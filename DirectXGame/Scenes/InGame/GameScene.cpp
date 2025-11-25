@@ -14,6 +14,8 @@ GameScene::~GameScene() {
    
     delete worldTransform_;
     delete model_;
+
+    delete smokeModel_;
 }
 
 void GameScene::Initialize() {
@@ -40,6 +42,11 @@ void GameScene::Initialize() {
     player_ = new Player();
     player_->Initialize(&camera_);
     player_->SetParent(&railCamera_->GetWorldTransform());
+
+    // エンジンスモーク初期化
+    smokeModel_ = Model::Create();
+    engineSmokes_.clear();
+    smokeEmitTimer_ = 0.0f;
 
     // スピードライン初期化
     speedLine_.Initialize(&camera_, 10);
@@ -93,7 +100,7 @@ void GameScene::Update() {
     if (!countDown_.IsInputLocked()) {
         if (!(result_ == GameResult::Clear && isClearAnimating_)) {
             player_->Update();
-        }        
+        }
     }
 
     // 弾（入力＋更新）
@@ -138,6 +145,69 @@ void GameScene::Update() {
 
     // UI更新（HPバー、スコア）
     uiManager_.Update();
+
+    // ===== プレイヤーエンジン煙パーティクル =====
+    if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
+        // dt は関数頭で const float dt = 1.0f / 60.0f; と定義されています
+
+        smokeEmitTimer_ += dt;
+
+        // 0.03 秒おきに 1 個生成（1 秒で約 6~7 個）
+        if (smokeEmitTimer_ >= 0.1f) {
+            smokeEmitTimer_ = 0.0f;
+
+            // プレイヤーのワールド座標（親子付け込み）
+            KamataEngine::Vector3 playerPos = player_->GetWorldTranslation();
+
+            // プレイヤーより少し下 & 後ろに出す
+            KamataEngine::Vector3 spawnPos = {
+                playerPos.x,
+                playerPos.y - 0.3f,
+                playerPos.z - 1.5f
+            };
+
+            // ランダムな広がり
+            static std::mt19937 rng{ std::random_device{}() };
+            std::uniform_real_distribution<float> distX(-0.05f, 0.05f);
+            std::uniform_real_distribution<float> distY(-0.05f, 0.05f);
+
+            KamataEngine::Vector3 vel = {
+                distX(rng),          // 横にフワフワ
+                distY(rng),          // 上下にフワフワ
+                -0.6f                // 後ろ(Z-)へ流れる
+            };
+
+            // 0.6秒で消える、スケール 0.18 → 0.0 に縮む
+            auto smoke = std::make_unique<Smoke>();
+            smoke->Initialize(
+                smokeModel_,
+                spawnPos,
+                vel,
+                0.6f,   // lifeTime
+                0.18f,  // startScale
+                0.0f    // endScale
+            );
+
+            // ムーブしてvectorに追加
+            engineSmokes_.push_back(std::move(smoke));
+        }
+
+        // 既存パーティクルの更新
+        for (auto& s : engineSmokes_) {
+            s->Update(dt);
+        }
+
+        // 寿命が尽きたものを削除
+        engineSmokes_.erase(
+            std::remove_if(
+                engineSmokes_.begin(), engineSmokes_.end(),
+                [](const std::unique_ptr<Smoke>& p) {
+                    return p->IsFinished();
+                }
+            ),
+            engineSmokes_.end()
+        );
+    }
 
     // レールカメラ更新
     if (isRailCameraActive_) {
@@ -234,6 +304,13 @@ void GameScene::Draw() {
         speedLine_.Draw();
     }
 
+    // エンジンスモーク
+    if (smokeModel_) {
+        for (auto& s : engineSmokes_) {
+            s->Draw(&camera_);
+        }
+    }
+
     // ゲーム中
     if (result_ == GameResult::None) {
         enemyManager_.Draw(&camera_);   // 敵
@@ -244,7 +321,7 @@ void GameScene::Draw() {
     if (!countDown_.IsInputLocked()) {
         player_->Draw(&camera_);
     }
-
+ 
     Model::PostDraw();
 #pragma endregion
 
