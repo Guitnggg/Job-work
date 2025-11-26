@@ -62,7 +62,7 @@ void GameScene::Initialize() {
     countDown_.SetScaleRange(1.2f, 1.0f);
     countDown_.SetBackOvershoot(1.7f);
 
-    auto* audio = KamataEngine::Audio::GetInstance();
+    auto* audio = Audio::GetInstance();
     countDown_.SetAudio(
         audio->LoadWave("./Resources/SE/CountBeep.wav"),
         audio->LoadWave("./Resources/SE/Start.wav")
@@ -147,20 +147,30 @@ void GameScene::Update() {
     uiManager_.Update();
 
     // ===== プレイヤーエンジン煙パーティクル =====
-    if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
-        // dt は関数頭で const float dt = 1.0f / 60.0f; と定義されています
-
+    if (!countDown_.IsInputLocked() &&
+        (result_ == GameResult::None || (result_ == GameResult::Clear && isClearAnimating_))) {
         smokeEmitTimer_ += dt;
 
-        // 0.03 秒おきに 1 個生成（1 秒で約 6~7 個）
-        if (smokeEmitTimer_ >= 0.1f) {
-            smokeEmitTimer_ = 0.0f;
+        // ★ クリア演出中だけパラメータを変更して「ドバーッ」と出す
+        if (result_ == GameResult::Clear && isClearAnimating_) {
+            emitInterval = 0.01f;   // 間隔をギュッと詰める（1秒で100回判定）
+            lifeTime = 0.30f;   // 少し長めに残す
+            startScale = 0.20f;   // ちょっと大きめ
+            burstCount = 3;       // 1回の判定で3個出す
+            baseZSpeed = -1.6f;   // 後ろへ強く吹き出す
+        }
+
+        // 
+        while (smokeEmitTimer_ >= emitInterval) {
+
+            // これないと止まる
+            smokeEmitTimer_ -= emitInterval;
 
             // プレイヤーのワールド座標（親子付け込み）
-            KamataEngine::Vector3 playerPos = player_->GetWorldTranslation();
+            Vector3 playerPos = player_->GetWorldTranslation();
 
             // プレイヤーより少し下 & 後ろに出す
-            KamataEngine::Vector3 spawnPos = {
+            Vector3 spawnPos = {
                 playerPos.x,
                 playerPos.y - 0.3f,
                 playerPos.z - 1.5f
@@ -171,7 +181,7 @@ void GameScene::Update() {
             std::uniform_real_distribution<float> distX(-0.05f, 0.05f);
             std::uniform_real_distribution<float> distY(-0.05f, 0.05f);
 
-            KamataEngine::Vector3 vel = {
+            Vector3 vel = {
                 distX(rng),          // 横にフワフワ
                 distY(rng),          // 上下にフワフワ
                 -0.6f                // 後ろ(Z-)へ流れる
