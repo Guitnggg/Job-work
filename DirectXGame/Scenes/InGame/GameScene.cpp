@@ -43,13 +43,17 @@ void GameScene::Initialize() {
     player_->Initialize(&camera_);
     player_->SetParent(&railCamera_->GetWorldTransform());
 
+    // スピードライン初期化
+    speedLine_.Initialize(&camera_, 10);
+
+    // ダメージ演出
+    damageParticleModel_ = Model::Create();
+    damageParticles_.clear();
+
     // エンジンスモーク初期化
     smokeModel_ = Model::Create();
     engineSmokes_.clear();
     smokeEmitTimer_ = 0.0f;
-
-    // スピードライン初期化
-    speedLine_.Initialize(&camera_, 10);
 
     // カウントダウン
     countDown_.InitializeFromPaths(
@@ -103,6 +107,34 @@ void GameScene::Update() {
         }
     }
 
+    // damage
+    if (player_->ConsumeTookDamageEvent()) {
+        Vector3 pos = player_->GetWorldTranslation();
+
+        // ランダムな飛び散り方向
+        static std::mt19937 rng{ std::random_device{}() };
+        std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+        for (int i = 0; i < 10; i++) {
+            Vector3 vel = {
+                dist(rng) * 2.5f,
+                dist(rng) * 2.5f,
+                dist(rng) * -2.0f
+            };
+
+            auto p = std::make_unique<DamageParticle>();
+            p->Initialize(
+                damageParticleModel_,
+                pos,
+                vel,
+                0.60f,   // life
+                0.22f,   // start
+                0.0f     // end
+            );
+            damageParticles_.push_back(std::move(p));
+        }
+    }
+
     // 弾（入力＋更新）
     if (result_ == GameResult::None) {
         bulletManager_.Update(input_, player_, countDown_);
@@ -145,6 +177,17 @@ void GameScene::Update() {
 
     // UI更新（HPバー、スコア）
     uiManager_.Update();
+
+    // ===== ダメージパーティクル更新 =====
+    for (auto& p : damageParticles_) {
+        p->Update(dt);
+    }
+    damageParticles_.erase(
+        std::remove_if(
+            damageParticles_.begin(), damageParticles_.end(),
+            [](const std::unique_ptr<DamageParticle>& p) { return p->IsFinished(); }),
+        damageParticles_.end()
+    );
 
     // ===== プレイヤーエンジン煙パーティクル =====
     if (!countDown_.IsInputLocked() &&
@@ -318,6 +361,13 @@ void GameScene::Draw() {
     if (smokeModel_) {
         for (auto& s : engineSmokes_) {
             s->Draw(&camera_);
+        }
+    }
+
+    // ダメージパーティクル
+    if (damageParticleModel_) {
+        for (auto& p : damageParticles_) {
+            p->Draw(&camera_);
         }
     }
 
