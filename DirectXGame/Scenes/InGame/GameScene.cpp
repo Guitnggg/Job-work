@@ -183,7 +183,7 @@ void GameScene::Update() {
                 smokeModel_,
                 spawnPos,
                 vel,
-                0.6f,   // lifeTime
+                0.2f,   // lifeTime
                 0.18f,  // startScale
                 0.0f    // endScale
             );
