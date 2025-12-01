@@ -7,12 +7,12 @@
 #include <algorithm>
 
 #include "Application/Background/Skydome/Skydome.h"
-#include "Application/Objects/Asteroid/Asteroid.h"
+#include "Application/Cameras/RailCamera/RailCamera.h"
+#include "Application/Charactors/Player/Player.h"
 #include "Application/Effects/SpeedLine/SpeedLine.h"
 #include "Application/Effects/Smoke/Smoke.h"
 #include "Application/Effects/Damage/DamageParticle.h"
-#include "Application/Cameras/RailCamera/RailCamera.h"
-#include "Application/Charactors/Player/Player.h"
+#include "Application/Objects/Asteroid/Asteroid.h"
 
 #include "UI/CountDown/CountDown.h"
 #include "UI/HPBar/Graph.h"

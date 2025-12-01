@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "Application/Charactors/Enemy/SeekerEnemy.h"
+#include "Application/Effects/Damage/DamageParticle.h"
 
 class EnemyManager {
 public:
@@ -49,11 +50,18 @@ private:
     /// JSONに従って敵をスポーン
     void SpawnEnemiesBySCV(const KamataEngine::Vector3& playerPos);
 
+    // スポーン情報とタイマー
+    void SpawnExplosionAt(const KamataEngine::Vector3& pos);
+
 private:
     // 敵本体
-    std::vector<std::unique_ptr<CharactorBase>> enemies_;
+    std::vector<std::unique_ptr<CharactorBase>> enemies_;  
 
     // スポーン情報とタイマー
     std::vector<EnemySpawnData> enemySpawnList_;
     float enemySpawnTimer_ = 0.0f;
+
+    // 敵爆発用パーティクル
+    KamataEngine::Model* explosionModel_ = nullptr;
+    std::vector<std::unique_ptr<DamageParticle>> explosionParticles_;
 };

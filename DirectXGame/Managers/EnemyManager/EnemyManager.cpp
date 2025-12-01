@@ -12,10 +12,12 @@ void EnemyManager::Initialize() {
     enemies_.clear();
     enemySpawnList_.clear();
     enemySpawnTimer_ = 0.0f;
+
+    explosionModel_ = Model::Create();
+    explosionParticles_.clear();
 }
 
-void EnemyManager::LoadEnemySCV(const std::string& path)
-{
+void EnemyManager::LoadEnemySCV(const std::string& path) {
     enemySpawnList_.clear();
 
     std::ifstream ifs(path);
@@ -90,8 +92,7 @@ void EnemyManager::LoadEnemySCV(const std::string& path)
         });
 }
 
-void EnemyManager::SpawnEnemiesBySCV(const Vector3& playerPos)
-{
+void EnemyManager::SpawnEnemiesBySCV(const Vector3& playerPos) {
     const float t = enemySpawnTimer_;
 
     while (!enemySpawnList_.empty()) {
@@ -121,8 +122,7 @@ void EnemyManager::SpawnEnemiesBySCV(const Vector3& playerPos)
     }
 }
 
-void EnemyManager::Update(float dt, const Vector3& playerPos)
-{
+void EnemyManager::Update(float dt, const Vector3& playerPos) {
     // タイマー更新 & スポーン
     enemySpawnTimer_ += dt;
     SpawnEnemiesBySCV(playerPos);
@@ -134,6 +134,19 @@ void EnemyManager::Update(float dt, const Vector3& playerPos)
         }
         e->Update();
     }
+
+    // 敵爆発パーティクル更新
+    for (auto& p : explosionParticles_) {
+        p->Update(dt);
+    }
+    explosionParticles_.erase(
+        std::remove_if(
+            explosionParticles_.begin(), explosionParticles_.end(),
+            [](const std::unique_ptr<DamageParticle>& p) {
+                return p->IsFinished();
+            }),
+        explosionParticles_.end()
+    );
 }
 
 void EnemyManager::Draw(Camera* camera)
@@ -141,10 +154,47 @@ void EnemyManager::Draw(Camera* camera)
     for (auto& e : enemies_) {
         e->Draw(camera);
     }
+
+    // 爆発パーティクル
+    if (explosionModel_) {
+        for (auto& p : explosionParticles_) {
+            p->Draw(camera);
+        }
+    }
 }
 
-void EnemyManager::RemoveDeadEnemies()
-{
+void EnemyManager::SpawnExplosionAt(const KamataEngine::Vector3& pos) {
+    if (!explosionModel_) {
+        return;
+    }
+
+    // ランダムな飛び散り方向
+    static std::mt19937 rng{ std::random_device{}() };
+    std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+    const int kNumParticles = 16;
+
+    for (int i = 0; i < kNumParticles; ++i) {
+        Vector3 vel{
+            dist(rng) * 3.0f,
+            dist(rng) * 3.0f,
+            dist(rng) * 3.0f
+        };
+
+        auto p = std::make_unique<DamageParticle>();
+        p->Initialize(
+            explosionModel_,
+            pos,
+            vel,
+            0.6f,   // life
+            0.25f,  // startScale
+            0.0f    // endScale
+        );
+        explosionParticles_.push_back(std::move(p));
+    }
+}
+
+void EnemyManager::RemoveDeadEnemies() {
     enemies_.erase(
         std::remove_if(enemies_.begin(), enemies_.end(),
             [](const std::unique_ptr<CharactorBase>& e) {

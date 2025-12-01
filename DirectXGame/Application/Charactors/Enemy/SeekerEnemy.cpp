@@ -5,10 +5,10 @@ using namespace KamataEngine;
 
 void SeekerEnemy::Initialize() {
 
-    // 親の初期化処理を呼び出す（worldTransform_ / collider_ の生成まで）
+    // 親の初期化処理を呼び出す（worldTransform_ / collider_ の生成など）
     CharactorBase::Initialize();
 
-    // 見た目モデル（OBJがなければSphereにフォールバック）
+    // モデル読み込み（OBJがなければSphereにフォールバック）
     model_.reset(Model::CreateFromOBJ("Enemy", true));
     if (!model_) {
         model_.reset(Model::CreateSphere());
@@ -18,6 +18,7 @@ void SeekerEnemy::Initialize() {
     worldTransform_.translation_ = initialPosition_;
     worldTransform_.rotation_ = { 0.0f, 0.0f, 0.0f };
     worldTransform_.scale_ = { 1.0f, 1.0f, 1.0f };
+    baseScale_ = worldTransform_.scale_;
     worldTransform_.UpdateMatrix();
 
     // HP設定
@@ -31,90 +32,253 @@ void SeekerEnemy::Initialize() {
         collider_->Update();
     }
 
-    // タイマー/死亡フラグ初期化
+    // 時間・死亡
     timeSec_ = 0.0f;
     isDead_ = false;
 
-    // 進行方向の初期値（-Z直進）
+    // 進行方向の初期値（-Z方向に直進）
     velocity_ = { 0.0f, 0.0f, -1.0f };
+
+    // 演出
+    state_ = State::Active;
+    flashTimer_ = 0.0f;
+    hitStopTimer_ = 0.0f;
+    pendingExplode_ = false;
+
+    // 被弾モーション
+    hitBasePos_ = worldTransform_.translation_;
+    hitDir_ = { 0.0f, 0.0f, 0.0f };
+    hitBaseRollZ_ = 0.0f;
+    hitMotionTimer_ = 0.0f;
+    hitMotionDuration_ = 0.12f;
+    hitKnockback_ = 0.8f;
+    hitRollRad_ = 0.25f;
 }
 
 void SeekerEnemy::Update() {
-    if (isDead_) { return; }
+    if (isDead_) {
+        return;
+    }
 
-    // 固定Δt（エンジンに可変Δtがあるなら差し替えてOK）
     const float dt = 1.0f / 60.0f;
     timeSec_ += dt;
 
-    // ---- 移動：目標へ向かう単純ステアリング ----
-    Vector3 pos = worldTransform_.translation_;
-    if (hasTarget_) {
-        // 目標方向（正規化）
-        Vector3 toTarget = { targetPos_.x - pos.x, targetPos_.y - pos.y, targetPos_.z - pos.z };
-        float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
-        if (len > 1e-5f) {
-            toTarget.x /= len; toTarget.y /= len; toTarget.z /= len;
-        }
-
-        // 旋回追従（一次フィルタ）
-        velocity_.x = (1.0f - turnRate_) * velocity_.x + turnRate_ * toTarget.x;
-        velocity_.y = (1.0f - turnRate_) * velocity_.y + turnRate_ * toTarget.y;
-        velocity_.z = (1.0f - turnRate_) * velocity_.z + turnRate_ * toTarget.z;
-
-        // 正規化
-        float vlen = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
-        if (vlen > 1e-5f) {
-            velocity_.x /= vlen; velocity_.y /= vlen; velocity_.z /= vlen;
-        }
-    }
-
-    // 前進
-    pos.x += velocity_.x * speed_;
-    pos.y += velocity_.y * speed_;
-    pos.z += velocity_.z * speed_;
-    worldTransform_.translation_ = pos;
-
-    // 見た目用の簡易ヨー回転
-    worldTransform_.rotation_.y += 0.6f * dt;
-
-    // 行列更新
-    worldTransform_.UpdateMatrix();
-
-    // コライダー追従
-    if (collider_) {
-        collider_->SetTranslate(GetWorldTranslation());
-        collider_->Update();
-    }
-
-    // 画面外/寿命/HPで消す
+    // 寿命・範囲外チェック
     ClampDeathByBounds_();
-    if (HP_ <= 0) {
-        isDead_ = true;
+    if (isDead_) {
+        return;
+    }
+
+    // ダメージフラッシュタイマー
+    if (flashTimer_ > 0.0f) {
+        flashTimer_ -= dt;
+        if (flashTimer_ < 0.0f) { flashTimer_ = 0.0f; }
+    }
+
+    // 被弾モーションタイマー
+    if (hitMotionTimer_ > 0.0f) {
+        hitMotionTimer_ -= dt;
+        if (hitMotionTimer_ < 0.0f) { hitMotionTimer_ = 0.0f; }
+    }
+
+    switch (state_) {
+    case State::Active:
+    {
+        // ==== 通常の追尾移動 ====
+        Vector3 pos = worldTransform_.translation_;
+
+        if (hasTarget_) {
+            // 目標方向
+            Vector3 toTarget{
+                targetPos_.x - pos.x,
+                targetPos_.y - pos.y,
+                targetPos_.z - pos.z
+            };
+            float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+            if (len > 1e-5f) {
+                toTarget.x /= len; toTarget.y /= len; toTarget.z /= len;
+            }
+
+            // 旋回追従
+            velocity_.x = (1.0f - turnRate_) * velocity_.x + turnRate_ * toTarget.x;
+            velocity_.y = (1.0f - turnRate_) * velocity_.y + turnRate_ * toTarget.y;
+            velocity_.z = (1.0f - turnRate_) * velocity_.z + turnRate_ * toTarget.z;
+
+            float vlen = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
+            if (vlen > 1e-5f) {
+                velocity_.x /= vlen; velocity_.y /= vlen; velocity_.z /= vlen;
+            }
+        }
+
+        // 前進
+        pos.x += velocity_.x * speed_;
+        pos.y += velocity_.y * speed_;
+        pos.z += velocity_.z * speed_;
+
+        // ここに「当たった瞬間の揺れオフセット」を足す
+        if (hitMotionTimer_ > 0.0f) {
+            float t = hitMotionTimer_ / hitMotionDuration_; // 1 → 0
+            // 単純に t でスケールする（最初大きく、その後だんだん減る）
+            float k = t;
+            pos.x += hitDir_.x * hitKnockback_ * k;
+            pos.y += hitDir_.y * hitKnockback_ * k;
+            pos.z += hitDir_.z * hitKnockback_ * k;
+
+            // Z回転にも少し反映（ちょっと傾く）
+            worldTransform_.rotation_.z = hitBaseRollZ_ + hitRollRad_ * k;
+        }
+
+        worldTransform_.translation_ = pos;
+
+        // 見た目用回転（ぐるぐる）
+        worldTransform_.rotation_.y += 0.6f * dt;
+
+        worldTransform_.UpdateMatrix();
+
+        // コライダー追従
+        if (collider_) {
+            collider_->SetTranslate(GetWorldTranslation());
+            collider_->Update();
+        }
+    }
+    break;
+
+    case State::HitStop:
+    {
+        // ヒットストップ中：移動・AIは止めるが、「被弾モーション」は行う
+        hitStopTimer_ -= dt;
+        float tMotion = 0.0f;
+
+        if (hitMotionTimer_ > 0.0f) {
+            float t = hitMotionTimer_ / hitMotionDuration_; // 1 → 0
+            tMotion = t;
+        }
+
+        // 基準位置＋ノックバック
+        Vector3 pos = hitBasePos_;
+        if (tMotion > 0.0f) {
+            pos.x += hitDir_.x * hitKnockback_ * tMotion;
+            pos.y += hitDir_.y * hitKnockback_ * tMotion;
+            pos.z += hitDir_.z * hitKnockback_ * tMotion;
+
+            worldTransform_.rotation_.z = hitBaseRollZ_ + hitRollRad_ * tMotion;
+        }
+        else {
+            // モーション終了後は元の姿勢に戻す
+            worldTransform_.rotation_.z = hitBaseRollZ_;
+        }
+
+        worldTransform_.translation_ = pos;
+        worldTransform_.UpdateMatrix();
+
+        if (collider_) {
+            collider_->SetTranslate(GetWorldTranslation());
+            collider_->Update();
+        }
+
+        if (hitStopTimer_ <= 0.0f) {
+            hitStopTimer_ = 0.0f;
+            if (pendingExplode_) {
+                // ヒットストップ終了後に消滅
+                isDead_ = true;
+            }
+            else {
+                state_ = State::Active;
+            }
+        }
+    }
+    break;
     }
 }
 
-void SeekerEnemy::Draw(KamataEngine::Camera* camera)
+void SeekerEnemy::Draw(Camera* camera)
 {
-    if (!camera || isDead_) { return; }
-    if (model_) {
+    if (!camera || isDead_ || !model_) { return; }
+
+    // 一旦スケールを保存
+    Vector3 originalScale = worldTransform_.scale_;
+
+    if (flashTimer_ > 0.0f) {
+        float t = flashTimer_ / flashDuration_; // 1 → 0
+        float scaleMul = 1.0f + 0.25f * t;
+
+        // スケールパンチ
+        worldTransform_.scale_.x = baseScale_.x * scaleMul;
+        worldTransform_.scale_.y = baseScale_.y * scaleMul;
+        worldTransform_.scale_.z = baseScale_.z * scaleMul;
+        worldTransform_.UpdateMatrix();
+
+        // 簡易点滅（最初の方だけチカチカ）
+        bool visible = true;
+        if (t > 0.5f) {
+            int blink = static_cast<int>(t * 10.0f);
+            visible = (blink % 2) == 0;
+        }
+
+        if (visible) {
+            model_->Draw(worldTransform_, *camera, textureHandle_);
+        }
+    }
+    else {
         model_->Draw(worldTransform_, *camera, textureHandle_);
     }
-    // デバッグ可視化したければ
-    //if (collider_) { collider_->Draw(*camera); }
+
+    // スケールを戻す
+    worldTransform_.scale_ = originalScale;
+    worldTransform_.UpdateMatrix();
 }
 
-void SeekerEnemy::OnCollision(CharactorBase* /*enemy*/){
-    // １回当たったら削除
-    isDead_ = true;
+void SeekerEnemy::OnCollision(CharactorBase* /*other*/)
+{
+    if (isDead_) {
+        return;
+    }
+
+    // とりあえず 1 ダメージ固定
+    HP_ -= 1;
+    if (HP_ < 0) HP_ = 0;
+
+    // ==== 当たった瞬間の演出セットアップ ====
+
+    // ダメージフラッシュ
+    flashTimer_ = flashDuration_;
+
+    // ヒットストップ
+    hitStopTimer_ = hitStopDuration_;
+    state_ = State::HitStop;
+
+    // 被弾モーションの基準
+    hitBasePos_ = worldTransform_.translation_;
+    hitBaseRollZ_ = worldTransform_.rotation_.z;
+    hitMotionTimer_ = hitMotionDuration_;
+
+    // ノックバック方向：基本は「進行方向の反対」
+    hitDir_ = { -velocity_.x, -velocity_.y, -velocity_.z };
+    float len = std::sqrt(hitDir_.x * hitDir_.x + hitDir_.y * hitDir_.y + hitDir_.z * hitDir_.z);
+    if (len > 1e-5f) {
+        hitDir_.x /= len; hitDir_.y /= len; hitDir_.z /= len;
+    }
+    else {
+        // 万が一0ベクトルなら手前方向に押す
+        hitDir_ = { 0.0f, 0.0f, -1.0f };
+    }
+
+    // HP0 ならヒットストップ後に消す
+    if (HP_ <= 0) {
+        pendingExplode_ = true;
+    }
 }
 
-void SeekerEnemy::ClampDeathByBounds_() {
+void SeekerEnemy::ClampDeathByBounds_()
+{
     const Vector3 p = GetWorldTranslation();
 
+    // 画面外orZ手前などで強制消去
     if (p.z < -40.0f || std::abs(p.x) > 220.0f || std::abs(p.y) > 220.0f) {
         isDead_ = true;
     }
 
+    // 寿命
     if (timeSec_ >= lifeTimeSec_) {
         isDead_ = true;
     }
