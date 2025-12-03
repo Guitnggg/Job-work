@@ -20,7 +20,7 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
         with:
-          msbuild-arachitecture: x64
+          msbuild-architecture: x64
           
       - name: Build
         run:
