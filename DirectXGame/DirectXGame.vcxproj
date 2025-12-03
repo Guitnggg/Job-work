@@ -84,7 +84,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;C:\日本工学院\Job work\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -107,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;C:\日本工学院\Job work\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>MinSpace</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;C:\日本工学院\Job work\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
