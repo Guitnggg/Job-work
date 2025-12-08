@@ -9,10 +9,12 @@ using json = nlohmann::json;
 using namespace KamataEngine;
 
 void EnemyManager::Initialize() {
+    // 敵とスポーン情報とタイマーの初期化
     enemies_.clear();
     enemySpawnList_.clear();
     enemySpawnTimer_ = 0.0f;
 
+    // 爆発パーティクル関連初期化
     explosionModel_ = Model::Create();
     explosionParticles_.clear();
 }
@@ -49,6 +51,7 @@ void EnemyManager::LoadEnemySCV(const std::string& path) {
                 rangeNode[2].get<float>()
             };
 
+            // パラメータ
             float baseSpeed = r.value("speed", 0.2f);
             float speedRange = r.value("speedRange", 0.0f);
             float turnRate = r.value("turnRate", 0.15f);
@@ -56,6 +59,7 @@ void EnemyManager::LoadEnemySCV(const std::string& path) {
             float radius = r.value("radius", 1.0f);
             float lifeTime = r.value("lifeTime", 30.0f);
 
+            // ランダム生成器
             std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
             std::uniform_real_distribution<float> dx(-range.x, range.x);
             std::uniform_real_distribution<float> dy(-range.y, range.y);
@@ -65,6 +69,7 @@ void EnemyManager::LoadEnemySCV(const std::string& path) {
                 baseSpeed + speedRange
             );
 
+            // JSONのcount回分リストへ書き込み
             for (int i = 0; i < count; ++i) {
                 EnemySpawnData d;
 
@@ -93,8 +98,10 @@ void EnemyManager::LoadEnemySCV(const std::string& path) {
 }
 
 void EnemyManager::SpawnEnemiesBySCV(const Vector3& playerPos) {
+    // 現在時間
     const float t = enemySpawnTimer_;
 
+    // スポーン予定リストを先頭から順にチェック
     while (!enemySpawnList_.empty()) {
         const auto& d = enemySpawnList_.front();
 
@@ -118,6 +125,8 @@ void EnemyManager::SpawnEnemiesBySCV(const Vector3& playerPos) {
         s->Initialize();
 
         enemies_.push_back(std::move(s));
+
+        // スポーンしたのでリストから除去
         enemySpawnList_.erase(enemySpawnList_.begin());
     }
 }
@@ -149,8 +158,8 @@ void EnemyManager::Update(float dt, const Vector3& playerPos) {
     );
 }
 
-void EnemyManager::Draw(Camera* camera)
-{
+void EnemyManager::Draw(Camera* camera){
+    // 敵描画
     for (auto& e : enemies_) {
         e->Draw(camera);
     }

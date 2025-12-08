@@ -9,18 +9,23 @@ using namespace KamataEngine;
 using namespace KamataEngine::MathUtility;
 
 void Player::Initialize(Camera* camera) {
+    // 親クラス初期化
     CharactorBase::Initialize();
 
+    // 参照登録、モデル読み込み
     camera_ = camera;
     model_ = Model::CreateFromOBJ("Player", true);
 
+    // 音声ロード
     audio_ = Audio::GetInstance();
     seExplosion_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
 
+    // 初期位置、姿勢
     worldTransform_.translation_ = { 0.0f, -2.0f, 20.0f };
     worldTransform_.scale_ = { 1.0f,  1.0f,  1.0f };
     worldTransform_.rotation_ = { 0.0f,  0.0f,  0.0f };
 
+    // 入力を受け付けるように
     input_ = Input::GetInstance();
 
     // HPや状態

@@ -3,6 +3,10 @@
 #include <3d/WorldTransform.h>
 #include <3d/Camera.h>
 
+/// <summary>
+/// RailCameraクラス
+/// レール上を進むように移動して、始点として利用するクラス
+/// </summary>
 class RailCamera{
 public:
 

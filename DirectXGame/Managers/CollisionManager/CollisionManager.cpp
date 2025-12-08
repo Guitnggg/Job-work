@@ -7,16 +7,19 @@ void CollisionManager::ResolvePlayerEnemyCollisions(
     std::vector<std::unique_ptr<CharactorBase>>& enemies,
     const CountDown& countDown)
 {
+    // 無効条件（入力ロック中、プレイヤー不在、プレイヤー爆散演出終了まちetc...）
     if (!player || countDown.IsInputLocked() || player->IsExplosionFinished()) {
         return;
     }
 
+    // プレイヤー側コライダー取得
     Collider* pc = player->GetCollider().get();
     if (!pc) { return; }
 
     const auto p = pc->GetTranslate();
     const float pr = pc->GetRadius();
 
+    // 各敵との衝突判定ループ
     for (auto& e : enemies) {
         if (!e) { continue; }
         Collider* ec = e->GetCollider().get();
@@ -25,12 +28,14 @@ void CollisionManager::ResolvePlayerEnemyCollisions(
         const auto q = ec->GetTranslate();
         const float er = ec->GetRadius();
 
+        // 距離チェック
         const float dx = p.x - q.x;
         const float dy = p.y - q.y;
         const float dz = p.z - q.z;
         const float dist2 = dx * dx + dy * dy + dz * dz;
         const float r = pr + er;
 
+        // 半径の合計より近ければ衝突
         if (dist2 <= r * r) {
             player->OnCollision(e.get());
             e->OnCollision(player);
@@ -41,18 +46,22 @@ void CollisionManager::ResolvePlayerEnemyCollisions(
 void CollisionManager::ResolveBulletEnemyCollisions(
     std::vector<std::unique_ptr<Bullet>>& bullets,
     std::vector<std::unique_ptr<CharactorBase>>& enemies,
-    const CountDown& countDown)
+    const CountDown& countDown) 
 {
+    // カウントダウン中は無効
     if (countDown.IsInputLocked()) { return; }
 
+    // 全弾ループ
     for (auto& b : bullets) {
         if (!b || b->IsDead()) { continue; }
+
         Collider* bc = b->GetCollider().get();
         if (!bc) { continue; }
 
         const auto bp = bc->GetTranslate();
         const float br = bc->GetRadius();
 
+        // 各敵と衝突チェック
         for (auto& e : enemies) {
             if (!e) { continue; }
 
@@ -67,6 +76,7 @@ void CollisionManager::ResolveBulletEnemyCollisions(
             const auto ep = ec->GetTranslate();
             const float er = ec->GetRadius();
 
+            // 球判定
             const float dx = bp.x - ep.x;
             const float dy = bp.y - ep.y;
             const float dz = bp.z - ep.z;

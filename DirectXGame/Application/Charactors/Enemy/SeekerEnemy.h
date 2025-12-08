@@ -8,27 +8,33 @@
 
 #include "Application/Charactors/CharactorBase.h"
 
+/// <summary>
+/// プレイヤーやターゲットへ向かって旋回追尾する敵キャラクター。
+/// ダメージフラッシュ・ヒットストップ・ノックバックなどの演出を備える。
+/// </summary>
 class SeekerEnemy : public CharactorBase {
 public:
 
     /// <summary>
-    /// 初期化
+    /// 初期化処理
     /// </summary>
     void Initialize() override;
 
     /// <summary>
-    /// 更新
+    /// 更新処理
     /// </summary>
     void Update() override;
 
     /// <summary>
-    /// 描画
+    /// 描画処理
     /// </summary>
+    /// <param name="camera">描画に使用するカメラ</param>
     void Draw(KamataEngine::Camera* camera) override;
 
     /// <summary>
-    /// 当たり判定時の処理
+    /// 当たり判定
     /// </summary>
+    /// <param name="other">衝突相手となるキャラクター</param>
     void OnCollision(CharactorBase* other) override;
 
     /// <summary>

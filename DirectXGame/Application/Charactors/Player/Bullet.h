@@ -5,24 +5,58 @@
 #include "3d/Camera.h"
 #include "Application/Charactors/CharactorBase.h"
 
+/// <summary>
+/// 単純な直進弾を表すクラス。
+/// 発射位置と方向を与えることで飛行し、
+/// 一定距離または寿命経過または衝突で消滅する。
+/// </summary>
 class Bullet :public CharactorBase {
 public:
 
+    /// <summary>
+    /// 初期化処理
+    /// </summary>
     void Initialize()override;
 
+    /// <summary>
+    /// 更新処理
+    /// </summary>
     void Update()override;
 
+    /// <summary>
+    /// 描画処理
+    /// </summary>
+    /// <param name="camera">描画に使用するカメラ</param>
     void Draw(KamataEngine::Camera* camera)override;
 
+    /// <summary>
+    /// 当たり判定
+    /// </summary>
+    /// <param name="">衝突相手</param>
     void OnCollision(CharactorBase* /*other*/)override;
 
+    /// <summary>
+    /// 死亡したかどうか
+    /// </summary>
     bool IsDead() const { return isDead_; }
 
-    // 射出初期化（ワールド座標・向き）
+    /// <summary>
+    /// 発射処理
+    /// </summary>
+    /// <param name="worldPos">発射位置（ワールド座標）</param>
+    /// <param name="dir">進行方向（正規化されたベクトル）</param>
     void FireFrom(const KamataEngine::Vector3& worldPos, const KamataEngine::Vector3& dir);
 
-    // パラメータ
+public:  // パラメータ
+
+    /// <summary>
+    /// 飛行速度の設定（１フレーム当たりの移動距離）
+    /// </summary>
     void SetSpeed(float s) { speed_ = s; }
+
+    /// <summary>
+    /// 寿命の設定（秒）
+    /// </summary>
     void SetLifeTime(float sec) { lifeTimeSec_ = sec; }
 
 private:

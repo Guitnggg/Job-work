@@ -4,6 +4,7 @@
 using namespace KamataEngine;
 
 void Bullet::Initialize() {
+    // 親クラスの初期化
     CharactorBase::Initialize();
 
     // 見た目（Bullet.obj が無ければ球）
@@ -23,9 +24,14 @@ void Bullet::Initialize() {
 }
 
 void Bullet::FireFrom(const Vector3& worldPos, const Vector3& dir) {
+    // 座標、進行方向セット
     worldTransform_.translation_ = worldPos;
     dir_ = dir;
-    startPos_ = worldPos; // 発射時の位置を記録
+
+    // 飛行距離カウントの基準座標
+    startPos_ = worldPos;
+
+    // 姿勢リセット
     worldTransform_.rotation_ = { 0.0f, 0.0f, 0.0f };
     worldTransform_.UpdateMatrix();
 }

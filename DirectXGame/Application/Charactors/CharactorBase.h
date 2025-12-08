@@ -7,6 +7,11 @@
 
 #include "Application/Charactors/Collider.h"
 
+/// <summary>
+/// キャラクター共通の基底クラス
+/// ワールド変換・移動量・コライダー・HP など、
+/// プレイヤー／敵などのキャラで共通となる機能を提供する。
+/// </summary>
 class CharactorBase {
 public:
 
@@ -16,37 +21,35 @@ public:
     virtual ~CharactorBase() = default;
 
     /// <summary>
-    /// 初期化
+    /// 初期化処理
     /// </summary>
     virtual void Initialize();
 
     /// <summary>
-    /// 更新
+    /// 更新処理
     /// </summary>
     virtual void Update();
 
     /// <summary>
-    /// 描画
+    /// 描画処理
     /// </summary>
-    /// <param name="camera"></param>
+    /// <param name="camera">描画に使用するカメラ</param>
     virtual void Draw(KamataEngine::Camera* camera) = 0;
 
     /// <summary>
     /// 当たり判定時の処理
     /// </summary>
-    /// <param name="enemy"></param>
+    /// <param name="enemy">衝突相手となるキャラクター</param>
     virtual void OnCollision(CharactorBase* enemy) = 0;
 
     /// <summary>
-    /// 
+    /// 死亡判定
     /// </summary>
-    /// <returns></returns>
     virtual bool IsDead()const { return false; }
 
     /// <summary>
-    /// 
+    /// 当たり判定の有効（死亡中/無敵時間などで使用）
     /// </summary>
-    /// <returns></returns>
     virtual bool IsCollidable()const { return true; }
 
 public:  /// === Getters === ///
@@ -54,49 +57,41 @@ public:  /// === Getters === ///
     /// <summary>
     /// ワールド座標の取得
     /// </summary>
-    /// <returns>ワールド座標</returns>
     KamataEngine::Vector3 GetWorldTranslation();
 
     /// <summary>
     /// WorldTransform の参照取得（編集や親子付けに使用）
     /// </summary>
-    /// <returns>内部の WorldTransform 参照</returns>
     KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
 
     /// <summary>
     /// 座標の取得
     /// </summary>
-    /// <returns>modelの座標</returns>
     KamataEngine::Vector3 GetTranslation() { return worldTransform_.translation_; }
 
     /// <summary>
     /// 角度の取得
     /// </summary>
-    /// <returns>modelの向き</returns>
     KamataEngine::Vector3 GetRotation() { return worldTransform_.rotation_; }
 
     /// <summary>
     /// 回転の取得
     /// </summary>
-    /// <returns>modelの回転</returns>
     KamataEngine::Vector3 GetRotate() { return worldTransform_.rotation_; }
 
     /// <summary>
     /// コライダーの取得
     /// </summary>
-    /// <returns>コライダー</returns>
     std::unique_ptr<Collider>& GetCollider() { return collider_; }
 
     /// <summary>
     /// HPの取得
     /// </summary>
-    /// <returns></returns>
     int GetHP() { return HP_; }
 
     /// <summary>
     /// 最大HPの取得
     /// </summary>
-    /// <returns></returns>
     int GetMaxHP() { return maxHp_; }
 
 public:  /// === Setters === ///
@@ -128,7 +123,6 @@ public:  /// === Setters === ///
     /// <summary>
     /// HPの設定
     /// </summary>
-    /// <param name="hp"></param>
     void SetHP(int hp) { HP_ = hp; }
 
 protected:
