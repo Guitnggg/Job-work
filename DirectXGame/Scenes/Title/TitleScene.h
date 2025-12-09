@@ -10,9 +10,14 @@
 #include "Scenes/IScene.h"
 class IntroductionScene;
 
+/// <summary>
+/// タイトルシーン
+/// 背景演出（宇宙空間＋小惑星流れ）とタイトルロゴの落下演出を行い
+/// ロゴ落下完了後に「Press SPACE」が点滅して表示される
+/// SPACE入力で IntroductionScene に遷移する
+/// </summary>
 class TitleScene : public IScene {
 public:
-
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -41,12 +46,19 @@ public:
 public:
 
     /// <summary>
-    /// GameSceneへのシーン変遷
+    /// シーン終了フラグの取得
     /// </summary>
     bool IsEnd()const override { return isEnd_; }
+
+    /// <summary>
+    /// 遷移先のシーン取得
+    /// </summary>
     IScene* NextScene()const override;
 
-    SceneName GetSceneName() const override { return SceneName::Title; }  // シーン名
+    /// <summary>
+    /// デバック識別用のシーン名取得
+    /// </summary>
+    SceneName GetSceneName() const override { return SceneName::Title; }
 
 private:
 

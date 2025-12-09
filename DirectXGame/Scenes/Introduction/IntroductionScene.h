@@ -11,11 +11,15 @@
 #include "Scenes/IScene.h"
 class GameScene;
 
+/// <summary>
+/// 操作説明・ゲーム導入を目的としたイントロシーン
+/// 背景アニメーション（小惑星＋天球）＋説明画像の表示を行い
+/// ESCでタイトルへ戻る・SPACEでゲーム本編へ進むシーン遷移を担当する
+/// </summary>
 class IntroductionScene :public IScene {
 public:
-
     /// <summary>
-    /// インストラクタ
+    /// コンストラクタ
     /// </summary>
     IntroductionScene();
 
@@ -42,13 +46,23 @@ public:
 public:
 
     /// <summary>
-    /// GameSceneへのシーン変遷
+    /// シーン終了フラグの取得
     /// </summary>
     bool IsEnd()const override { return isEnd_; }
+
+    /// <summary>
+    /// 遷移先のシーン取得
+    /// </summary>
     IScene* NextScene()const override;
 
+    /// <summary>
+    /// デバック識別用のシーン名取得
+    /// </summary>
     SceneName GetSceneName() const override { return SceneName::InGame; }
 
+    /// <summary>
+    /// シーン繊維の資格演出ヒント
+    /// </summary>
     TransitionHint GetTransitionHint(SceneName to)const override;
 
 private:
@@ -93,10 +107,13 @@ private:
 
 private:
 
-    // 生成
+    /// <summary>
+    /// 小惑星を生成し背景として流す
+    /// </summary>
     Asteroid* SpawnAsteroid();
 
-    // 乱数
+    /// <summary>
+    /// 乱数[min,max]を返す
+    /// </summary>
     float Rand(float min, float max);
 };
-

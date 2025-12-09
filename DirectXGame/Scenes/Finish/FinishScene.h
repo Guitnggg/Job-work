@@ -10,6 +10,10 @@
 #include "Scenes/IScene.h"
 class TitleScene;
 
+/// <summary>
+/// ゲームオーバー時に遷移するシーン
+/// 背景スクロール演出→GameOver文字表示→タイトルへ戻る
+/// </summary>
 class FinishScene :public IScene {
 public:
 
@@ -41,48 +45,51 @@ public:
 public:
 
     /// <summary>
-    /// シーン変遷
+    /// シーン終了フラグ
     /// </summary>
-    bool IsEnd() const override { return isEnd_; }  // シーン終了フラグ
-    IScene* NextScene() const override;             // 次のシーンを返す
+    bool IsEnd() const override { return isEnd_; }
 
-    SceneName GetSceneName() const override { return SceneName::Finish; }  // シーン名
+    /// <summary>
+    /// シーン終了後の遷移先
+    /// </summary>
+    IScene* NextScene() const override;
+
+    /// <summary>
+    /// デバック・識別用シーン名取得
+    /// </summary>
+    SceneName GetSceneName() const override { return SceneName::Finish; }
 
 private:
 
-    KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連
-    KamataEngine::Input* input_ = nullptr;             // 入力関連
-    KamataEngine::WorldTransform* worldTransform_;     // ワールド変換管理クラス
-    KamataEngine::Camera camera_;                      // カメラ管理クラス
+    // DirectX / カメラ / 入力
+    KamataEngine::DirectXCommon* dxCommon_ = nullptr;
+    KamataEngine::Input* input_ = nullptr;
+    KamataEngine::WorldTransform* worldTransform_ = nullptr;
+    KamataEngine::Camera camera_;
 
-    // 各テクスチャ
+    // UIスプライト
     uint32_t FinishTextureHandle_ = 0;
     KamataEngine::Sprite* FinishSprite_ = nullptr;
     uint32_t ReturnTextureHandle_ = 0;
     KamataEngine::Sprite* ReturnSprite_ = nullptr;
 
-    // 各種サウンド
-    uint32_t changeSEHandle_ = 0;  // シーン変遷SE
-    KamataEngine::Audio* changeSE_ = nullptr;
+    // 効果音
+    uint32_t changeSEHandle_ = 0;
 
-    // 点滅用
-    float blinkTimer_ = 0.0f;     // 点滅タイマー
-    float blinkInterval_ = 1.0f;  // 点滅間隔
+    // 点滅演出
+    float blinkTimer_ = 0.0f;
+    float blinkInterval_ = 1.0f;
 
-    // 天球
+    // 背景演出（天球 / 小惑星）
     Skydome* skydome_ = nullptr;
-
-    // 小惑星
     KamataEngine::Model* asteroidModel_ = nullptr;
     std::vector<Asteroid*> asteroids_;
-    int   asteroidCount_ = 10;    // 背景に流す数
-    float spawnZMin_ = 0.0f;      // 出現Z（奥）
+    int   asteroidCount_ = 10;
+    float spawnZMin_ = 0.0f;
     float spawnZMax_ = 140.0f;
-    float recycleZ_ = -50.0f;     // カメラを超えたら再出現
-    float spawnInterval_ = 1.0f;  // 出現間隔
-    float spawnTimer_ = 0.0f;     // 出現タイマー
-
-    // ランダム生成器
+    float recycleZ_ = -50.0f;
+    float spawnInterval_ = 1.0f;
+    float spawnTimer_ = 0.0f;
     std::mt19937 mt_{ std::random_device{}() };
 
     // 終了フラグ
@@ -90,9 +97,13 @@ private:
 
 private:
 
-    // 生成
+    /// <summary>
+    /// 小惑星をランダム生成して登録
+    /// </summary>
     Asteroid* SpawnAsteroid();
 
-    // 乱数
+    /// <summary>
+    /// 乱数を[min,max]の範囲で生成
+    /// </summary>
     float Rand(float min, float max);
 };

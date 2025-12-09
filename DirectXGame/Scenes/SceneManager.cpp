@@ -58,6 +58,7 @@ void SceneManager::ChangeScene(IScene* newScene) {
     // どのスタイルを使うか決定
     TransitionStyle style = hint.style;
     if (style == TransitionStyle::Auto) {
+        // Autoの場合はSceneManagerのデフォルト規則に従う
         pendingWhiteFlash_ = ShouldUseWhiteFlash(from, to);
         style = pendingWhiteFlash_ ? TransitionStyle::WhiteFlash : TransitionStyle::BlackFade;
     }
@@ -65,6 +66,7 @@ void SceneManager::ChangeScene(IScene* newScene) {
     // 状態遷移の初期設定
     switch (style) {
     case TransitionStyle::None:
+        // 演出なしで即切り替え
         if (currentScene_) {
             delete currentScene_;
         }
@@ -101,6 +103,10 @@ void SceneManager::ChangeScene(IScene* newScene) {
 
 void SceneManager::Update() {
     switch (transitionState_) {
+
+    // ===============
+    // 通常状態
+    // ===============
     case SceneTransitionState::None:
         if (currentScene_) {
             currentScene_->Update();
@@ -110,7 +116,9 @@ void SceneManager::Update() {
         }
         break;
 
-        // 白フラッシュ
+    // ===============
+    // 白フラッシュ
+    // ===============
     case SceneTransitionState::FlashOut: {
         flashTimer_ += 1.0f / 60.0f;
         float t = std::clamp(flashTimer_ / flashTime_, 0.0f, 1.0f);
@@ -126,7 +134,9 @@ void SceneManager::Update() {
         }
     } break;
 
-        // 黒フェードアウト
+    // ===============
+    // 黒フェードアウト
+    // ===============
     case SceneTransitionState::FadeOut: {
         transitionAlpha_ += transitionSpeed_;
         fadeSprite_->SetColor({ 0, 0, 0, std::clamp(transitionAlpha_, 0.0f, 1.0f) });
@@ -144,7 +154,9 @@ void SceneManager::Update() {
         }
     } break;
 
-                                      // 黒フェードイン
+    // ===============
+    // 黒フェードイン
+    // ===============
     case SceneTransitionState::FadeIn: {
         transitionAlpha_ -= transitionSpeed_;
         fadeSprite_->SetColor({ 0, 0, 0, std::clamp(transitionAlpha_, 0.0f, 1.0f) });
@@ -167,6 +179,7 @@ void SceneManager::Draw() {
         currentScene_->Draw();
     }
 
+    // 演出があるときだけ描画
     if (transitionState_ != SceneTransitionState::None) {
         auto commandList = DirectXCommon::GetInstance()->GetCommandList();
         Sprite::PreDraw(commandList);

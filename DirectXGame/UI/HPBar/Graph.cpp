@@ -14,7 +14,7 @@ Graph::~Graph() {
 
 void Graph::Initialize() {
 
-    uint32_t texHandle = TextureManager::GetInstance()->Load("./Resources/white1x1.png");
+    texHandle = TextureManager::Load("./Resources/white1x1.png");
 
     backBar_ = Sprite::Create(texHandle, { 10, 10 }, { 1, 0, 0, 1 });
     frontBar_ = Sprite::Create(texHandle, { 10, 10 }, { 0, 1, 0, 1 });

@@ -2,6 +2,13 @@
 
 #include "SceneName.h"
 
+/// <summary>
+/// シーン遷移時の演出スタイル
+/// ・Auto       : SceneManager が自動判定
+/// ・BlackFade  : 黒フェードアウト/フェードイン
+/// ・WhiteFlash : 白フラッシュ
+/// ・None       : 無演出（即時切替）
+/// </summary>
 enum class TransitionStyle {
     Auto,
     BlackFade,
@@ -9,12 +16,23 @@ enum class TransitionStyle {
     None
 };
 
+/// <summary>
+/// 遷移演出のパラメータ指定  
+/// style      : 遷移表現の種類  
+/// fadeSpeed  : フェードに使用する速度（-1 ならデフォルト）  
+/// frashTime  : WhiteFlash の発光時間（-1 ならデフォルト）
+/// </summary>
 struct TransitionHint {
     TransitionStyle style = TransitionStyle::Auto;
     float fadeSpeed = -1.0f;
     float frashTime = -1.0f;
 };
 
+/// <summary>
+/// すべてのシーンが継承すべきインターフェース。  
+/// Title → Introduction → Game → Clear / Finish など、  
+/// 全シーンの基本的な振る舞い（初期化・更新・描画・遷移）を統一する役割を持つ。
+/// </summary>
 class IScene {
 public:
     virtual ~IScene() = default;

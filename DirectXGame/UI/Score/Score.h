@@ -4,6 +4,10 @@
 #include <base/TextureManager.h>
 #include <base/DirectXCommon.h>
 
+/// <summary>
+/// スコア表示クラス
+/// 1つの数字スプライトを横に並べ、整数値を桁ごとに描画する仕組み
+/// </summary>
 class Score {
 public:
 
@@ -28,22 +32,18 @@ public:
     void Draw();
 
     /// <summary>
-    /// 
+    /// スコアを加算する
     /// </summary>
-    /// <param name="value"></param>
     void Add(int value) { score_ += value; }
 
     /// <summary>
-    /// 
+    /// 現在のスコアを取得する
     /// </summary>
-    /// <returns></returns>
     int GetScore()const { return score_; }
 
     /// <summary>
-    /// 
+    /// スプライトの表示位置を設定する
     /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
     void SetPosition(float x, float y);
 
 private:

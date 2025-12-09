@@ -44,15 +44,6 @@ void SeekerEnemy::Initialize() {
     flashTimer_ = 0.0f;
     hitStopTimer_ = 0.0f;
     pendingExplode_ = false;
-
-    // 被弾モーション
-    hitBasePos_ = worldTransform_.translation_;
-    hitDir_ = { 0.0f, 0.0f, 0.0f };
-    hitBaseRollZ_ = 0.0f;
-    hitMotionTimer_ = 0.0f;
-    hitMotionDuration_ = 0.12f;
-    hitKnockback_ = 0.8f;
-    hitRollRad_ = 0.25f;
 }
 
 void SeekerEnemy::Update() {
@@ -199,7 +190,8 @@ void SeekerEnemy::Draw(Camera* camera) {
 
     if (flashTimer_ > 0.0f) {
         float t = flashTimer_ / flashDuration_; // 1 → 0
-        float scaleMul = 1.0f + 0.25f * t;
+
+        float scaleMul = 1.0f + 0.5f * t; // 最大 1.5倍 まで膨らむ
 
         // スケールパンチ
         worldTransform_.scale_.x = baseScale_.x * scaleMul;

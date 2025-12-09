@@ -25,8 +25,6 @@ void Score::Initialize() {
 }
 
 void Score::Update() {
-    //score_++;  // 増やしていく
-
     int32_t number = score_;  // 表示対象のスコア値
     int32_t digit = 10000;    // 一番上の桁からスタートする
 
@@ -47,6 +45,7 @@ void Score::Draw() {
 }
 
 void Score::SetPosition(float x, float y){
+    // 描画開始位置を更新、桁ごとに再配置
     startX = x;
     startY = y;
 

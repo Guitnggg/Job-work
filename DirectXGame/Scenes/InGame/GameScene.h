@@ -28,18 +28,38 @@ class FinishScene;
 class ClearScene;
 
 enum class GameResult {
-    Clear,
-    Fail,
-    None
+    Clear,  // クリアに成功
+    Fail,   // プレイヤーが倒された
+    None    // 判定前
 };
 
+/// <summary>
+/// ゲーム本編シーン。  
+/// カウントダウン → 戦闘 → 判定（クリア／失敗） → 演出 → シーン遷移  
+/// までの流れを一括で制御する。  
+/// 弾・敵・HP・スコア・パーティクル・カメラを統合する中枢クラス。
+/// </summary>
 class GameScene : public IScene {
 public:
     GameScene();
     ~GameScene();
 
+    /// <summary>
+    /// 初期化処理
+    /// 全てのゲーム要素を生成・初期化する
+    /// プレイヤー・天球・カメラ・敵・弾・UI・演出・各モデルを生成する。
+    /// </summary>
     void Initialize() override;
+
+    /// <summary>
+    /// 更新処理
+    /// </summary>
     void Update() override;
+
+    /// <summary>
+    /// 描画処理
+    /// 背景→3Dオブジェクト→UIの順に描画
+    /// </summary>
     void Draw() override;
 
 public:

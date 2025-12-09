@@ -113,11 +113,11 @@ private:
 
     // ダメージフラッシュ
     float flashTimer_ = 0.0f;
-    float flashDuration_ = 0.08f;
+    float flashDuration_ = 0.15f;
 
     // ヒットストップ
     float hitStopTimer_ = 0.0f;
-    float hitStopDuration_ = 0.06f;
+    float hitStopDuration_ = 0.12f;
 
     // ヒットストップ終了後に消滅するか？
     bool pendingExplode_ = false;
@@ -130,9 +130,9 @@ private:
     KamataEngine::Vector3 hitDir_{ 0.0f, 0.0f, 0.0f };      // ノックバック方向
     float hitBaseRollZ_ = 0.0f;            // 被弾前のZ回転
     float hitMotionTimer_ = 0.0f;
-    float hitMotionDuration_ = 0.12f;      // モーション時間
-    float hitKnockback_ = 0.8f;       // ノックバック距離
-    float hitRollRad_ = 0.25f;      // 最大ロール角（ラジアン）
+    float hitMotionDuration_ = 0.28f;      // モーション時間
+    float hitKnockback_ = 2.5f;       // ノックバック距離
+    float hitRollRad_ = 1.0f;      // 最大ロール角（ラジアン）
 
 private:
     /// <summary>範囲外や寿命による強制死亡チェック</summary>

@@ -2,12 +2,19 @@
 
 #include <2d/Sprite.h>
 #include <base/DirectXCommon.h>
-
 #include <algorithm>
 
 #include "IScene.h"
 #include "SceneName.h"
 
+/// <summary>
+/// シーン遷移の進行状態
+/// None      : 遷移中ではない（通常再生）
+/// FadeOut   : 黒フェードアウト中
+/// LoadNextScene : 現在のシーンを解放して次のシーンを生成する（現実装では未使用）
+/// FadeIn    : 黒フェードイン中
+/// FlashOut  : 白フラッシュ
+/// </summary>
 enum class SceneTransitionState {
     None,
     FadeOut,
@@ -16,6 +23,13 @@ enum class SceneTransitionState {
     FlashOut
 };
 
+/// <summary>
+/// ゲーム内の全シーンを統括するマネージャー
+/// ・現在再生中のシーンの更新／描画
+/// ・シーン終了判定の検知
+/// ・遷移演出（黒フェード／白フラッシュ）の制御
+/// ・新しいシーンの生成・Initialize呼び出し
+/// </summary>
 class SceneManager {
 public:
 
@@ -64,17 +78,25 @@ public:
 
 private:
 
+    /// <summary>
+    /// 自動演出判定用
+    /// Title → Introduction : 黒フェード
+    /// Introduction → InGame : 白フラッシュ
+    /// </summary>
+    bool ShouldUseWhiteFlash(SceneName form, SceneName n) const;
+
+private:
+
     IScene* currentScene_ = nullptr;  // 現在実行中のシーン
-    IScene* nextScene_ = nullptr;
+    IScene* nextScene_ = nullptr;     // 遷移予定のシーン
 
     SceneTransitionState transitionState_ = SceneTransitionState::None;
 
+    // === 黒フェード ===
     float transitionAlpha_ = 0.0f;
     float transitionSpeed_ = 0.02f;
 
-    KamataEngine::Sprite* fadeSprite_ = nullptr;
-    KamataEngine::Sprite* flashSprite_ = nullptr;
-
+    // === 白フラッシュ ===
     float flashTimer_ = 0.0f;
     float flashTime_ = 0.16f;
 
@@ -84,5 +106,6 @@ private:
 
     bool pendingWhiteFlash_ = false;
 
-    bool ShouldUseWhiteFlash(SceneName form, SceneName n) const;
+    KamataEngine::Sprite* fadeSprite_ = nullptr;
+    KamataEngine::Sprite* flashSprite_ = nullptr;
 };
