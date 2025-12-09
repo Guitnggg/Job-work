@@ -21,22 +21,16 @@ ClearScene::~ClearScene() {
 void ClearScene::Initialize() {
     // 各種初期化処理
     dxCommon_ = DirectXCommon::GetInstance();
-
-    // ワールド変換データ
     worldTransform_ = new WorldTransform();
     worldTransform_->Initialize();
-
-    // カメラ
     camera_.Initialize();
-
-    // 入力を受け付けるようにする
     input_ = Input::GetInstance();
 
-    // 各種サウンド
+    // SE 読み込み
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
     pointSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/point.wav");
 
-    // 小惑星生成
+    // 小惑星を一定量生成
     asteroidModel_ = Model::CreateFromOBJ("Asteroid", true);
     asteroids_.reserve(asteroidCount_);
     for (int i = 0; i < asteroidCount_; i++) {
@@ -47,34 +41,28 @@ void ClearScene::Initialize() {
     skydome_ = new Skydome();
     skydome_->Initialize(&camera_);
 
-    // ★ スコアUI（0からカウントアップしていく）
+    // スコアUIセットアップ（0からfinalScoreまでカウントアップ）
     scoreUI_.Initialize();
     displayedScore_ = 0;
-
-    // ★ GAME CLEAR!! テキスト
-    uint32_t clearTex = TextureManager::Load("./Resources/Clear/GameClear.png");
-
-    // ※ テクスチャパスは好きなものに変えてOK
-    clearTextSprite_ = Sprite::Create(clearTex, { 640.0f, 200.0f });
-    clearTextSprite_->SetAnchorPoint({ 0.5f, 0.5f });
-
-    // 最初は見えないサイズ＆透明
-    clearTextSprite_->SetSize({ 0.0f, 0.0f });
-    clearTextSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 0.0f });
-
     float centerX = 1280.0f * 0.5f - (32.0f * 5 * 0.5f);
     float centerY = 720.0f * 0.6f;
     scoreUI_.SetPosition(centerX, centerY);
 
+    // GAME CLEAR 表示
+    uint32_t clearTex = TextureManager::Load("./Resources/Clear/GameClear.png");
+    clearTextSprite_ = Sprite::Create(clearTex, { 640.0f, 200.0f });
+    clearTextSprite_->SetAnchorPoint({ 0.5f, 0.5f });
+    clearTextSprite_->SetSize({ 0, 0 });
+    clearTextSprite_->SetColor({ 1, 1, 1, 0 });
+
+    // RETURN テキスト（最初は透明）
     uint32_t returnTex = TextureManager::Load("./Resources/Clear/Return.png");
-    returnTextSprite_ = Sprite::Create(returnTex, { 640.0f, 620.0f }); // 画面下中央
+    returnTextSprite_ = Sprite::Create(returnTex, { 640.0f, 620.0f });
     returnTextSprite_->SetAnchorPoint({ 0.5f, 0.5f });
     returnTextSprite_->SetSize(returnTextBaseSize_);
+    returnTextSprite_->SetColor({ 1, 1, 1, 0 });
 
-    // 最初は非表示（α=0）
-    returnTextSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 0.0f });
-
-    // 演出開始フェーズ
+    // 最初のフェーズ
     phase_ = ClearPhase::CameraMove;
     phaseTimer_ = 0.0f;
 }
@@ -83,6 +71,7 @@ void ClearScene::Update() {
     // 天球更新
     skydome_->Update();
 
+    // 小惑星生成間隔の更新
     const float dt = 1.0f / 60.0f;
 
     // 小惑星出現タイマー更新
@@ -124,22 +113,14 @@ void ClearScene::Update() {
         // GAME CLEAR!! がバウンスしながら出てくる
         float duration = 0.8f;
         float t = (std::min)(phaseTimer_ / duration, 1.0f);
+        float over = 1.2f;
+        float scale = (t < 0.6f) ? over * (t / 0.6f) : over + (1.0f - over) * ((t - 0.6f) / 0.4f);
 
-        float over = 1.2f; // 一瞬大きく
-        float scale;
-        if (t < 0.6f) {
-            scale = over * (t / 0.6f); // 0 → 1.2
-        }
-        else {
-            scale = over + (1.0f - over) * ((t - 0.6f) / 0.4f); // 1.2 → 1.0
-        }
-
-        KamataEngine::Vector2 size = {
+        clearTextSprite_->SetSize({
             clearTextBaseSize_.x * scale,
             clearTextBaseSize_.y * scale
-        };
-        clearTextSprite_->SetSize(size);
-        clearTextSprite_->SetColor({ 1.0f, 1.0f, 1.0f, t }); // αも0→1
+            });
+        clearTextSprite_->SetColor({ 1.0f, 1.0f, 1.0f, t });
 
         if (t >= 1.0f) {
             phase_ = ClearPhase::ResultCount;

@@ -21,80 +21,109 @@ enum class ClearPhase {
     WaitInput
 };
 
+/// <summary>
+/// ゲームクリア時に遷移するシーン
+/// 背景演出→GameClearテキスト表示→スコアカウントアップ→入力待ち
+/// →タイトルへ遷移
+/// </summary>
 class ClearScene :public IScene {
 public:
 
+    /// <summary>
+    /// コンストラクタ
+    /// </summary>
+    /// <param name="finalScore">ゲーム中で獲得した最終スコア</param>
     ClearScene(int finalScore);
 
+    /// <summary>
+    /// デストラクタ
+    /// </summary>
     ~ClearScene();
 
+    /// <summary>
+    /// 初期化処理
+    /// </summary>
     void Initialize()override;
 
+    /// <summary>
+    /// 更新処理
+    /// </summary>
     void Update()override;
 
+    /// <summary>
+    /// 描画処理
+    /// </summary>
     void Draw()override;
 
 public:
-
+    /// <summary>
+    /// フェードアウト/入力完了でシーン変遷
+    /// </summary>
     bool IsEnd() const override { return isEnd_; }  // シーン終了フラグ
-    IScene* NextScene() const override;             // 次のシーンを返す
 
+    /// <summary>
+    /// シーン終了後に遷移するシーンを返す
+    /// </summary>
+    IScene* NextScene() const override;
+
+    /// <summary>
+    /// デバック用：シーン名取得
+    /// </summary>
     SceneName GetSceneName() const override { return SceneName::Clear; }
 
 private:
 
-    KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連
-    KamataEngine::Input* input_ = nullptr;             // 入力関連
-    KamataEngine::WorldTransform* worldTransform_;     // ワールド変換管理クラス
-    KamataEngine::Camera camera_;                      // カメラ管理クラス
+    // DirectX / 入力 / カメラ / 行列
+    KamataEngine::DirectXCommon* dxCommon_ = nullptr;
+    KamataEngine::Input* input_ = nullptr;
+    KamataEngine::WorldTransform* worldTransform_ = nullptr;
+    KamataEngine::Camera camera_;
 
-    // 各種サウンド
-    uint32_t changeSEHandle_ = 0;  // シーン変遷SE
-    KamataEngine::Audio* changeSE_ = nullptr;
-
+    // 効果音
+    uint32_t changeSEHandle_ = 0;
     uint32_t pointSEHandle_ = 0;
-    KamataEngine::Audio* pointSE_ = nullptr;
 
-    // 天球
+    // 背景（天球 / 小惑星）
     Skydome* skydome_ = nullptr;
-
-    // 小惑星
     KamataEngine::Model* asteroidModel_ = nullptr;
     std::vector<Asteroid*> asteroids_;
-    int   asteroidCount_ = 10;    // 背景に流す数
-    float spawnZMin_ = 0.0f;      // 出現Z（奥）
+    int   asteroidCount_ = 10;
+    float spawnZMin_ = 0.0f;
     float spawnZMax_ = 140.0f;
-    float recycleZ_ = -50.0f;     // カメラを超えたら再出現
-    float spawnInterval_ = 1.0f;  // 出現間隔
-    float spawnTimer_ = 0.0f;     // 出現タイマー
-
-    // ランダム生成器
+    float recycleZ_ = -50.0f;
+    float spawnInterval_ = 1.0f;
+    float spawnTimer_ = 0.0f;
     std::mt19937 mt_{ std::random_device{}() };
 
-    // ★ 追加：クリア演出用
+    // 演出フェーズ
     ClearPhase phase_ = ClearPhase::CameraMove;
     float phaseTimer_ = 0.0f;
 
-    // ★ 追加：最終スコアと表示用スコア
+    // スコアUI
     int finalScore_ = 0;
     int displayedScore_ = 0;
     Score scoreUI_;
 
-    // ★ 追加：GAME CLEAR!! テキスト
+    // GAME CLEAR テキスト
     KamataEngine::Sprite* clearTextSprite_ = nullptr;
-    KamataEngine::Vector2 clearTextBaseSize_ = { 512.0f*2, 128.0f*2 };
+    KamataEngine::Vector2 clearTextBaseSize_ = { 512.0f * 2, 128.0f * 2 };
 
+    // RETURN テキスト（スペースでタイトルに戻る）
     KamataEngine::Sprite* returnTextSprite_ = nullptr;
-    KamataEngine::Vector2 returnTextBaseSize_ = { 1024.0f,128.8f };
+    KamataEngine::Vector2 returnTextBaseSize_ = { 1024.0f, 128.8f };
 
     // 終了フラグ
     bool isEnd_ = false;
 
 private:
 
-    // 生成
+    /// <summary>
+    /// 小惑星を生成して配列へ登録
+    /// </summary>
     Asteroid* SpawnAsteroid();
 
-    // 乱数
+    /// <summary>
+    /// 指定範囲の乱数を返す
+    /// </summary>
     float Rand(float min, float max);
 };
