@@ -5,6 +5,11 @@
 #include "3d/Camera.h"
 #include "math/Vector3.h"
 
+/// <summary>
+/// 被弾・爆発・推進エンジンなどの演出に使用する残留系パーティクル（煙）。
+/// 時間経過とともに移動し、スケールが変化し、寿命で消滅する。
+/// DamageParticle より長く残るふわっとした演出向き。
+/// </summary>
 class Smoke{
 public:
 

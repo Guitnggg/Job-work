@@ -191,8 +191,7 @@ void SeekerEnemy::Update() {
     }
 }
 
-void SeekerEnemy::Draw(Camera* camera)
-{
+void SeekerEnemy::Draw(Camera* camera) {
     if (!camera || isDead_ || !model_) { return; }
 
     // 一旦スケールを保存
@@ -228,8 +227,7 @@ void SeekerEnemy::Draw(Camera* camera)
     worldTransform_.UpdateMatrix();
 }
 
-void SeekerEnemy::OnCollision(CharactorBase* /*other*/)
-{
+void SeekerEnemy::OnCollision(CharactorBase* /*other*/) {
     if (isDead_) {
         return;
     }
@@ -269,8 +267,7 @@ void SeekerEnemy::OnCollision(CharactorBase* /*other*/)
     }
 }
 
-void SeekerEnemy::ClampDeathByBounds_()
-{
+void SeekerEnemy::ClampDeathByBounds_() {
     const Vector3 p = GetWorldTranslation();
 
     // 画面外orZ手前などで強制消去

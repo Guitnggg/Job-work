@@ -9,15 +9,13 @@ void Smoke::Initialize(KamataEngine::Model* model,
     float startScale,
     float endScale
 ) {
+    // パラメータ受け取り
     model_ = model;
     velocity_ = velocity;
-
     life_ = 0.0f;
     maxLife_ = lifeTime;
-
     startScale_ = startScale;
     endScale_ = endScale;
-
     isFinished_ = false;
 
     // ワールド変換の初期化

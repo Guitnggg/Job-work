@@ -6,21 +6,40 @@
 #include "Application/Charactors/Player/Player.h"
 #include "Application/Charactors/Enemy/SeekerEnemy.h"
 #include "Application/Charactors/Player/Bullet.h"
-#include "Application/Charactors/Collider.h"   // 実際のパスに合わせてください
+#include "Application/Charactors/Collider.h"
 
 #include "UI/CountDown/CountDown.h"
 
-
+/// <summary>
+/// 当たり判定の管理クラス。  
+/// ・プレイヤーと敵との衝突  
+/// ・弾と敵との衝突  
+/// を判定し、それぞれの OnCollision を呼び出す役割を持つ。  
+/// 本クラスは「衝突の検知・通知のみ」を行い、  
+/// HPの減少・被弾エフェクト・スコア処理などは各オブジェクトへ委譲する。
+/// </summary>
 class CollisionManager {
 public:
-    /// プレイヤー × 敵
+    /// <summary>
+    /// プレイヤーと複数の敵の衝突判定を行う。  
+    /// 衝突が発生した場合、両者の OnCollision を呼び出す。
+    /// </summary>
+    /// <param name="player">衝突対象のプレイヤー</param>
+    /// <param name="enemies">衝突対象の敵リスト</param>
+    /// <param name="countDown">カウントダウン中は衝突を無効にするため使用</param>
     static void ResolvePlayerEnemyCollisions(
         Player* player,
         std::vector<std::unique_ptr<CharactorBase>>& enemies,
         const CountDown& countDown
     );
 
-    /// 弾 × 敵
+    /// 弾と複数の敵との衝突判定を行う。  
+    /// 衝突が発生した場合、敵に OnCollision、弾に OnCollision を通知し、  
+    /// 1発の弾につき1体の敵へ命中することを想定して処理を中断する。
+    /// </summary>
+    /// <param name="bullets">衝突対象の弾のリスト</param>
+    /// <param name="enemies">衝突対象の敵のリスト</param>
+    /// <param name="countDown">カウントダウン中は衝突を無効にするため使用</param>
     static void ResolveBulletEnemyCollisions(
         std::vector<std::unique_ptr<Bullet>>& bullets,
         std::vector<std::unique_ptr<CharactorBase>>& enemies,

@@ -8,6 +8,11 @@
 
 #include "Application/Charactors/CharactorBase.h"
 
+/// <summary>
+/// プレイヤーキャラクタークラス。
+/// 移動・ロール回避・被弾演出・無敵時間・爆発演出など
+/// ゲーム内での操作・生存管理を担当する。
+/// </summary>
 class Player : public CharactorBase {
 public:
     /// <summary>
