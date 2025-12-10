@@ -10,64 +10,171 @@
 #include "audio/Audio.h"
 #include "math/Vector2.h"
 
+/// <summary>
+/// ゲーム開始時のカウントダウン演出
+/// </summary>
 class CountDown{
 public:
-
-    enum class Phase { Inactive, ReadyDelay, Count3, Count2, Count1, Go, Done };
+    enum class Phase {
+        Inactive,    // 待機（何も表示しない）
+        ReadyDelay,  // 開始時のウェイト
+        Count3,      // ３
+        Count2,      // ２
+        Count1,      // １
+        Go,          // GO
+        Done         // 完了
+    };
 
     CountDown() = default;
     ~CountDown();
 
-
+    /// <summary>
+    /// 画像パスからテクスチャを読み込み、カウント用スプライトを生成して初期化する
+    /// </summary>
+    /// <param name="tex3">「3」に使用するテクスチャのパス</param>
+    /// <param name="tex2">「2」に使用するテクスチャのパス</param>
+    /// <param name="tex1">「1」に使用するテクスチャのパス</param>
+    /// <param name="texGo">「GO」に使用するテクスチャのパス</param>
+    /// <param name="centerPos">表示の中心座標</param>
+    /// <param name="baseSizeCount">3/2/1 表示時の基準サイズ</param>
+    /// <param name="baseGoSize">GO 表示時の基準サイズ</param>
     void InitializeFromPaths(const char* tex3, const char* tex2, const char* tex1, const char* texGo,
         const KamataEngine::Vector2& centerPos = { 640.0f,360.0f },
         const KamataEngine::Vector2& baseSizeCount = { 256.0f,256.0f },
         const KamataEngine::Vector2& baseGoSize = { 320.0f,160.0f }
     );
 
-
+    /// <summary>
+    /// テクスチャハンドルから直接スプライトを生成し初期化する
+    /// 事前に別処理で読み込んだテクスチャを使い回したい場合に利用する
+    /// </summary>
+    /// <param name="tex3">「3」に使用するテクスチャハンドル</param>
+    /// <param name="tex2">「2」に使用するテクスチャハンドル</param>
+    /// <param name="tex1">「1」に使用するテクスチャハンドル</param>
+    /// <param name="texGo">「GO」に使用するテクスチャハンドル</param>
+    /// <param name="centerPos">表示の中心座標</param>
+    /// <param name="baseSizeCount">3/2/1 表示時の基準サイズ</param>
+    /// <param name="baseSizeGo">GO 表示時の基準サイズ</param>
     void InitializeFromHandles(uint32_t tex3, uint32_t tex2, uint32_t tex1, uint32_t texGo,
         const KamataEngine::Vector2& centerPos = { 640.0f, 360.0f },
         const KamataEngine::Vector2& baseSizeCount = { 256.0f, 256.0f },
         const KamataEngine::Vector2& baseSizeGo = { 320.0f, 160.0f }
     );
 
-    // 
+    /// <summary>
+    /// 各フェーズの表示時間を設定する
+    /// ReadyDelay → 3 → 2 → 1 → GO の順
+    /// </summary>
+    /// <param name="readyDeley">カウント開始前の待機時間</param>
+    /// <param name="countUnit">3/2/1 各数字の表示時間</param>
+    /// <param name="goDuraction">GO 表示時間</param>
     void SetTimings(float readyDeley, float countUnit, float goDuraction);
+
+    /// <summary>
+    /// 拡大アニメーションの開始スケールと終了スケールを設定する
+    /// </summary>
+    /// <param name="startScale">表示開始時のスケール</param>
+    /// <param name="endScale">表示終了時のスケール</param>
     void SetScaleRange(float startScale, float endScale);
+
+    /// <summary>
+    /// BackEase 用の「跳ね返り量」を設定する
+    /// 数値が大きいほど表示時の弾みが強くなる
+    /// </summary>
+    /// <param name="s">BackEase のオーバーシュート量</param>
     void SetBackOvershoot(float s);
+
+    /// <summary>
+    /// カウントダウン時に再生する効果音を設定する。
+    /// </summary>
+    /// <param name="seBeep">3/2/1 表示開始時に鳴らすビープ音</param>
+    /// <param name="seGo">GO 表示開始時に鳴らす効果音</param>
     void SetAudio(uint32_t seBeep, uint32_t seGo);
 
-    // 制御
+public:
+    /// <summary>
+    /// カウントダウン開始
+    /// </summary>
     void Start();
+
+    /// <summary>
+    /// カウントダウン状態のリセット
+    /// </summary>
     void Reset();
-    void Update(float dt); 
+
+    /// <summary>
+    /// カウントダウンの更新
+    /// </summary>
+    /// <param name="dt">前フレーム空の経過時間</param>
+    void Update(float dt);
+
+    /// <summary>
+    /// カウントダウンの描画
+    /// </summary>
     void Draw();
 
-    // 状態問い合わせ
+public:
+    /// <summary>
+    /// カウントダウンが有効かどうか返す
+    /// </summary>
     bool IsActive() const { return phase_ != Phase::Inactive; }
+
+    /// <summary>
+    /// カウントダウンが完了かどうか返す
+    /// </summary>
     bool IsDone()   const { return phase_ == Phase::Done; }
+
+    /// <summary>
+    /// 入力がロックされているかどうか返す
+    /// </summary>
     bool IsInputLocked() const { return inputLocked_; }
+
+    /// <summary>
+    /// 現在のフェーズを取得する
+    /// </summary>
     Phase GetPhase() const { return phase_; }
 
 private:
-
+    /// <summary>
+    /// BackEaseのイージング関数
+    /// </summary>
     float EaseoutBack(float t, float s)const;
+
+    /// <summary>
+    /// 現在のフェーズに対する表示時間を返す
+    /// </summary>
     float CurrentPhaseDuraction()const;
+
+    /// <summary>
+    /// 現在のフェーズで表示すべきスプライトを返す
+    /// 該当しないフェーズの場合は nullptr を返す
+    /// </summary>
     KamataEngine::Sprite* CurrentPhaseSprite()const;
+
+    /// <summary>
+    /// 現在のフェーズにおけるアルファ値を返す
+    /// </summary>
     float CurrentPhaseAlpha(float t01)const;
+
+    /// <summary>
+    /// 現在のフェーズにおけるスケール値を返す
+    /// </summary>
     float CurrentPhaseScale(float t01)const;
+
+    /// <summary>
+    /// タイマーのフェーズが持ち時間を超えたら次のフェーズに進める
+    /// </summary>
     void AdvancePhase();
 
 private:
 
-    // 
+    // スプライト
     KamataEngine::Sprite* sp3_ = nullptr;
     KamataEngine::Sprite* sp2_ = nullptr;
     KamataEngine::Sprite* sp1_ = nullptr;
     KamataEngine::Sprite* spGo_ = nullptr;
 
-    // 見た目
+    // 表示パラメータ
     KamataEngine::Vector2 center_ = { 640.0f, 360.0f };
     KamataEngine::Vector2 baseSizeCount_ = { 256.0f, 256.0f };
     KamataEngine::Vector2 baseSizeGo_ = { 320.0f, 160.0f };
