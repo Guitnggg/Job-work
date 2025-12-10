@@ -12,7 +12,6 @@
 /// </summary>
 class Smoke{
 public:
-
     /// <summary>
     /// コンストラクタ / デストラクタ 
     /// </summary>

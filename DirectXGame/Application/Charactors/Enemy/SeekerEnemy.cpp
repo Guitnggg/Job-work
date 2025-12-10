@@ -4,7 +4,6 @@
 using namespace KamataEngine;
 
 void SeekerEnemy::Initialize() {
-
     // 親の初期化処理を呼び出す（worldTransform_ / collider_ の生成など）
     CharactorBase::Initialize();
 
@@ -47,18 +46,14 @@ void SeekerEnemy::Initialize() {
 }
 
 void SeekerEnemy::Update() {
-    if (isDead_) {
-        return;
-    }
+    if (isDead_) { return; }
 
     const float dt = 1.0f / 60.0f;
     timeSec_ += dt;
 
     // 寿命・範囲外チェック
     ClampDeathByBounds_();
-    if (isDead_) {
-        return;
-    }
+    if (isDead_) { return; }
 
     // ダメージフラッシュタイマー
     if (flashTimer_ > 0.0f) {
@@ -73,8 +68,7 @@ void SeekerEnemy::Update() {
     }
 
     switch (state_) {
-    case State::Active:
-    {
+    case State::Active: {
         // ==== 通常の追尾移動 ====
         Vector3 pos = worldTransform_.translation_;
 
@@ -132,10 +126,9 @@ void SeekerEnemy::Update() {
             collider_->Update();
         }
     }
-    break;
+                      break;
 
-    case State::HitStop:
-    {
+    case State::HitStop: {
         // ヒットストップ中：移動・AIは止めるが、「被弾モーション」は行う
         hitStopTimer_ -= dt;
         float tMotion = 0.0f;
@@ -178,7 +171,7 @@ void SeekerEnemy::Update() {
             }
         }
     }
-    break;
+                       break;
     }
 }
 
@@ -220,9 +213,7 @@ void SeekerEnemy::Draw(Camera* camera) {
 }
 
 void SeekerEnemy::OnCollision(CharactorBase* /*other*/) {
-    if (isDead_) {
-        return;
-    }
+    if (isDead_) { return; }
 
     // とりあえず 1 ダメージ固定
     HP_ -= 1;

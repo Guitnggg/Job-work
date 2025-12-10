@@ -12,7 +12,6 @@
 /// </summary>
 class Bullet :public CharactorBase {
 public:
-
     /// <summary>
     /// 初期化処理
     /// </summary>
@@ -48,7 +47,6 @@ public:
     void FireFrom(const KamataEngine::Vector3& worldPos, const KamataEngine::Vector3& dir);
 
 public:  // パラメータ
-
     /// <summary>
     /// 飛行速度の設定（１フレーム当たりの移動距離）
     /// </summary>

@@ -8,7 +8,6 @@ void DamageParticle::Initialize(KamataEngine::Model* model,
     float lifeTime,
     float startScale,
     float endScale) {
-
     // パラメータ受け取り
     model_ = model;
     velocity_ = vel;

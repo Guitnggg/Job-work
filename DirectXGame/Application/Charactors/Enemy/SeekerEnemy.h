@@ -14,7 +14,6 @@
 /// </summary>
 class SeekerEnemy : public CharactorBase {
 public:
-
     /// <summary>
     /// 初期化処理
     /// </summary>
@@ -42,9 +41,7 @@ public:
     /// </summary>
     bool IsDead() const override { return isDead_; }
 
-public:
-    // ==== 外部から設定するパラメータ ====
-
+public:  // ==== 外部から設定するパラメータ ====
     /// <summary>
     /// ターゲットの設定（プレイヤー位置など）
     /// </summary>

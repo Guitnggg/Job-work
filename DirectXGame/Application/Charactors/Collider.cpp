@@ -3,7 +3,6 @@
 using namespace KamataEngine;
 
 void Collider::Initialize() {
-
     // ワールド変換の初期化
     worldTransform_.Initialize();
 
@@ -15,13 +14,11 @@ void Collider::Initialize() {
 }
 
 void Collider::Update() {
-
     // ワールド変換行列の更新
     worldTransform_.UpdateMatrix();
 }
 
 void Collider::Draw(KamataEngine::Camera& camera) {
-
     // ワールド変換をモデルに反映して描画
     model_->Draw(worldTransform_, camera, textureHandle_);
 }

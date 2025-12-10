@@ -14,7 +14,6 @@
 /// </summary>
 class CharactorBase {
 public:
-
     /// <summary>
     /// 仮想デストラクタ
     /// </summary>
@@ -53,7 +52,6 @@ public:
     virtual bool IsCollidable()const { return true; }
 
 public:  /// === Getters === ///
-
     /// <summary>
     /// ワールド座標の取得
     /// </summary>
@@ -95,7 +93,6 @@ public:  /// === Getters === ///
     int GetMaxHP() { return maxHp_; }
 
 public:  /// === Setters === ///
-
     /// <summary>
     /// 親の設定（RailCamera などの WT を渡す）
     /// </summary>
@@ -126,7 +123,6 @@ public:  /// === Setters === ///
     void SetHP(int hp) { HP_ = hp; }
 
 protected:
-
     // ワールド変換情報
     KamataEngine::WorldTransform worldTransform_;
 

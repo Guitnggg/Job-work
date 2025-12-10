@@ -13,7 +13,6 @@
 /// </summary>
 class Collider {
 public:
-
     /// <summary>
     /// 初期化処理
     /// </summary>
@@ -31,7 +30,6 @@ public:
     void Draw(KamataEngine::Camera& camera);
 
 public:  /// === Getters === ///
-
     /// <summary>
     /// 座標の取得
     /// </summary>
@@ -43,7 +41,6 @@ public:  /// === Getters === ///
     float GetRadius() { return radius_; }
 
 public:  /// === Setters === ///
-
     /// <summary>
     /// 座標の設定
     /// </summary>
@@ -55,7 +52,6 @@ public:  /// === Setters === ///
     void SetRadius(float radius) { radius_ = radius; }
 
 private:
-
     // ワールドトランスフォーム
     KamataEngine::WorldTransform worldTransform_;
 

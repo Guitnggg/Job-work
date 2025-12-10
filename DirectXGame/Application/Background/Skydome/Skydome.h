@@ -9,7 +9,6 @@
 /// </summary>
 class Skydome {
 public:
-
     /// <summary>
     /// 初期化処理
     /// </summary>

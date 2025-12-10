@@ -9,7 +9,6 @@
 /// </summary>
 class RailCamera{
 public:
-
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -31,7 +30,6 @@ public:
     void Update();
 
 public:
-
     /// <summary>
     /// カメラの取得
     /// </summary>
@@ -43,9 +41,7 @@ public:
     KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
 
 private:
-
     KamataEngine::WorldTransform worldTransform_;  // ワールド変換データ
     KamataEngine::Camera* camera_ = nullptr;       // カメラ（ビューポート）
-
 };
 

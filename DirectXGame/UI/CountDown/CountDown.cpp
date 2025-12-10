@@ -10,7 +10,7 @@ CountDown::~CountDown() {
 }
 
 void CountDown::InitializeFromPaths(const char* tex3, const char* tex2, const char* tex1, const char* texGo,
-    const KamataEngine::Vector2& centerPos, const KamataEngine::Vector2& baseSizeCount, const KamataEngine::Vector2& baseGoSize) {
+    const Vector2& centerPos, const Vector2& baseSizeCount, const Vector2& baseGoSize) {
     // 画像パスからテクスチャを読み込む
     InitializeFromHandles(
         TextureManager::Load(tex3),
@@ -22,7 +22,7 @@ void CountDown::InitializeFromPaths(const char* tex3, const char* tex2, const ch
 }
 
 void CountDown::InitializeFromHandles(uint32_t tex3, uint32_t tex2, uint32_t tex1, uint32_t texGo,
-    const KamataEngine::Vector2& centerPos, const KamataEngine::Vector2& baseSizeCount, const KamataEngine::Vector2& baseSizeGo) {
+    const Vector2& centerPos, const Vector2& baseSizeCount, const Vector2& baseSizeGo) {
     // 表示パラメータ設定
     center_ = centerPos;
     baseSizeCount_ = baseSizeCount;
