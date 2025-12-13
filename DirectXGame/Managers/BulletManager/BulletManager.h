@@ -4,8 +4,8 @@
 #include <vector>
 #include <memory>
 
-#include "Application/Charactors/Player/Bullet.h"
-#include "Application/Charactors/Player/Player.h"
+#include "Application/Characters/Player/Bullet.h"
+#include "Application/Characters/Player/Player.h"
 #include "UI/CountDown/CountDown.h"
 
 /// <summary>

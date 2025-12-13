@@ -50,7 +50,7 @@ public:  // ==== 外部から設定するパラメータ ====
     /// <summary>
     /// 速度の設定
     /// </summary>
-    void SetSpeed(float s) { speed_ = s; }
+    void SetSpeed(float speed) { speed_ = speed; }
 
     /// <summary>
     /// 旋回率の設定

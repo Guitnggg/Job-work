@@ -6,7 +6,7 @@
 #include <string>
 #include <algorithm>
 
-#include "Application/Charactors/Enemy/SeekerEnemy.h"
+#include "Application/Characters/Enemy/SeekerEnemy.h"
 #include "Application/Effects/Damage/DamageParticle.h"
 
 /// <summary>

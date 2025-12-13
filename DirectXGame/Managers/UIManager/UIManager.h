@@ -5,7 +5,7 @@
 
 #include "UI/HPBar/Graph.h"
 #include "UI/Score/Score.h"
-#include "Application/Charactors/Player/Player.h"
+#include "Application/Characters/Player/Player.h"
 
 /// <summary>
 /// HPバー／スコアなど画面上のUIをまとめて管理するクラス

@@ -6,7 +6,7 @@
 #include "input/Input.h"
 #include "audio/Audio.h"
 
-#include "Application/Charactors/CharactorBase.h"
+#include "Application/Characters/CharacterBase.h"
 
 /// <summary>
 /// プレイヤーキャラクタークラス。

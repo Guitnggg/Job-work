@@ -1,4 +1,4 @@
-#include "CharactorBase.h"
+#include "CharacterBase.h"
 
 using namespace KamataEngine;
 

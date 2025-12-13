@@ -3,7 +3,7 @@
 #include "3d/WorldTransform.h"
 #include "3d/Model.h"
 #include "3d/Camera.h"
-#include "Application/Charactors/CharactorBase.h"
+#include "Application/Characters/CharacterBase.h"
 
 /// <summary>
 /// 単純な直進弾を表すクラス。

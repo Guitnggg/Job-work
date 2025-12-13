@@ -1,6 +1,6 @@
 #include "Asteroid.h"
 
-#include "Application/Charactors/Player/Player.h"
+#include "Application/Characters/Player/Player.h"
 
 #include <cassert>
 
@@ -8,7 +8,7 @@ Asteroid::Asteroid() {}
 
 Asteroid::~Asteroid() {}
 
-void Asteroid::Initialize(KamataEngine::Model* model, const KamataEngine::Vector3 pos, const KamataEngine::Vector3 velocity, KamataEngine::Vector3 rotate) {
+void Asteroid::Initialize(KamataEngine::Model* model, const KamataEngine::Vector3& pos, const KamataEngine::Vector3& velocity, const KamataEngine::Vector3& rotate) {
     // NULLポインタチェック
     assert(model);
 
@@ -46,7 +46,7 @@ void Asteroid::Draw(const KamataEngine::Camera& camera) {
     model_->Draw(worldTransform_, camera);
 }
 
-void Asteroid::Respawn(const KamataEngine::Vector3 pos, const KamataEngine::Vector3 velocity, KamataEngine::Vector3 rotate){
+void Asteroid::Respawn(const KamataEngine::Vector3& pos, const KamataEngine::Vector3& velocity, const KamataEngine::Vector3& rotate) {
     worldTransform_.translation_ = pos;
     velocity_ = velocity;
     rotate_ = rotate;

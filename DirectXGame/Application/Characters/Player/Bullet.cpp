@@ -9,7 +9,6 @@ void Bullet::Initialize() {
 
     // 見た目（Bullet.obj が無ければ球）
     model_.reset(Model::CreateSphere());
-    if (!model_) { model_.reset(Model::CreateSphere()); }
 
     // 小さめスケール
     worldTransform_.scale_ = { 0.4f, 0.4f, 0.7f };

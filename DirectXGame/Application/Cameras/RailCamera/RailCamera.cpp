@@ -26,5 +26,5 @@ void RailCamera::Update() {
     worldTransform_.UpdateMatrix();
 
     // カメラの位置をワールド変換データの位置に合わせる
-    camera_->matView = myMath::Inverse(worldTransform_.matWorld_);
+    camera_->matView = MyMath::Inverse(worldTransform_.matWorld_);
 }

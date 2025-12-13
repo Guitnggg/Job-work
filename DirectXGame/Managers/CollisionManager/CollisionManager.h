@@ -3,10 +3,10 @@
 #include <vector>
 #include <memory>
 
-#include "Application/Charactors/Player/Player.h"
-#include "Application/Charactors/Enemy/SeekerEnemy.h"
-#include "Application/Charactors/Player/Bullet.h"
-#include "Application/Charactors/Collider.h"
+#include "Application/Characters/Player/Player.h"
+#include "Application/Characters/Enemy/SeekerEnemy.h"
+#include "Application/Characters/Player/Bullet.h"
+#include "Application/Characters/Collider.h"
 
 #include "UI/CountDown/CountDown.h"
 
