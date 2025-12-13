@@ -206,7 +206,7 @@ void EnemyManager::SpawnExplosionAt(const KamataEngine::Vector3& pos) {
 void EnemyManager::RemoveDeadEnemies() {
     enemies_.erase(
         std::remove_if(enemies_.begin(), enemies_.end(),
-            [](const std::unique_ptr<CharactorBase>& e) {
+            [](const std::unique_ptr<CharacterBase>& e) {
                 if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
                     return s->IsDead();
                 }

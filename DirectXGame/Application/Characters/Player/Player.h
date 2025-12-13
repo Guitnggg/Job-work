@@ -13,7 +13,7 @@
 /// 移動・ロール回避・被弾演出・無敵時間・爆発演出など
 /// ゲーム内での操作・生存管理を担当する。
 /// </summary>
-class Player : public CharactorBase {
+class Player : public CharacterBase {
 public:
     /// <summary>
     /// デストラクタ
@@ -41,7 +41,7 @@ public:
     /// 当たり判定処理
     /// </summary>
     /// <param name="enemy">衝突した相手</param>
-    void OnCollision(CharactorBase* enemy) override;
+    void OnCollision(CharacterBase* enemy) override;
 
 public:
     /// <summary>

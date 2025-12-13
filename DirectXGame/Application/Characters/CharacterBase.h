@@ -5,19 +5,19 @@
 #include "math/Vector3.h"
 #include <memory>
 
-#include "Application/Charactors/Collider.h"
+#include "Application/Characters/Collider.h"
 
 /// <summary>
 /// キャラクター共通の基底クラス
 /// ワールド変換・移動量・コライダー・HP など、
 /// プレイヤー／敵などのキャラで共通となる機能を提供する。
 /// </summary>
-class CharactorBase {
+class CharacterBase {
 public:
     /// <summary>
     /// 仮想デストラクタ
     /// </summary>
-    virtual ~CharactorBase() = default;
+    virtual ~CharacterBase() = default;
 
     /// <summary>
     /// 初期化処理
@@ -39,7 +39,7 @@ public:
     /// 当たり判定時の処理
     /// </summary>
     /// <param name="enemy">衝突相手となるキャラクター</param>
-    virtual void OnCollision(CharactorBase* enemy) = 0;
+    virtual void OnCollision(CharacterBase* enemy) = 0;
 
     /// <summary>
     /// 死亡判定
@@ -85,7 +85,7 @@ public:  /// === Getters === ///
     /// <summary>
     /// HPの取得
     /// </summary>
-    int GetHP() { return HP_; }
+    int GetHP() { return hp_; }
 
     /// <summary>
     /// 最大HPの取得
@@ -120,7 +120,7 @@ public:  /// === Setters === ///
     /// <summary>
     /// HPの設定
     /// </summary>
-    void SetHP(int hp) { HP_ = hp; }
+    void SetHP(int hp) { hp_ = hp; }
 
 protected:
     // ワールド変換情報
@@ -133,7 +133,7 @@ protected:
     std::unique_ptr<Collider> collider_;
 
     // 体力
-    int HP_ = 0;
+    int hp_ = 0;
 
     // 最大体力
     int maxHp_ = 0;

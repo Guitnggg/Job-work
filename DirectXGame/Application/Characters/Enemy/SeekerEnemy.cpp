@@ -5,7 +5,7 @@ using namespace KamataEngine;
 
 void SeekerEnemy::Initialize() {
     // 親の初期化処理を呼び出す（worldTransform_ / collider_ の生成など）
-    CharactorBase::Initialize();
+    CharacterBase::Initialize();
 
     // モデル読み込み（OBJがなければSphereにフォールバック）
     model_.reset(Model::CreateFromOBJ("Enemy", true));
@@ -22,7 +22,7 @@ void SeekerEnemy::Initialize() {
 
     // HP設定
     maxHp_ = initialHP_;
-    HP_ = maxHp_;
+    hp_ = maxHp_;
 
     // コライダー設定
     if (collider_) {
@@ -212,12 +212,12 @@ void SeekerEnemy::Draw(Camera* camera) {
     worldTransform_.UpdateMatrix();
 }
 
-void SeekerEnemy::OnCollision(CharactorBase* /*other*/) {
+void SeekerEnemy::OnCollision(CharacterBase* /*other*/) {
     if (isDead_) { return; }
 
     // とりあえず 1 ダメージ固定
-    HP_ -= 1;
-    if (HP_ < 0) HP_ = 0;
+    hp_ -= 1;
+    if (hp_ < 0) hp_ = 0;
 
     // ==== 当たった瞬間の演出セットアップ ====
 
@@ -245,7 +245,7 @@ void SeekerEnemy::OnCollision(CharactorBase* /*other*/) {
     }
 
     // HP0 ならヒットストップ後に消す
-    if (HP_ <= 0) {
+    if (hp_ <= 0) {
         pendingExplode_ = true;
     }
 }

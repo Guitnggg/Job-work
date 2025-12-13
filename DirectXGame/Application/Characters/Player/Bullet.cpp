@@ -5,7 +5,7 @@ using namespace KamataEngine;
 
 void Bullet::Initialize() {
     // 親クラスの初期化
-    CharactorBase::Initialize();
+    CharacterBase::Initialize();
 
     // 見た目（Bullet.obj が無ければ球）
     model_.reset(Model::CreateSphere());
@@ -78,7 +78,7 @@ void Bullet::Draw(Camera* camera) {
     // if (collider_) { collider_->Draw(*camera); }
 }
 
-void Bullet::OnCollision(CharactorBase* /*other*/) {
+void Bullet::OnCollision(CharacterBase* /*other*/) {
     // 当たったら弾は消える
     isDead_ = true;
 }

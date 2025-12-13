@@ -6,13 +6,13 @@
 #include "3d/Model.h"
 #include "3d/Camera.h"
 
-#include "Application/Charactors/CharactorBase.h"
+#include "Application/Characters/CharacterBase.h"
 
 /// <summary>
 /// プレイヤーやターゲットへ向かって旋回追尾する敵キャラクター。
 /// ダメージフラッシュ・ヒットストップ・ノックバックなどの演出を備える。
 /// </summary>
-class SeekerEnemy : public CharactorBase {
+class SeekerEnemy : public CharacterBase {
 public:
     /// <summary>
     /// 初期化処理
@@ -34,7 +34,7 @@ public:
     /// 当たり判定
     /// </summary>
     /// <param name="other">衝突相手となるキャラクター</param>
-    void OnCollision(CharactorBase* other) override;
+    void OnCollision(CharacterBase* other) override;
 
     /// <summary>
     /// 生存フラグ

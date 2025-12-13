@@ -66,7 +66,7 @@ public:
     /// <summary>
     /// 敵リストへの参照を返す（外部で当たり判定などに使用）
     /// </summary>
-    std::vector<std::unique_ptr<CharactorBase>>& GetEnemies() { return enemies_; }
+    std::vector<std::unique_ptr<CharacterBase>>& GetEnemies() { return enemies_; }
 
      /// <summary>
      /// 死亡フラグの立った敵を削除する
@@ -87,7 +87,7 @@ private:
 
 private:
     // 敵本体
-    std::vector<std::unique_ptr<CharactorBase>> enemies_;  
+    std::vector<std::unique_ptr<CharacterBase>> enemies_;  
 
     // スポーン情報とタイマー
     std::vector<EnemySpawnData> enemySpawnList_;

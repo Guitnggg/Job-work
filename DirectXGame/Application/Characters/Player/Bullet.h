@@ -10,7 +10,7 @@
 /// 発射位置と方向を与えることで飛行し、
 /// 一定距離または寿命経過または衝突で消滅する。
 /// </summary>
-class Bullet :public CharactorBase {
+class Bullet :public CharacterBase {
 public:
     /// <summary>
     /// 初期化処理
@@ -32,7 +32,7 @@ public:
     /// 当たり判定
     /// </summary>
     /// <param name="">衝突相手</param>
-    void OnCollision(CharactorBase* /*other*/)override;
+    void OnCollision(CharacterBase* /*other*/)override;
 
     /// <summary>
     /// 死亡したかどうか

@@ -29,7 +29,7 @@ public:
     /// <param name="countDown">カウントダウン中は衝突を無効にするため使用</param>
     static void ResolvePlayerEnemyCollisions(
         Player* player,
-        std::vector<std::unique_ptr<CharactorBase>>& enemies,
+        std::vector<std::unique_ptr<CharacterBase>>& enemies,
         const CountDown& countDown
     );
 
@@ -42,7 +42,7 @@ public:
     /// <param name="countDown">カウントダウン中は衝突を無効にするため使用</param>
     static void ResolveBulletEnemyCollisions(
         std::vector<std::unique_ptr<Bullet>>& bullets,
-        std::vector<std::unique_ptr<CharactorBase>>& enemies,
+        std::vector<std::unique_ptr<CharacterBase>>& enemies,
         const CountDown& countDown
     );
 };

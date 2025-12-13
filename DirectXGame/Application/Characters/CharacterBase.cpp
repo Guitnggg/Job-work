@@ -2,7 +2,7 @@
 
 using namespace KamataEngine;
 
-void CharactorBase::Initialize() {
+void CharacterBase::Initialize() {
    //  // ワールド変換の初期化
     worldTransform_.Initialize();
 
@@ -10,7 +10,7 @@ void CharactorBase::Initialize() {
     velocity_ = { 0.0f, 0.0f, 0.0f };
 
     // 体力の初期化（必要に応じて派生クラスで SetHP 使用）
-    HP_ = 0;
+    hp_ = 0;
 
     // コライダーの生成,初期化
     collider_ = std::make_unique<Collider>();
@@ -20,7 +20,7 @@ void CharactorBase::Initialize() {
     collider_->SetTranslate(GetWorldTranslation());
 }
 
-void CharactorBase::Update() {
+void CharacterBase::Update() {
     // ワールド変換行列の更新
     worldTransform_.UpdateMatrix();
 
@@ -31,7 +31,7 @@ void CharactorBase::Update() {
     collider_->Update();
 }
 
-KamataEngine::Vector3 CharactorBase::GetWorldTranslation() {
+KamataEngine::Vector3 CharacterBase::GetWorldTranslation() {
     Vector3 result;
 
     // ワールド行列から座標成分を抽出

@@ -4,7 +4,7 @@ using namespace KamataEngine;
 
 void CollisionManager::ResolvePlayerEnemyCollisions(
     Player* player,
-    std::vector<std::unique_ptr<CharactorBase>>& enemies,
+    std::vector<std::unique_ptr<CharacterBase>>& enemies,
     const CountDown& countDown)
 {
     // 無効条件（入力ロック中、プレイヤー不在、プレイヤー爆散演出終了まちetc...）
@@ -45,7 +45,7 @@ void CollisionManager::ResolvePlayerEnemyCollisions(
 
 void CollisionManager::ResolveBulletEnemyCollisions(
     std::vector<std::unique_ptr<Bullet>>& bullets,
-    std::vector<std::unique_ptr<CharactorBase>>& enemies,
+    std::vector<std::unique_ptr<CharacterBase>>& enemies,
     const CountDown& countDown) 
 {
     // カウントダウン中は無効

@@ -75,22 +75,22 @@
     <ClCompile Include="UI\CountDown\CountDown.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactors\CharactorBase.cpp">
+    <ClCompile Include="Application\Characters\CharacterBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactors\Collider.cpp">
+    <ClCompile Include="Application\Characters\Collider.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactors\Player\Player.cpp">
+    <ClCompile Include="Application\Characters\Player\Player.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactors\Enemy\SeekerEnemy.cpp">
+    <ClCompile Include="Application\Characters\Enemy\SeekerEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="UI\HPBar\Graph.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Charactors\Player\Bullet.cpp">
+    <ClCompile Include="Application\Characters\Player\Bullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="UI\Score\Score.cpp">
@@ -207,22 +207,22 @@
     <ClInclude Include="UI\CountDown\CountDown.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactors\CharactorBase.h">
+    <ClInclude Include="Application\Characters\CharacterBase.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactors\Collider.h">
+    <ClInclude Include="Application\Characters\Collider.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactors\Player\Player.h">
+    <ClInclude Include="Application\Characters\Player\Player.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactors\Enemy\SeekerEnemy.h">
+    <ClInclude Include="Application\Characters\Enemy\SeekerEnemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="UI\HPBar\Graph.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Charactors\Player\Bullet.h">
+    <ClInclude Include="Application\Characters\Player\Bullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="UI\Score\Score.h">

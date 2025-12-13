@@ -10,7 +10,7 @@ using namespace KamataEngine::MathUtility;
 
 void Player::Initialize(Camera* camera) {
     // 親クラス初期化
-    CharactorBase::Initialize();
+    CharacterBase::Initialize();
 
     // 参照登録、モデル読み込み
     camera_ = camera;
@@ -196,7 +196,7 @@ void Player::Draw(Camera* camera) {
     model_->Draw(worldTransform_, *camera);
 }
 
-void Player::OnCollision(CharactorBase* /*enemy*/) {
+void Player::OnCollision(CharacterBase* /*enemy*/) {
 
     // ロール中はダメージを受けない
     if (isRolling_ || invincibleFrames_ > 0) {
