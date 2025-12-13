@@ -55,6 +55,24 @@ void GameScene::Initialize() {
     engineSmokes_.clear();
     smokeEmitTimer_ = 0.0f;
 
+    // 通常時スモーク
+    normalSmokeParams_ = {
+        0.08f,  // emitInterval
+        0.15f,  // lifeTime
+        0.14f,  // startScale
+        1,      // burstCount
+        -0.8f   // baseZSpeed
+    };
+
+    // クリア演出（ブースト）
+    boostSmokeParams_ = {
+        0.01f,  // emitInterval
+        0.30f,  // lifeTime
+        0.20f,  // startScale
+        3,      // burstCount
+        -1.6f   // baseZSpeed
+    };
+
     // カウントダウン
     countDown_.InitializeFromPaths(
         "./Resources/InGame/3.png",
@@ -77,7 +95,7 @@ void GameScene::Initialize() {
     // 弾・敵
     bulletManager_.Initialize();
     enemyManager_.Initialize();
-    enemyManager_.LoadEnemySCV("Resources/levels/stage1.json");
+    enemyManager_.LoadEnemyScv("Resources/levels/stage1.json");
 
     // 開始
     countDown_.Start();
@@ -176,36 +194,62 @@ void GameScene::Update() {
 
     // ======================
     // エンジン煙パーティクル
-    // ★ クリア演出中だけ強化モード
     // ======================
-    if (!countDown_.IsInputLocked() && (result_ == GameResult::None || (result_ == GameResult::Clear && isClearAnimating_))) {
+    if (!countDown_.IsInputLocked() &&
+        (result_ == GameResult::None || (result_ == GameResult::Clear && isClearAnimating_))) {
+
         smokeEmitTimer_ += dt;
 
-        if (result_ == GameResult::Clear && isClearAnimating_) {
-            emitInterval = 0.01f;
-            lifeTime = 0.30f;
-            startScale = 0.20f;
-            burstCount = 3;
-            baseZSpeed = -1.6f;
+        // 使用するパラメータを選択
+        const SmokeParams& params =
+            (result_ == GameResult::Clear && isClearAnimating_) ? boostSmokeParams_ : normalSmokeParams_;
+
+        static std::mt19937 rng{ std::random_device{}() };
+        std::uniform_real_distribution<float> xyDist(-0.05f, 0.05f);
+        std::uniform_real_distribution<float> zDist(-0.10f, 0.10f);
+
+        // 
+        while (smokeEmitTimer_ >= params.emitInterval) {
+            smokeEmitTimer_ -= params.emitInterval;
+
+            const Vector3 playerPos = player_->GetWorldTranslation();
+            const Vector3 spawnPos = {
+                playerPos.x,
+                playerPos.y - 0.3f,
+                playerPos.z - 1.5f
+            };
+
+            // 
+            for (int i = 0; i < params.burstCount; ++i) {
+                Vector3 vel{
+                    xyDist(rng),
+                    xyDist(rng),
+                    params.baseZSpeed + zDist(rng)
+                };
+
+                auto smoke = std::make_unique<Smoke>();
+                smoke->Initialize(
+                    smokeModel_,
+                    spawnPos,
+                    vel,
+                    params.lifeTime,
+                    params.startScale,
+                    0.0f
+                );
+                engineSmokes_.push_back(std::move(smoke));
+            }
         }
 
-        while (smokeEmitTimer_ >= emitInterval) {
-            smokeEmitTimer_ -= emitInterval;
-            Vector3 playerPos = player_->GetWorldTranslation();
-            Vector3 spawnPos = { playerPos.x, playerPos.y - 0.3f, playerPos.z - 1.5f };
-            static std::mt19937 rng{ std::random_device{}() };
-            std::uniform_real_distribution<float> dist(-0.05f, 0.05f);
-            Vector3 vel = { dist(rng), dist(rng), -0.6f };
-
-            auto smoke = std::make_unique<Smoke>();
-            smoke->Initialize(smokeModel_, spawnPos, vel, 0.2f, 0.18f, 0.0f);
-            engineSmokes_.push_back(std::move(smoke));
+        for (auto& s : engineSmokes_) {
+            s->Update(dt);
         }
 
-        for (auto& s : engineSmokes_) s->Update(dt);
         engineSmokes_.erase(
-            std::remove_if(engineSmokes_.begin(), engineSmokes_.end(),
-                [](const std::unique_ptr<Smoke>& p) { return p->IsFinished(); }),
+            std::remove_if(
+                engineSmokes_.begin(), engineSmokes_.end(),
+                [](const std::unique_ptr<Smoke>& p) {
+                    return p->IsFinished();
+                }),
             engineSmokes_.end()
         );
     }

@@ -65,10 +65,10 @@ public:
     /// 各フェーズの表示時間を設定する
     /// ReadyDelay → 3 → 2 → 1 → GO の順
     /// </summary>
-    /// <param name="readyDeley">カウント開始前の待機時間</param>
+    /// <param name="readyDelay">カウント開始前の待機時間</param>
     /// <param name="countUnit">3/2/1 各数字の表示時間</param>
-    /// <param name="goDuraction">GO 表示時間</param>
-    void SetTimings(float readyDeley, float countUnit, float goDuraction);
+    /// <param name="goDuration">GO 表示時間</param>
+    void SetTimings(float readyDelay, float countUnit, float goDuration);
 
     /// <summary>
     /// 拡大アニメーションの開始スケールと終了スケールを設定する
@@ -138,12 +138,12 @@ private:
     /// <summary>
     /// BackEaseのイージング関数
     /// </summary>
-    float EaseoutBack(float t, float s)const;
+    float EaseOutBack(float t, float s)const;
 
     /// <summary>
     /// 現在のフェーズに対する表示時間を返す
     /// </summary>
-    float CurrentPhaseDuraction()const;
+    float CurrentPhaseDuration()const;
 
     /// <summary>
     /// 現在のフェーズで表示すべきスプライトを返す
@@ -169,10 +169,10 @@ private:
 private:
 
     // スプライト
-    KamataEngine::Sprite* sp3_ = nullptr;
-    KamataEngine::Sprite* sp2_ = nullptr;
-    KamataEngine::Sprite* sp1_ = nullptr;
-    KamataEngine::Sprite* spGo_ = nullptr;
+    KamataEngine::Sprite* count3Sprite_ = nullptr;
+    KamataEngine::Sprite* count2Sprite_ = nullptr;
+    KamataEngine::Sprite* count1Sprite_ = nullptr;
+    KamataEngine::Sprite* goSprite_ = nullptr;
 
     // 表示パラメータ
     KamataEngine::Vector2 center_ = { 640.0f, 360.0f };

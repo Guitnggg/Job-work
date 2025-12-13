@@ -20,7 +20,9 @@ void UIManager::Update()
     // HPバー更新
     if (player_ && graph_) {
         // HP(0〜100想定) を 0.0〜1.0 に変換してGraphに渡す
-        float hpRate = static_cast<float>(player_->GetHP()) / 100.0f;
+        static constexpr float kMaxHp = 100.0f;
+        float hpRate = static_cast<float>(player_->GetHP()) / kMaxHp;
+
         graph_->SetValue(hpRate);
         graph_->Update();
     }

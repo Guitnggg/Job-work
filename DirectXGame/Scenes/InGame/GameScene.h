@@ -107,11 +107,16 @@ private:
     std::vector<std::unique_ptr<Smoke>> engineSmokes_;
     float smokeEmitTimer_ = 0.0f;
 
-    float emitInterval = 0.08f;  // 通常時：0.08秒ごと（1秒に12〜13個くらい）
-    float lifeTime = 0.15f;      // すぐ消える
-    float startScale = 0.14f;    // 小さめ
-    int   burstCount = 1;        // 一度に出す個数
-    float baseZSpeed = -0.8f;    // 後ろへの速度
+    // スモークのパラメータ
+    struct SmokeParams {
+        float emitInterval = 0.1f;
+        float lifeTime = 0.2f;
+        float startScale = 0.15f;
+        int burstCount = 1;
+        float baseZSpeed = -0.6f;
+    };
+    SmokeParams normalSmokeParams_;  // 通常時
+    SmokeParams boostSmokeParams_;   // クリア演出時
 
     // ========== UI（HPバー／スコアなど） ==========
     UIManager uiManager_;

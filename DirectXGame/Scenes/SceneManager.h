@@ -83,7 +83,7 @@ private:
     /// Title → Introduction : 黒フェード
     /// Introduction → InGame : 白フラッシュ
     /// </summary>
-    bool ShouldUseWhiteFlash(SceneName form, SceneName n) const;
+    bool ShouldUseWhiteFlash(SceneName form, SceneName to) const;
 
 private:
 

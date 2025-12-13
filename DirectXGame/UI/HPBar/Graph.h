@@ -49,8 +49,11 @@ private:
     KamataEngine::Sprite* backBar_ = nullptr;   // 裏のグラフ（赤）
     KamataEngine::Sprite* frontBar_ = nullptr;  // 表のグラフ（緑）
 
-    uint32_t texHandle;
+    uint32_t texHandle_;
 
-    float value_;  // 現在の表示比率(0.0～1.0)
+    float value_ = 1.0f;  // 現在の表示比率(0.0～1.0)
+
+    float kBarWidth = 200.0f;
+    float kBarHeight = 10.0f;
 };
 

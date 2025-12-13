@@ -7,8 +7,8 @@ using namespace KamataEngine;
 TitleScene::TitleScene() {}
 
 TitleScene::~TitleScene() {
-    delete TitleSprite_;
-    delete StartSprite_;
+    delete titleSprite_;
+    delete startSprite_;
     delete asteroidModel_;
     for (auto asteroid : asteroids_) {
         delete asteroid;
@@ -31,20 +31,20 @@ void TitleScene::Initialize() {
     input_ = Input::GetInstance();
 
     // 各種テクスチャ
-    TitleTextureHandle_ = TextureManager::Load("./Resources/title/GameTitle.png");
-    TitleSprite_ = Sprite::Create(TitleTextureHandle_, titlePosition_);
+    titleTextureHandle_ = TextureManager::Load("./Resources/title/GameTitle.png");
+    titleSprite_ = Sprite::Create(titleTextureHandle_, titlePosition_);
 
-    StartTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
-    StartSprite_ = Sprite::Create(StartTextureHandle_, { 150.0f,550.0f });
-    StartSprite_->SetColor({ 1.0f,1.0f,1.0f,0.0f });  // 最初は透明
+    startTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
+    startSprite_ = Sprite::Create(startTextureHandle_, { 150.0f,550.0f });
+    startSprite_->SetColor({ 1.0f,1.0f,1.0f,0.0f });  // 最初は透明
 
     // 各種サウンド
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
 
     // 小惑星生成
     asteroidModel_ = Model::CreateFromOBJ("Asteroid", true);
-    asteroids_.reserve(asteroidCount_);
-    for(int i = 0; i < asteroidCount_; i++) {
+    asteroids_.reserve(kAsteroidCount);
+    for (int i = 0; i < kAsteroidCount; i++) {
         SpawnAsteroid();
     }
 
@@ -53,7 +53,7 @@ void TitleScene::Initialize() {
     skydome_->Initialize(&camera_);
 }
 
-void TitleScene::Update() {    
+void TitleScene::Update() {
     // 天球更新
     skydome_->Update();
 
@@ -91,7 +91,7 @@ void TitleScene::Update() {
             // 点滅の初期化
             blinkTimer_ = 0.0f;
         }
-        TitleSprite_->SetPosition(titlePosition_);
+        titleSprite_->SetPosition(titlePosition_);
     }
 
     // Start点滅
@@ -101,11 +101,11 @@ void TitleScene::Update() {
             blinkTimer_ -= blinkInterval_;
         }
         const float alpha = 0.5f + 0.5f * sinf(blinkTimer_ / blinkInterval_ * 2.0f * 3.14159265f);
-        StartSprite_->SetColor({ 1.0f, 1.0f, 1.0f, alpha });
+        startSprite_->SetColor({ 1.0f, 1.0f, 1.0f, alpha });
     }
     else {
         // 完了前は常に透明のまま
-        StartSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 0.0f });
+        startSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 0.0f });
     }
 
     // シーン遷移（落下完了後のみ）
@@ -147,7 +147,7 @@ void TitleScene::Draw() {
     // 小惑星描画
     for (auto asteroid : asteroids_) {
         asteroid->Draw(camera_);
-    }  
+    }
 
     // 天球描画
     skydome_->Draw();
@@ -164,8 +164,8 @@ void TitleScene::Draw() {
     /// ここに前景スプライトの描画処理を追加できる
     /// </summary>
 
-    TitleSprite_->Draw();
-    StartSprite_->Draw();
+    titleSprite_->Draw();
+    startSprite_->Draw();
 
     // スプライト描画後処理
     Sprite::PostDraw();
@@ -179,7 +179,7 @@ IScene* TitleScene::NextScene() const {
 
 Asteroid* TitleScene::SpawnAsteroid() {
     // 位置、速度、回転をランダムに決定
-    Vector3 pos = { 
+    Vector3 pos = {
         Rand(-25.0f,25.0f),
         Rand(-15.0f,15.0f),
         Rand(spawnZMin_,spawnZMax_)
@@ -196,7 +196,7 @@ Asteroid* TitleScene::SpawnAsteroid() {
     return asteroid;
 }
 
-float TitleScene::Rand(float min, float max){
+float TitleScene::Rand(float min, float max) {
     std::uniform_real_distribution<float> dist(min, max);
     return dist(mt_);
 }

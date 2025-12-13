@@ -68,10 +68,10 @@ private:
     KamataEngine::Camera camera_;
 
     // UIスプライト
-    uint32_t FinishTextureHandle_ = 0;
-    KamataEngine::Sprite* FinishSprite_ = nullptr;
-    uint32_t ReturnTextureHandle_ = 0;
-    KamataEngine::Sprite* ReturnSprite_ = nullptr;
+    uint32_t finishTextureHandle_ = 0;
+    KamataEngine::Sprite* finishSprite_ = nullptr;
+    uint32_t returnTextureHandle_ = 0;
+    KamataEngine::Sprite* returnSprite_ = nullptr;
 
     // 効果音
     uint32_t changeSEHandle_ = 0;

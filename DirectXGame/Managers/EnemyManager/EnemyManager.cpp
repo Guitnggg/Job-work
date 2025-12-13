@@ -19,7 +19,7 @@ void EnemyManager::Initialize() {
     explosionParticles_.clear();
 }
 
-void EnemyManager::LoadEnemySCV(const std::string& path) {
+void EnemyManager::LoadEnemyScv(const std::string& path) {
     enemySpawnList_.clear();
 
     std::ifstream ifs(path);
@@ -97,7 +97,7 @@ void EnemyManager::LoadEnemySCV(const std::string& path) {
         });
 }
 
-void EnemyManager::SpawnEnemiesBySCV(const Vector3& playerPos) {
+void EnemyManager::SpawnEnemiesByScv(const Vector3& playerPos) {
     // 現在時間
     const float t = enemySpawnTimer_;
 
@@ -134,7 +134,7 @@ void EnemyManager::SpawnEnemiesBySCV(const Vector3& playerPos) {
 void EnemyManager::Update(float dt, const Vector3& playerPos) {
     // タイマー更新 & スポーン
     enemySpawnTimer_ += dt;
-    SpawnEnemiesBySCV(playerPos);
+    SpawnEnemiesByScv(playerPos);
 
     // 敵更新（追尾対象をプレイヤーに）
     for (auto& e : enemies_) {

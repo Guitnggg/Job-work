@@ -4,7 +4,7 @@ using namespace KamataEngine;
 
 Score::~Score() {
     for (int i = 0; i < kDigitCount; i++) {
-        delete sprite_[i];
+        delete digitSprites_[i];
     }
 }
 
@@ -13,12 +13,12 @@ void Score::Initialize() {
 
     // 画面右上に表示するためにx座標を計算
     float screenWidth = static_cast<float>(KamataEngine::DirectXCommon::GetInstance()->GetBackBufferWidth());
-    startX = screenWidth - (size_.x * kDigitCount) - 10.0f;
+    startX_ = screenWidth - (size_.x * kDigitCount) - 10.0f;
 
     // 各桁のスプライトを作成
     for (int i = 0; i < kDigitCount; ++i) {
-        sprite_[i] = Sprite::Create(textureHandle_, { startX + size_.x * i, startY });
-        sprite_[i]->SetSize(size_);
+        digitSprites_[i] = Sprite::Create(textureHandle_, { startX_ + size_.x * i, startY_ });
+        digitSprites_[i]->SetSize(size_);
     }
 
     score_ = 0;
@@ -34,22 +34,22 @@ void Score::Update() {
         digit /= 10;                     // 次の桁へ
 
         // 数字の部分に対応するテクスチャ範囲を設定
-        sprite_[i]->SetTextureRect({ size_.x * nowNumber, 0 }, size_);
+        digitSprites_[i]->SetTextureRect({ size_.x * nowNumber, 0 }, size_);
     }
 }
 
 void Score::Draw() {
     for (int i = 0; i < kDigitCount; ++i) {
-        sprite_[i]->Draw();
+        digitSprites_[i]->Draw();
     }
 }
 
 void Score::SetPosition(float x, float y){
     // 描画開始位置を更新、桁ごとに再配置
-    startX = x;
-    startY = y;
+    startX_ = x;
+    startY_ = y;
 
     for (int i = 0; i < kDigitCount; ++i) {
-        sprite_[i]->SetPosition({ startX + size_.x * i,startY });
+        digitSprites_[i]->SetPosition({ startX_ + size_.x * i,startY_ });
     }
 }

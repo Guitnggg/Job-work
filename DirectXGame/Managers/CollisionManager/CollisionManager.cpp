@@ -13,20 +13,20 @@ void CollisionManager::ResolvePlayerEnemyCollisions(
     }
 
     // プレイヤー側コライダー取得
-    Collider* pc = player->GetCollider().get();
-    if (!pc) { return; }
+    Collider* playerCollider = player->GetCollider().get();
+    if (!playerCollider) { return; }
 
-    const auto p = pc->GetTranslate();
-    const float pr = pc->GetRadius();
+    const auto p = playerCollider->GetTranslate();
+    const float pr = playerCollider->GetRadius();
 
     // 各敵との衝突判定ループ
     for (auto& e : enemies) {
         if (!e) { continue; }
-        Collider* ec = e->GetCollider().get();
-        if (!ec) { continue; }
+        Collider* enemyCollider = e->GetCollider().get();
+        if (!enemyCollider) { continue; }
 
-        const auto q = ec->GetTranslate();
-        const float er = ec->GetRadius();
+        const auto q = enemyCollider->GetTranslate();
+        const float er = enemyCollider->GetRadius();
 
         // 距離チェック
         const float dx = p.x - q.x;
@@ -70,11 +70,11 @@ void CollisionManager::ResolveBulletEnemyCollisions(
                 if (s->IsDead()) { continue; }
             }
 
-            Collider* ec = e->GetCollider().get();
-            if (!ec) { continue; }
+            Collider* enemyCollider = e->GetCollider().get();
+            if (!enemyCollider) { continue; }
 
-            const auto ep = ec->GetTranslate();
-            const float er = ec->GetRadius();
+            const auto ep = enemyCollider->GetTranslate();
+            const float er = enemyCollider->GetRadius();
 
             // 球判定
             const float dx = bp.x - ep.x;

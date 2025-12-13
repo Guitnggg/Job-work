@@ -52,7 +52,7 @@ void SceneManager::ChangeScene(IScene* newScene) {
     }
 
     // 使うパラメータ
-    float useFlashTime = (hint.frashTime > 0.0f) ? hint.frashTime : baseFlashTime_;
+    float useFlashTime = (hint.flashTime > 0.0f) ? hint.flashTime : baseFlashTime_;
     float useFadeSpeed = (hint.fadeSpeed > 0.0f) ? hint.fadeSpeed : baseTransitionSpeed_;
 
     // どのスタイルを使うか決定

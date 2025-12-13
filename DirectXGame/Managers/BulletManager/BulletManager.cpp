@@ -22,7 +22,7 @@ void BulletManager::HandleShooting(Input* input, Player* player, const CountDown
     // 発射キー判定
     if (input->PushKey(DIK_SPACE) && fireCooldownFrames_ == 0) {
         // クールダウン再設定
-        fireCooldownFrames_ = kFireCooldownMax_;
+        fireCooldownFrames_ = kFireCooldownMax;
 
         // 弾生成
         auto b = std::make_unique<Bullet>();

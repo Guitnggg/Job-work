@@ -8,8 +8,8 @@ using namespace KamataEngine;
 IntroductionScene::IntroductionScene() {}
 
 IntroductionScene::~IntroductionScene() {
-    delete ReturnTitleSprite_;
-    delete IntroSprite_;
+    delete returnTitleSprite_;
+    delete introSprite_;
     delete asteroidModel_;
     for (auto asteroid : asteroids_) {
         delete asteroid;
@@ -23,11 +23,11 @@ void IntroductionScene::Initialize() {
     nextScene_ = SceneName::None;
 
     // 各種テクスチャ
-    ReturnTitleTextureHandle_ = TextureManager::Load("./Resources/introduction/Esc-export.png");
-    ReturnTitleSprite_ = Sprite::Create(ReturnTitleTextureHandle_, { 20.0f,20.0f });
+    returnTitleTextureHandle_ = TextureManager::Load("./Resources/introduction/Esc-export.png");
+    returnTitleSprite_ = Sprite::Create(returnTitleTextureHandle_, { 20.0f,20.0f });
 
-    IntroTextureHandle_ = TextureManager::Load("./Resources/Introduction/setumei.png");
-    IntroSprite_ = Sprite::Create(IntroTextureHandle_, { 0.0f,0.0f });
+    introTextureHandle_ = TextureManager::Load("./Resources/Introduction/setumei.png");
+    introSprite_ = Sprite::Create(introTextureHandle_, { 0.0f,0.0f });
 
     // 各種サウンド
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
@@ -145,9 +145,9 @@ void IntroductionScene::Draw() {
     /// ここに前景スプライトの描画処理を追加できる
     /// </summary>
 
-    ReturnTitleSprite_->Draw();
+    returnTitleSprite_->Draw();
 
-    IntroSprite_->Draw();
+    introSprite_->Draw();
 
     // スプライト描画後処理
     Sprite::PostDraw();
@@ -198,7 +198,7 @@ TransitionHint IntroductionScene::GetTransitionHint(SceneName to) const {
     TransitionHint h{};
     if (to == SceneName::InGame) {
         h.style = TransitionStyle::WhiteFlash;
-        h.frashTime = 0.35f;   // 既定0.16fより長め（好みに合わせて調整）
+        h.flashTime = 0.35f;   // 既定0.16fより長め（好みに合わせて調整）
         // h.fadeSpeed = 0.03f; // 必要なら黒フェード速度も上書き可能
     }
     return h;

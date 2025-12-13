@@ -44,7 +44,7 @@ public:
     /// 読み込まれたデータは time 昇順にソートされ、SpawnEnemiesBySCVで逐次出現させる。
     /// </summary>
     /// <param name="path">読み込むSCVファイルパス</param>
-    void LoadEnemySCV(const std::string& path);
+    void LoadEnemyScv(const std::string& path);
 
     /// <summary>
     /// 敵管理のメイン処理。  
@@ -78,7 +78,7 @@ private:
     /// SCVスポーンリストに従い、出現時間を迎えた敵を生成する。
     /// スポーン座標は「playerPos + 相対値」で決定する。
     /// </summary>
-    void SpawnEnemiesBySCV(const KamataEngine::Vector3& playerPos);
+    void SpawnEnemiesByScv(const KamataEngine::Vector3& playerPos);
 
     /// <summary>
     /// 指定座標に爆発パーティクルを生成

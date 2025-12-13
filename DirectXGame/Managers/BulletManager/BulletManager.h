@@ -71,5 +71,5 @@ private:
 private:
     std::vector<std::unique_ptr<Bullet>> bullets_;
     int fireCooldownFrames_ = 0;
-    static constexpr int kFireCooldownMax_ = 9;  // 約0.15秒@60fps
+    static constexpr int kFireCooldownMax = 9;  // 約0.15秒@60fps
 };

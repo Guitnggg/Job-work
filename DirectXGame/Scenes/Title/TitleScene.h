@@ -68,10 +68,10 @@ private:
     KamataEngine::Camera camera_;                      // カメラ管理クラス
 
     // 各種テクスチャ
-    uint32_t TitleTextureHandle_ = 0;
-    KamataEngine::Sprite* TitleSprite_ = nullptr;
-    uint32_t StartTextureHandle_ = 0;
-    KamataEngine::Sprite* StartSprite_ = nullptr;
+    uint32_t titleTextureHandle_ = 0;
+    KamataEngine::Sprite* titleSprite_ = nullptr;
+    uint32_t startTextureHandle_ = 0;
+    KamataEngine::Sprite* startSprite_ = nullptr;
 
     // 各種サウンド
     uint32_t changeSEHandle_ = 0;  // シーン変遷SE
@@ -93,12 +93,12 @@ private:
     // 小惑星
     KamataEngine::Model* asteroidModel_ = nullptr;
     std::vector<Asteroid*> asteroids_;
-    int   asteroidCount_ = 10;    // 背景に流す数
-    float spawnZMin_ = 0.0f;      // 出現Z（奥）
+    static constexpr int kAsteroidCount = 10;    // 背景に流す数
+    float spawnZMin_ = 0.0f;                     // 出現Z（奥）
     float spawnZMax_ = 140.0f;
-    float recycleZ_ = -50.0f;     // カメラを超えたら再出現
-    float spawnInterval_ = 1.0f;  // 出現間隔
-    float spawnTimer_ = 0.0f;     // 出現タイマー
+    float recycleZ_ = -50.0f;                    // カメラを超えたら再出現
+    float spawnInterval_ = 1.0f;                 // 出現間隔
+    float spawnTimer_ = 0.0f;                    // 出現タイマー
 
     // ランダム生成器
     std::mt19937 mt_{ std::random_device{}() };
@@ -107,7 +107,7 @@ private:
     bool isEnd_ = false;
 
 private:
-    
+
     // 生成
     Asteroid* SpawnAsteroid();
 

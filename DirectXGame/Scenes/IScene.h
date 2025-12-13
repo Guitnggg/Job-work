@@ -20,12 +20,12 @@ enum class TransitionStyle {
 /// 遷移演出のパラメータ指定  
 /// style      : 遷移表現の種類  
 /// fadeSpeed  : フェードに使用する速度（-1 ならデフォルト）  
-/// frashTime  : WhiteFlash の発光時間（-1 ならデフォルト）
+/// flashTime  : WhiteFlash の発光時間（-1 ならデフォルト）
 /// </summary>
 struct TransitionHint {
     TransitionStyle style = TransitionStyle::Auto;
     float fadeSpeed = -1.0f;
-    float frashTime = -1.0f;
+    float flashTime = -1.0f;
 };
 
 /// <summary>

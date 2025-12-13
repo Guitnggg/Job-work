@@ -58,7 +58,7 @@ public:
     /// <summary>
     /// デバック識別用のシーン名取得
     /// </summary>
-    SceneName GetSceneName() const override { return SceneName::InGame; }
+    SceneName GetSceneName() const override { return SceneName::Introduction; }
 
     /// <summary>
     /// シーン繊維の資格演出ヒント
@@ -73,11 +73,11 @@ private:
     KamataEngine::Camera camera_;                      // カメラ管理クラス
 
     // 各種テクスチャ
-    uint32_t ReturnTitleTextureHandle_ = 0;
-    KamataEngine::Sprite* ReturnTitleSprite_ = nullptr;
+    uint32_t returnTitleTextureHandle_ = 0;
+    KamataEngine::Sprite* returnTitleSprite_ = nullptr;
 
-    uint32_t IntroTextureHandle_ = 0;
-    KamataEngine::Sprite* IntroSprite_ = nullptr;
+    uint32_t introTextureHandle_ = 0;
+    KamataEngine::Sprite* introSprite_ = nullptr;
 
     // 各種サウンド
     uint32_t changeSEHandle_ = 0;  // シーン変遷SE

@@ -3,10 +3,10 @@
 using namespace KamataEngine;
 
 CountDown::~CountDown() {
-    delete sp1_;
-    delete sp2_;
-    delete sp3_;
-    delete spGo_;
+    delete count1Sprite_;
+    delete count2Sprite_;
+    delete count3Sprite_;
+    delete goSprite_;
 }
 
 void CountDown::InitializeFromPaths(const char* tex3, const char* tex2, const char* tex1, const char* texGo,
@@ -34,11 +34,11 @@ void CountDown::InitializeFromHandles(uint32_t tex3, uint32_t tex2, uint32_t tex
         };
 
     // 既存スプライトを破棄してから再生成
-    delete sp3_; delete sp2_; delete sp1_; delete spGo_;
-    sp3_ = makeCentered(tex3);
-    sp2_ = makeCentered(tex2);
-    sp1_ = makeCentered(tex1);
-    spGo_ = makeCentered(texGo);
+    delete count3Sprite_; delete count2Sprite_; delete count1Sprite_; delete goSprite_;
+    count3Sprite_ = makeCentered(tex3);
+    count2Sprite_ = makeCentered(tex2);
+    count1Sprite_ = makeCentered(tex1);
+    goSprite_ = makeCentered(texGo);
 
     // 状態を初期化
     phase_ = Phase::Inactive;
@@ -47,11 +47,11 @@ void CountDown::InitializeFromHandles(uint32_t tex3, uint32_t tex2, uint32_t tex
     goPlayed_ = false;
 }
 
-void CountDown::SetTimings(float readyDeley, float countUnit, float goDuraction) {
+void CountDown::SetTimings(float readyDelay, float countUnit, float goDuration) {
     // 各フェーズの長さを設定
-    readyDelay_ = readyDeley;
+    readyDelay_ = readyDelay;
     countUnit_ = countUnit;
-    goDuration_ = goDuraction;
+    goDuration_ = goDuration;
 }
 
 void CountDown::SetScaleRange(float startScale, float endScale) {
@@ -91,7 +91,7 @@ void CountDown::Update(float dt) {
 
     // 経過時間を加算
     phaseTimer_ += dt;
-    float duraction = CurrentPhaseDuraction();
+    float duration = CurrentPhaseDuration();
 
     // フェース開始のタイミングのSE
     if (phaseTimer_ == dt) {
@@ -115,7 +115,7 @@ void CountDown::Update(float dt) {
     }
 
     // フェーズ持ち時間を超えたら次のフェーズへ
-    if (phaseTimer_ >= duraction) {
+    if (phaseTimer_ >= duration) {
         AdvancePhase();
     }
 }
@@ -124,7 +124,7 @@ void CountDown::Draw() {
     // 非アクティブ or 完了状態h描画不要
     if (phase_ == Phase::Inactive || phase_ == Phase::Done) { return; }
 
-    float duraction = CurrentPhaseDuraction();
+    float duraction = CurrentPhaseDuration();
     float t01 = (duraction > 0.0f) ? std::clamp(phaseTimer_ / duraction, 0.0f, 1.0f) : 1.0f;
 
     // 現在フェーズ用スプライト取得
@@ -143,13 +143,13 @@ void CountDown::Draw() {
     }
 }
 
-float CountDown::EaseoutBack(float t, float s)const {
+float CountDown::EaseOutBack(float t, float s)const {
     // BackEaseのイージング関数本体
     t -= 1.0f;
     return t * t * ((s + 1.0f) * t + s) + 1.0f;
 }
 
-float CountDown::CurrentPhaseDuraction() const{
+float CountDown::CurrentPhaseDuration() const{
     // 現在フェーズに対応する表示時間を返す
     switch (phase_) {
     case Phase::ReadyDelay:
@@ -176,16 +176,16 @@ Sprite* CountDown::CurrentPhaseSprite()const {
     // 現在フェーズで表示すべきスプライトを返す
     switch (phase_) {
     case Phase::Count3:
-        return sp3_;
+        return count3Sprite_;
 
     case Phase::Count2:
-        return sp2_;
+        return count2Sprite_;
 
     case Phase::Count1:
-        return sp1_;
+        return count1Sprite_;
 
     case Phase::Go:
-        return spGo_;
+        return goSprite_;
 
     default:
         return nullptr;
@@ -204,7 +204,7 @@ float CountDown::CurrentPhaseAlpha(float t01) const{
 
 float CountDown::CurrentPhaseScale(float t01)const {
     // easeOutBackで1.20->1.00
-    float e = EaseoutBack(std::clamp(t01, 0.0f, 1.0f), backS_);
+    float e = EaseOutBack(std::clamp(t01, 0.0f, 1.0f), backS_);
 
     return scaleStart_ + (scaleEnd_ - scaleStart_) * e;
 }
