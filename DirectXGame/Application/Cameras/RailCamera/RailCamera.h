@@ -7,7 +7,7 @@
 /// RailCameraクラス
 /// レール上を進むように移動して、始点として利用するクラス
 /// </summary>
-class RailCamera{
+class RailCamera {
 public:
     /// <summary>
     /// コンストラクタ
@@ -43,5 +43,8 @@ public:
 private:
     KamataEngine::WorldTransform worldTransform_;  // ワールド変換データ
     KamataEngine::Camera* camera_ = nullptr;       // カメラ（ビューポート）
+
+    static constexpr float kInitialZ = -50.0f;   // 初期Z位置
+    static constexpr float kMoveSpeedZ = 0.1f;   // Z方向移動速度（1フレーム）
 };
 

@@ -6,12 +6,6 @@ void CharacterBase::Initialize() {
    //  // ワールド変換の初期化
     worldTransform_.Initialize();
 
-    // 移動量の初期化
-    velocity_ = { 0.0f, 0.0f, 0.0f };
-
-    // 体力の初期化（必要に応じて派生クラスで SetHP 使用）
-    hp_ = 0;
-
     // コライダーの生成,初期化
     collider_ = std::make_unique<Collider>();
     collider_->Initialize();

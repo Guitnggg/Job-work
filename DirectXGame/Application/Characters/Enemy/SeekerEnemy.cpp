@@ -3,6 +3,22 @@
 
 using namespace KamataEngine;
 
+// ===== SeekerEnemy.cpp 専用定数 =====
+namespace {
+    // 固定フレーム時間（Update 内で使用）
+    constexpr float kFixedDeltaTime = 1.0f / 60.0f;
+
+    // 見た目用の回転速度（rad/sec）
+    constexpr float kYawRotateSpeed = 0.6f;
+
+    // 衝突時ダメージ
+    constexpr int kCollisionDamage = 1;
+
+    // 強制消滅範囲
+    constexpr float kKillZ = -40.0f;
+    constexpr float kKillXY = 220.0f;
+}
+
 void SeekerEnemy::Initialize() {
     // 親の初期化処理を呼び出す（worldTransform_ / collider_ の生成など）
     CharacterBase::Initialize();
@@ -48,7 +64,7 @@ void SeekerEnemy::Initialize() {
 void SeekerEnemy::Update() {
     if (isDead_) { return; }
 
-    const float dt = 1.0f / 60.0f;
+    const float dt = kFixedDeltaTime;
     timeSec_ += dt;
 
     // 寿命・範囲外チェック
@@ -116,7 +132,7 @@ void SeekerEnemy::Update() {
         worldTransform_.translation_ = pos;
 
         // 見た目用回転（ぐるぐる）
-        worldTransform_.rotation_.y += 0.6f * dt;
+        worldTransform_.rotation_.y += kYawRotateSpeed * dt;
 
         worldTransform_.UpdateMatrix();
 
@@ -216,7 +232,7 @@ void SeekerEnemy::OnCollision(CharacterBase* /*other*/) {
     if (isDead_) { return; }
 
     // とりあえず 1 ダメージ固定
-    hp_ -= 1;
+    hp_ -= kCollisionDamage;
     if (hp_ < 0) hp_ = 0;
 
     // ==== 当たった瞬間の演出セットアップ ====
@@ -254,7 +270,7 @@ void SeekerEnemy::ClampDeathByBounds_() {
     const Vector3 p = GetWorldTranslation();
 
     // 画面外orZ手前などで強制消去
-    if (p.z < -40.0f || std::abs(p.x) > 220.0f || std::abs(p.y) > 220.0f) {
+    if (p.z < kKillZ || std::abs(p.x) > kKillXY || std::abs(p.y) > kKillXY) {
         isDead_ = true;
     }
 

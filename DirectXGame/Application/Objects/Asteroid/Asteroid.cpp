@@ -1,8 +1,15 @@
 #include "Asteroid.h"
 
 #include "Application/Characters/Player/Player.h"
-
 #include <cassert>
+
+using namespace KamataEngine;
+
+// ===== Asteroid.cpp 専用定数（奥行き演出）=====
+namespace {
+    // Z距離によるスケール減衰率
+    constexpr float kDepthScaleFactor = 0.05f;
+}
 
 Asteroid::Asteroid() {}
 
@@ -35,7 +42,7 @@ void Asteroid::Update() {
 
     // 奥行表現
     float distance = std::fabs(worldTransform_.translation_.z);
-    float scale = 1.0f / (1.0f + distance * 0.05f);
+    float scale = 1.0f / (1.0f + distance * kDepthScaleFactor);
     worldTransform_.scale_ = { scale, scale, scale };
 
     // 行列更新

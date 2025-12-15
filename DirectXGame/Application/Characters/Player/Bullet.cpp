@@ -3,6 +3,22 @@
 
 using namespace KamataEngine;
 
+// ===== Bullet.cpp 専用定数（実装詳細）=====
+namespace {
+    // 固定Δt
+    constexpr float kFixedDeltaTime = 1.0f / 60.0f;
+
+    // 見た目スケール（弾の形）
+    constexpr Vector3 kBulletScale{ 0.4f, 0.4f, 0.7f };
+
+    // コライダー半径
+    constexpr float kColliderRadius = 0.4f;
+
+    // 姿勢リセット
+    constexpr Vector3 kZeroRot{ 0.0f, 0.0f, 0.0f };
+}
+
+
 void Bullet::Initialize() {
     // 親クラスの初期化
     CharacterBase::Initialize();
@@ -11,12 +27,12 @@ void Bullet::Initialize() {
     model_.reset(Model::CreateSphere());
 
     // 小さめスケール
-    worldTransform_.scale_ = { 0.4f, 0.4f, 0.7f };
+    worldTransform_.scale_ = kBulletScale;
     worldTransform_.UpdateMatrix();
 
     // コライダー（小さめ）
     if (collider_) {
-        collider_->SetRadius(0.4f);
+        collider_->SetRadius(kColliderRadius);
         collider_->SetTranslate(GetWorldTranslation());
         collider_->Update();
     }
@@ -31,14 +47,14 @@ void Bullet::FireFrom(const Vector3& worldPos, const Vector3& dir) {
     startPos_ = worldPos;
 
     // 姿勢リセット
-    worldTransform_.rotation_ = { 0.0f, 0.0f, 0.0f };
+    worldTransform_.rotation_ = kZeroRot;
     worldTransform_.UpdateMatrix();
 }
 
 void Bullet::Update() {
     if (isDead_) { return; }
 
-    const float dt = 1.0f / 60.0f;
+    const float dt = kFixedDeltaTime;
     t_ += dt;
 
     // 前進

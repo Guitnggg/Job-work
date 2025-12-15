@@ -2,6 +2,10 @@
 
 using namespace KamataEngine;
 
+namespace {
+    Vector3 kBulletForward{ 0.0f,0.0f,1.0f };
+}
+
 void BulletManager::Initialize() {
     // 弾リスト初期化＆クールダウンリセット
     bullets_.clear();
@@ -32,7 +36,7 @@ void BulletManager::HandleShooting(Input* input, Player* player, const CountDown
         const Vector3 muzzle = player->GetWorldTranslation();
 
         // 前方（+z）へ射出
-        b->FireFrom(muzzle, { 0.0f, 0.0f, 1.0f });
+        b->FireFrom(muzzle, kBulletForward);
 
         // リストへ追加
         bullets_.push_back(std::move(b));

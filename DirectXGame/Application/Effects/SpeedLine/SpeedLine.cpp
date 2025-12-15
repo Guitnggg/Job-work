@@ -2,8 +2,32 @@
 
 using namespace KamataEngine;
 
-SpeedLine::SpeedLine() {
+// ===== SpeedLine.cpp 専用定数 =====
+namespace {
+    // 円周率
+    constexpr float kTwoPi = 6.28318530717958647692f;
+
+    // 分布
+    constexpr float kInnerRadiusRate = 0.8f;   // 中央を空ける割合
+    constexpr float kYFlattenRate = 0.6f;      // Y方向のつぶし
+
+    // 見た目サイズ
+    constexpr float kLineScale = 0.15f;
+
+    // スピード範囲
+    constexpr float kSpeedMin = 45.0f;
+    constexpr float kSpeedMax = 85.0f;
+
+    // 透明度
+    constexpr float kAlphaBase = 0.10f;
+    constexpr float kAlphaRange = 0.25f;
+
+    // ゆらぎ
+    constexpr float kJitterX = 0.02f;
+    constexpr float kJitterY = 0.01f;
 }
+
+SpeedLine::SpeedLine() {}
 
 SpeedLine::~SpeedLine() {
     // WorldTransform の破棄
@@ -19,7 +43,6 @@ SpeedLine::~SpeedLine() {
 void SpeedLine::Initialize(Camera* camera, int lineCount) {
     camera_ = camera;
 
-    // ★ 使用するモデル
     // 必要に応じて専用モデルの読み込みに差し替えてください
     model_ = Model::CreateFromOBJ("Asteroid", true);
 
@@ -45,13 +68,13 @@ void SpeedLine::Respawn(LineParticle& p, const Vector3& basePos, bool randomDept
     }
 
     std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
-    std::uniform_real_distribution<float> distAngle(0.0f, 2.0f * 3.14159265f);
+    std::uniform_real_distribution<float> distAngle(0.0f,kTwoPi);
 
     float u = dist01(random_);        // 0〜1
     float angle = distAngle(random_);     // 0〜2π
 
     // ★ さらに外側だけ：内側 80% は完全に空けるイメージ
-    float innerRadius = maxRadius_ * 0.8f;
+    float innerRadius = maxRadius_ * kInnerRadiusRate;
     float outerRadius = maxRadius_;
 
     // u^2 で外側寄りの分布に
@@ -59,7 +82,7 @@ void SpeedLine::Respawn(LineParticle& p, const Vector3& basePos, bool randomDept
     float r = innerRadius + (outerRadius - innerRadius) * t;
 
     float x = std::cos(angle) * r;
-    float y = std::sin(angle) * r * 0.6f;
+    float y = std::sin(angle) * r * kYFlattenRate;
 
     float z = spawnZMin_;
     if (randomDepth) {
@@ -78,14 +101,14 @@ void SpeedLine::Respawn(LineParticle& p, const Vector3& basePos, bool randomDept
     wt.translation_.z = basePos.z + z;
 
     // size
-    wt.scale_ = { 0.15f, 0.15f, 0.15f };
+    wt.scale_ = { kLineScale, kLineScale, kLineScale };
 
-    std::uniform_real_distribution<float> distSpeed(45.0f, 85.0f);
+    std::uniform_real_distribution<float> distSpeed(kSpeedMin,kSpeedMax);
     p.speed = distSpeed(random_);
 
     // 外側ほど少し明るく（でも全体は薄め）
     float edgeFactor = (r - innerRadius) / (outerRadius - innerRadius); // 0〜1
-    p.alpha = 0.10f + edgeFactor * 0.25f;   // 0.10〜0.35 くらいに少し控えめ
+    p.alpha = kAlphaBase + edgeFactor * kAlphaRange;
 
     wt.rotation_ = { 0.0f, 0.0f, 0.0f };
     wt.UpdateMatrix();
@@ -107,8 +130,8 @@ void SpeedLine::Update(float dt, const Vector3& playerPos) {
         wt.translation_.z -= line.speed * dt;
 
         // ほんの少しだけゆらぎを入れるとブラー感UP
-        wt.translation_.x *= (1.0f + 0.02f * dt);
-        wt.translation_.y *= (1.0f + 0.01f * dt);
+        wt.translation_.x *= (1.0f + kJitterX * dt);
+        wt.translation_.y *= (1.0f + kJitterY * dt);
 
         // プレイヤー位置より手前まで来たら再配置
         if (wt.translation_.z < playerPos.z + despawnOffsetZ_) {

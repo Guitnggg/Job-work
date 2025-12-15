@@ -8,6 +8,27 @@ using json = nlohmann::json;
 
 using namespace KamataEngine;
 
+// ===== EnemyManager.cpp 内部定数 =====
+namespace {
+    // ---- JSONデフォルト値 ----
+    constexpr float kDefaultSpeed = 0.2f;
+    constexpr float kDefaultSpeedVar = 0.0f;
+    constexpr float kDefaultTurnRate = 0.15f;
+    constexpr int   kDefaultHp = 1;
+    constexpr float kDefaultRadius = 1.0f;
+    constexpr float kDefaultLifeTime = 30.0f;
+
+    // ---- ランダム ----
+    constexpr uint64_t kSpawnSeed = 123456789ull;
+
+    // ---- 爆発演出 ----
+    constexpr int   kExplosionParticleCount = 16;
+    constexpr float kExplosionSpeed = 3.0f;
+    constexpr float kExplosionLifeTime = 0.6f;
+    constexpr float kExplosionStartScale = 0.25f;
+    constexpr float kExplosionEndScale = 0.0f;
+}
+
 void EnemyManager::Initialize() {
     // 敵とスポーン情報とタイマーの初期化
     enemies_.clear();
@@ -30,7 +51,7 @@ void EnemyManager::LoadEnemyScv(const std::string& path) {
 
     if (root.contains("randomAreas")) {
         // 固定シードにしておくと毎回同じ配置になる
-        static std::mt19937_64 rng{ 123456789 };
+        static std::mt19937_64 rng{ kSpawnSeed };
 
         for (auto& r : root["randomAreas"]) {
             int   count = r.value("count", 0);
@@ -52,12 +73,12 @@ void EnemyManager::LoadEnemyScv(const std::string& path) {
             };
 
             // パラメータ
-            float baseSpeed = r.value("speed", 0.2f);
-            float speedRange = r.value("speedRange", 0.0f);
-            float turnRate = r.value("turnRate", 0.15f);
-            int   hp = r.value("hp", 1);
-            float radius = r.value("radius", 1.0f);
-            float lifeTime = r.value("lifeTime", 30.0f);
+            float baseSpeed = r.value("speed", kDefaultSpeed);
+            float speedRange = r.value("speedRange", kDefaultSpeedVar);
+            float turnRate = r.value("turnRate", kDefaultTurnRate);
+            int   hp = r.value("hp", kDefaultHp);
+            float radius = r.value("radius", kDefaultRadius);
+            float lifeTime = r.value("lifeTime", kDefaultLifeTime);
 
             // ランダム生成器
             std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
@@ -158,7 +179,7 @@ void EnemyManager::Update(float dt, const Vector3& playerPos) {
     );
 }
 
-void EnemyManager::Draw(Camera* camera){
+void EnemyManager::Draw(Camera* camera) {
     // 敵描画
     for (auto& e : enemies_) {
         e->Draw(camera);
@@ -181,13 +202,11 @@ void EnemyManager::SpawnExplosionAt(const KamataEngine::Vector3& pos) {
     static std::mt19937 rng{ std::random_device{}() };
     std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
-    const int kNumParticles = 16;
-
-    for (int i = 0; i < kNumParticles; ++i) {
+    for (int i = 0; i < kExplosionParticleCount; ++i) {
         Vector3 vel{
-            dist(rng) * 3.0f,
-            dist(rng) * 3.0f,
-            dist(rng) * 3.0f
+            dist(rng) * kExplosionSpeed,
+            dist(rng) * kExplosionSpeed,
+            dist(rng) * kExplosionSpeed
         };
 
         auto p = std::make_unique<DamageParticle>();
@@ -195,9 +214,9 @@ void EnemyManager::SpawnExplosionAt(const KamataEngine::Vector3& pos) {
             explosionModel_,
             pos,
             vel,
-            0.6f,   // life
-            0.25f,  // startScale
-            0.0f    // endScale
+            kExplosionLifeTime,
+            kExplosionStartScale,
+            kExplosionEndScale
         );
         explosionParticles_.push_back(std::move(p));
     }
