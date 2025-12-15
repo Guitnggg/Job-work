@@ -44,7 +44,6 @@ public:
     void Draw()override;
 
 public:
-
     /// <summary>
     /// シーン終了フラグの取得
     /// </summary>
@@ -61,7 +60,6 @@ public:
     SceneName GetSceneName() const override { return SceneName::Title; }
 
 private:
-
     KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連の管理クラス
     KamataEngine::Input* input_ = nullptr;             // 入力管理クラス
     KamataEngine::WorldTransform* worldTransform_;     // ワールド変換管理クラス
