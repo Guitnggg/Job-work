@@ -4,6 +4,26 @@
 
 using namespace KamataEngine;
 
+// ===== TitleScene.cpp 内部定数（演出・時間）=====
+namespace {
+    // フレーム
+    constexpr float kFixedDeltaTime = 1.0f / 60.0f;
+    constexpr float kTwoPi = 6.28318530717958647692f;
+
+    // タイトル落下演出
+    constexpr float kTitleFallSpeed = 3.0f;
+    constexpr float kBlinkBaseAlpha = 0.5f;
+    constexpr float kBlinkAmpAlpha = 0.5f;
+
+    // 小惑星ランダム範囲
+    constexpr float kAsteroidRangeX = 25.0f;
+    constexpr float kAsteroidRangeY = 15.0f;
+    constexpr float kAsteroidSpeedMin = -0.3f;
+    constexpr float kAsteroidSpeedMax = -0.1f;
+    constexpr float kAsteroidRotMin = 0.01f;
+    constexpr float kAsteroidRotMax = 0.03f;
+}
+
 TitleScene::TitleScene() {}
 
 TitleScene::~TitleScene() {
@@ -58,7 +78,7 @@ void TitleScene::Update() {
     skydome_->Update();
 
     // 小惑星出現タイマー更新
-    const float dt = 1.0f / 60.0f;
+    const float dt = kFixedDeltaTime;
     spawnTimer_ += dt;
 
     // 小惑星更新
@@ -96,11 +116,11 @@ void TitleScene::Update() {
 
     // Start点滅
     if (isTitleFallFinished_) {
-        blinkTimer_ += 1.0f / 60.0f;
+        blinkTimer_ += kFixedDeltaTime;
         if (blinkTimer_ >= blinkInterval_) {
             blinkTimer_ -= blinkInterval_;
         }
-        const float alpha = 0.5f + 0.5f * sinf(blinkTimer_ / blinkInterval_ * 2.0f * 3.14159265f);
+        const float alpha = kBlinkBaseAlpha + kBlinkAmpAlpha * sinf(blinkTimer_ / blinkInterval_ * kTwoPi);
         startSprite_->SetColor({ 1.0f, 1.0f, 1.0f, alpha });
     }
     else {
@@ -180,12 +200,15 @@ IScene* TitleScene::NextScene() const {
 Asteroid* TitleScene::SpawnAsteroid() {
     // 位置、速度、回転をランダムに決定
     Vector3 pos = {
-        Rand(-25.0f,25.0f),
-        Rand(-15.0f,15.0f),
+        Rand(-kAsteroidRangeX, kAsteroidRangeX),
+        Rand(-kAsteroidRangeY, kAsteroidRangeY),
         Rand(spawnZMin_,spawnZMax_)
     };
-    Vector3 velocity = { 0.0f,0.0f,Rand(-0.3f,-0.1f) };
-    Vector3 rotate = { Rand(0.01f,0.03f),Rand(0.01f,0.03f),Rand(0.01f,0.03f) };
+    Vector3 velocity = { 0.0f,0.0f,Rand(kAsteroidSpeedMin,kAsteroidSpeedMax) };
+    Vector3 rotate = { Rand(kAsteroidRotMin, kAsteroidRotMax),
+        Rand(kAsteroidRotMin, kAsteroidRotMax),
+        Rand(kAsteroidRotMin, kAsteroidRotMax) 
+    };
 
     // インスタンス生成
     Asteroid* asteroid = new Asteroid();
