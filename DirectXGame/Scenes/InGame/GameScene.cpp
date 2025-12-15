@@ -109,211 +109,24 @@ void GameScene::Initialize() {
 }
 
 void GameScene::Update() {
-    const float dt = 1.0f / 60.0f;
+    const float dt = kFixedDeltaTime_;
 
-    // ======================
-    // 3カウント演出
-    // ======================
-    countDown_.Update(dt);
+    CountDownUpdate(dt);
+    BackgroundUpdate();
+    PlayerUpdate();
+    SpawnDamageParticles();
 
-    // ======================
-    // 背景（Skydome）
-    // ======================
-    skydome_->Update();
+    BattleUpdate(dt);
 
-    // ======================
-    // プレイヤー更新
-    // ※クリア演出中は手動で動かすのでUpdateしない
-    // ======================
-    if (!countDown_.IsInputLocked()) {
-        if (!(result_ == GameResult::Clear && isClearAnimating_)) {
-            player_->Update();
-        }
-    }
+    UIUpdate();
+    DamageParticleUpdate(dt);
+    EngineSmokesUpdate(dt);
 
-    // ======================
-    // ダメージ発生 → パーティクル生成
-    // ======================
-    if (player_->ConsumeTookDamageEvent()) {
-        Vector3 pos = player_->GetWorldTranslation();
-        static std::mt19937 rng{ std::random_device{}() };
-        std::uniform_real_distribution<float> dist(-1, 1);
+    CameraUpdate();
+    SpeedLineUpdate(dt);
 
-        for (int i = 0; i < 10; i++) {
-            Vector3 vel = { dist(rng) * 2.5f, dist(rng) * 2.5f, dist(rng) * -2.0f };
-            auto p = std::make_unique<DamageParticle>();
-            p->Initialize(damageParticleModel_, pos, vel, 0.60f, 0.22f, 0.0f);
-            damageParticles_.push_back(std::move(p));
-        }
-    }
-
-    // ======================
-    // 弾・敵（戦闘中のみ）
-    // ======================
-    if (result_ == GameResult::None) {
-        bulletManager_.Update(input_, player_, countDown_);
-    }
-
-    if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
-        const Vector3 playerPos = player_->GetWorldTranslation();
-        enemyManager_.Update(dt, playerPos);
-
-        // 衝突判定
-        CollisionManager::ResolvePlayerEnemyCollisions(player_, enemyManager_.GetEnemies(), countDown_);
-        CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
-
-        // スコア加算（倒れた数 × 100）
-        int deadCount = 0;
-        for (auto& e : enemyManager_.GetEnemies()) {
-            if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
-                if (s->IsDead()) deadCount++;
-            }
-        }
-        if (deadCount > 0) {
-            uiManager_.GetScore()->Add(deadCount * 100);
-        }
-
-        // 死亡した敵を削除
-        enemyManager_.RemoveDeadEnemies();
-    }
-
-    // ======================
-    // UI更新（HP / スコア）
-    // ======================
-    uiManager_.Update();
-
-    // ======================
-    // ダメージパーティクル更新 & 削除
-    // ======================
-    for (auto& p : damageParticles_) p->Update(dt);
-    damageParticles_.erase(
-        std::remove_if(damageParticles_.begin(), damageParticles_.end(),
-            [](const std::unique_ptr<DamageParticle>& p) { return p->IsFinished(); }),
-        damageParticles_.end()
-    );
-
-    // ======================
-    // エンジン煙パーティクル
-    // ======================
-    if (!countDown_.IsInputLocked() &&
-        (result_ == GameResult::None || (result_ == GameResult::Clear && isClearAnimating_))) {
-
-        smokeEmitTimer_ += dt;
-
-        // 使用するパラメータを選択
-        const SmokeParams& params =
-            (result_ == GameResult::Clear && isClearAnimating_) ? boostSmokeParams_ : normalSmokeParams_;
-
-        static std::mt19937 rng{ std::random_device{}() };
-        std::uniform_real_distribution<float> xyDist(-0.05f, 0.05f);
-        std::uniform_real_distribution<float> zDist(-0.10f, 0.10f);
-
-        // 
-        while (smokeEmitTimer_ >= params.emitInterval) {
-            smokeEmitTimer_ -= params.emitInterval;
-
-            const Vector3 playerPos = player_->GetWorldTranslation();
-            const Vector3 spawnPos = {
-                playerPos.x,
-                playerPos.y - 0.3f,
-                playerPos.z - 1.5f
-            };
-
-            // 
-            for (int i = 0; i < params.burstCount; ++i) {
-                Vector3 vel{
-                    xyDist(rng),
-                    xyDist(rng),
-                    params.baseZSpeed + zDist(rng)
-                };
-
-                auto smoke = std::make_unique<Smoke>();
-                smoke->Initialize(
-                    smokeModel_,
-                    spawnPos,
-                    vel,
-                    params.lifeTime,
-                    params.startScale,
-                    0.0f
-                );
-                engineSmokes_.push_back(std::move(smoke));
-            }
-        }
-
-        for (auto& s : engineSmokes_) {
-            s->Update(dt);
-        }
-
-        engineSmokes_.erase(
-            std::remove_if(
-                engineSmokes_.begin(), engineSmokes_.end(),
-                [](const std::unique_ptr<Smoke>& p) {
-                    return p->IsFinished();
-                }),
-            engineSmokes_.end()
-        );
-    }
-
-    // ======================
-    // カメラ更新
-    // ======================
-    if (isRailCameraActive_) {
-        railCamera_->Update();
-        camera_.matView = railCamera_->GetCamera()->matView;
-        camera_.matProjection = railCamera_->GetCamera()->matProjection;
-        camera_.TransferMatrix();
-    }
-    else {
-        camera_.UpdateMatrix();
-    }
-
-    // ======================
-    // スピードライン更新
-    // ======================
-    if (isRailCameraActive_) {
-        speedLine_.Update(dt, railCamera_->GetWorldTransform().translation_);
-    }
-
-    // ======================
-    // クリア/失敗判定
-    // ======================
-    if (result_ == GameResult::None) {
-        if (player_->IsExplosionFinished()) {
-            result_ = GameResult::Fail;
-            isEnd_ = true;
-        }
-        else if (uiManager_.GetScore()->GetScore() >= 1000) {
-            result_ = GameResult::Clear;
-            clearScore_ = uiManager_.GetScore()->GetScore();
-            isClearAnimating_ = true;
-            clearAnimTimer_ = 0.0f;
-        }
-    }
-
-    // ======================
-    // クリア演出（自機ブースト → 画面外へ）
-    // ======================
-    if (result_ == GameResult::Clear && isClearAnimating_) {
-        clearAnimTimer_ += dt;
-        auto& wt = player_->GetWorldTransform();
-
-        wt.translation_.z += 1.0f * dt;
-        wt.translation_.y += 5.0f * dt;
-        wt.rotation_.x -= 0.5f * dt;
-
-        if (clearAnimTimer_ > 0.5f) {
-            float shrink = clearAnimTimer_ - 0.5f;
-            float scale = (std::max)(0.0f, 1.0f - shrink * 1.0f);
-            wt.scale_ = { scale, scale, scale };
-        }
-
-        wt.UpdateMatrix();
-
-        if (clearAnimTimer_ >= 2.0f) {
-            isEnd_ = true;
-            isClearAnimating_ = false;
-        }
-    }
+    JudgeResultAndStartClear();
+    ClearAnimationUpdate(dt);
 }
 
 void GameScene::Draw() {
@@ -375,6 +188,236 @@ void GameScene::Draw() {
 
     Sprite::PostDraw();
 #pragma endregion
+}
+
+void GameScene::CountDownUpdate(float dt) { countDown_.Update(dt); }
+
+void GameScene::BackgroundUpdate() { skydome_->Update(); }
+
+void GameScene::PlayerUpdate() {
+    // クリア演出中は更新しない
+    if (!countDown_.IsInputLocked()) {
+        if (!(result_ == GameResult::Clear && isClearAnimating_)) {
+            player_->Update();
+        }
+    }
+}
+
+void GameScene::SpawnDamageParticles() {
+    // 
+    if (!player_->ConsumeTookDamageEvent()) {
+        return;
+    }
+
+    Vector3 pos = player_->GetWorldTranslation();
+    static std::mt19937 rng{ (std::random_device{}()) };
+    std::uniform_real_distribution<float> dist(-1, 1);
+
+    // 
+    for (int i = 0; i < kDamageParticleCount_; i++) {
+        Vector3 vel = {
+            dist(rng) * kDamageParticleSpeedXY_,
+            dist(rng) * kDamageParticleSpeedXY_,
+            dist(rng) * kDamageParticleSpeedZ_
+        };
+        auto p = std::make_unique<DamageParticle>();
+
+        p->Initialize(
+            damageParticleModel_,
+            pos,
+            vel,
+            kDamageParticleLife_,
+            kDamageParticleStartScale_,
+            kDamageParticleEndScale_
+        );
+        damageParticles_.push_back(std::move(p));
+    }
+}
+
+void GameScene::BattleUpdate(float dt) {
+    // 弾（戦闘中のみ）
+    if (result_ == GameResult::None) {
+        bulletManager_.Update(input_, player_, countDown_);
+    }
+
+    // 敵・衝突・スコア（入力ロック解除＆戦闘中のみ）
+    if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
+        const Vector3 playerPos = player_->GetWorldTranslation();
+        enemyManager_.Update(dt, playerPos);
+
+        // 衝突判定
+        CollisionManager::ResolvePlayerEnemyCollisions(player_, enemyManager_.GetEnemies(), countDown_);
+        CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
+
+        // スコア加算（倒れた数 × 100）
+        int deadCount = 0;
+        for (auto& e : enemyManager_.GetEnemies()) {
+            if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
+                if (s->IsDead()) deadCount++;
+            }
+        }
+        if (deadCount > 0) {
+            uiManager_.GetScore()->Add(deadCount * kScorePerEnemy_);
+        }
+
+        // 死亡した敵を削除
+        enemyManager_.RemoveDeadEnemies();
+    }
+}
+
+void GameScene::UIUpdate()
+{
+    uiManager_.Update();
+}
+
+void GameScene::DamageParticleUpdate(float dt)
+{
+    // 
+    for (auto& p : damageParticles_) {
+        p->Update(dt);
+    }
+
+    // 
+    damageParticles_.erase(
+        std::remove_if(damageParticles_.begin(), damageParticles_.end(),
+            [](const std::unique_ptr<DamageParticle>& p) { return p->IsFinished(); }),
+        damageParticles_.end()
+    );
+}
+
+void GameScene::EngineSmokesUpdate(float dt)
+{
+    if (!countDown_.IsInputLocked());
+
+    const bool canEmit = (result_ == GameResult::None) ||
+        (result_ == GameResult::Clear && isClearAnimating_);
+
+    if (!canEmit) { return; }
+
+    smokeEmitTimer_ += dt;
+
+    // 使用するパラメータを選択
+    const SmokeParams& params =
+        (result_ == GameResult::Clear && isClearAnimating_) ? boostSmokeParams_ : normalSmokeParams_;
+
+    static std::mt19937 rng{ std::random_device{}() };
+    std::uniform_real_distribution<float> xyDist(-kSmokeRandXY_, kSmokeRandXY_);
+    std::uniform_real_distribution<float> zDist(-kSmokeRandZ_, kSmokeRandZ_);
+
+    // 
+    while (smokeEmitTimer_ >= params.emitInterval) {
+        smokeEmitTimer_ -= params.emitInterval;
+
+        const Vector3 playerPos = player_->GetWorldTranslation();
+        const Vector3 spawnPos = {
+            playerPos.x,
+            playerPos.y + kSmokeOffsetY_,
+            playerPos.z + kSmokeOffsetZ_
+        };
+
+        // 
+        for (int i = 0; i < params.burstCount; ++i) {
+            Vector3 vel{
+                xyDist(rng),
+                xyDist(rng),
+                params.baseZSpeed + zDist(rng)
+            };
+
+            auto smoke = std::make_unique<Smoke>();
+            smoke->Initialize(
+                smokeModel_,
+                spawnPos,
+                vel,
+                params.lifeTime,
+                params.startScale,
+                0.0f
+            );
+            engineSmokes_.push_back(std::move(smoke));
+        }
+    }
+
+    for (auto& s : engineSmokes_) {
+        s->Update(dt);
+    }
+
+    engineSmokes_.erase(
+        std::remove_if(
+            engineSmokes_.begin(), engineSmokes_.end(),
+            [](const std::unique_ptr<Smoke>& p) {
+                return p->IsFinished();
+            }),
+        engineSmokes_.end()
+    );
+}
+
+void GameScene::CameraUpdate()
+{
+    // 
+    if (isRailCameraActive_) {
+        railCamera_->Update();
+        camera_.matView = railCamera_->GetCamera()->matView;
+        camera_.matProjection = railCamera_->GetCamera()->matProjection;
+        camera_.TransferMatrix();
+    }
+    // 
+    else {
+        camera_.UpdateMatrix();
+    }
+}
+
+void GameScene::SpeedLineUpdate(float dt)
+{
+    // 
+    if (isRailCameraActive_) {
+        // 
+        speedLine_.Update(dt, railCamera_->GetWorldTransform().translation_);
+    }
+}
+
+void GameScene::JudgeResultAndStartClear()
+{
+    if (result_ == GameResult::None) {
+        if (player_->IsExplosionFinished()) {
+            result_ = GameResult::Fail;
+            isEnd_ = true;
+        }
+        else if (uiManager_.GetScore()->GetScore() >= kClearScore_) {
+            result_ = GameResult::Clear;
+            clearScore_ = uiManager_.GetScore()->GetScore();
+            isClearAnimating_ = true;
+            clearAnimTimer_ = 0.0f;
+        }
+    }
+}
+
+void GameScene::ClearAnimationUpdate(float dt)
+{
+    // 
+    if (result_ == GameResult::Clear && isClearAnimating_) {
+        clearAnimTimer_ += dt;
+        auto& wt = player_->GetWorldTransform();
+
+        // 
+        wt.translation_.z += kClearBoostSpeedZ_ * dt;
+        wt.translation_.y += kClearBoostSpeedY_ * dt;
+        wt.rotation_.x -= kClearRotateSpeedX_ * dt;
+
+        // 
+        if (clearAnimTimer_ > kClearShrinkStart_) {
+            float shrink = clearAnimTimer_ - kClearShrinkStart_;
+            float scale = (std::max)(0.0f, 1.0f - shrink * kClearShrinkSpeed_);
+            wt.scale_ = { scale, scale, scale };
+        }
+
+        // 
+        wt.UpdateMatrix();
+
+        // 
+        if (clearAnimTimer_ >= kClearAnimEndTime_) {
+            isEnd_ = true;
+            isClearAnimating_ = false;
+        }
+    }
 }
 
 IScene* GameScene::NextScene() const {

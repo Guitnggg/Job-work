@@ -62,6 +62,32 @@ public:
     /// </summary>
     void Draw() override;
 
+private:
+
+    void CountDownUpdate(float dt);
+
+    void BackgroundUpdate();
+
+    void PlayerUpdate();
+
+    void SpawnDamageParticles();
+
+    void BattleUpdate(float dt);
+
+    void UIUpdate();
+
+    void DamageParticleUpdate(float dt);
+
+    void EngineSmokesUpdate(float dt);
+
+    void CameraUpdate();
+
+    void SpeedLineUpdate(float dt);
+
+    void JudgeResultAndStartClear();
+
+    void ClearAnimationUpdate(float dt);
+
 public:
     bool IsEnd() const override { return isEnd_; }
     IScene* NextScene() const override;
@@ -77,6 +103,9 @@ private:
     KamataEngine::WorldTransform* worldTransform_ = nullptr;
     KamataEngine::Camera camera_;
     KamataEngine::Model* model_ = nullptr;
+
+    // ========== フレーム ==========
+    float kFixedDeltaTime_ = 1.0f / 60.0f;
 
     // ========== ３カウントUI ==========
     CountDown countDown_;
@@ -102,6 +131,13 @@ private:
     std::vector<std::unique_ptr<DamageParticle>>damageParticles_;
     KamataEngine::Model* damageParticleModel_ = nullptr;
 
+    int kDamageParticleCount_ = 10;
+    float kDamageParticleSpeedXY_ = 2.5f;
+    float kDamageParticleSpeedZ_ = -2.0f;
+    float kDamageParticleLife_ = 0.7f;
+    float kDamageParticleStartScale_ = 0.22f;
+    float kDamageParticleEndScale_ = 0.0f;
+
     // ========== エンジンスモーク ==========
     KamataEngine::Model* smokeModel_ = nullptr;
     std::vector<std::unique_ptr<Smoke>> engineSmokes_;
@@ -118,13 +154,29 @@ private:
     SmokeParams normalSmokeParams_;  // 通常時
     SmokeParams boostSmokeParams_;   // クリア演出時
 
+    float kSmokeOffsetY_ = -0.3f;
+    float kSmokeOffsetZ_ = -1.5f;
+    float kSmokeRandXY_ = 0.05f;
+    float kSmokeRandZ_ = 0.10f;
+
     // ========== UI（HPバー／スコアなど） ==========
     UIManager uiManager_;
     int clearScore_ = 0;
 
+    int kScorePerEnemy_ = 100;
+    int kClearScore_ = 1000;
+
     // ========== クリア後演出用 ==========
     bool  isClearAnimating_ = false;
     float clearAnimTimer_ = 0.0f;
+
+    float kClearBoostSpeedZ_ = 1.0f;
+    float kClearBoostSpeedY_ = 5.0f;
+    float kClearRotateSpeedX_ = 0.5f;
+
+    float kClearShrinkStart_ = 0.5f;
+    float kClearShrinkSpeed_ = 1.0f;
+    float kClearAnimEndTime_ = 2.0f;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;
