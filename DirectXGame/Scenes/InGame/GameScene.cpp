@@ -204,7 +204,7 @@ void GameScene::PlayerUpdate() {
 }
 
 void GameScene::SpawnDamageParticles() {
-    // 
+    // プレイヤーが被弾していないフレームでは生成しない
     if (!player_->ConsumeTookDamageEvent()) {
         return;
     }
@@ -213,7 +213,7 @@ void GameScene::SpawnDamageParticles() {
     static std::mt19937 rng{ (std::random_device{}()) };
     std::uniform_real_distribution<float> dist(-1, 1);
 
-    // 
+    // 被弾時に複数のダメージパーティクルを一気に生成
     for (int i = 0; i < kDamageParticleCount_; i++) {
         Vector3 vel = {
             dist(rng) * kDamageParticleSpeedXY_,
@@ -242,14 +242,22 @@ void GameScene::BattleUpdate(float dt) {
 
     // 敵・衝突・スコア（入力ロック解除＆戦闘中のみ）
     if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
-        const Vector3 playerPos = player_->GetWorldTranslation();
-        enemyManager_.Update(dt, playerPos);
+        // 敵更新（プレイヤー位置を基準に行動）
+        enemyManager_.Update(dt, player_->GetWorldTranslation());
 
-        // 衝突判定
-        CollisionManager::ResolvePlayerEnemyCollisions(player_, enemyManager_.GetEnemies(), countDown_);
-        CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
+        // プレイヤーと敵の衝突判定
+        CollisionManager::ResolvePlayerEnemyCollisions(player_,
+            enemyManager_.GetEnemies(),
+            countDown_
+        );
 
-        // スコア加算（倒れた数 × 100）
+        // 弾と敵の衝突判定
+        CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), 
+            enemyManager_.GetEnemies(),
+            countDown_
+        );
+
+        // 倒された敵の数をカウントしてスコアを加算
         int deadCount = 0;
         for (auto& e : enemyManager_.GetEnemies()) {
             if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
@@ -265,13 +273,9 @@ void GameScene::BattleUpdate(float dt) {
     }
 }
 
-void GameScene::UIUpdate()
-{
-    uiManager_.Update();
-}
+void GameScene::UIUpdate(){    uiManager_.Update();}
 
-void GameScene::DamageParticleUpdate(float dt)
-{
+void GameScene::DamageParticleUpdate(float dt){
     // 
     for (auto& p : damageParticles_) {
         p->Update(dt);
@@ -285,10 +289,11 @@ void GameScene::DamageParticleUpdate(float dt)
     );
 }
 
-void GameScene::EngineSmokesUpdate(float dt)
-{
+void GameScene::EngineSmokesUpdate(float dt){
+    // カウントダウン中はスモークを出さない
     if (!countDown_.IsInputLocked()) { return; }
 
+    // 戦闘中、またはクリア演出集のみスモークを生成
     const bool canEmit = (result_ == GameResult::None) ||
         (result_ == GameResult::Clear && isClearAnimating_);
 

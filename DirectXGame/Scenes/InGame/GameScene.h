@@ -63,29 +63,70 @@ public:
     void Draw() override;
 
 private:
-
+    /// <summary>
+    /// 3カウント更新
+    /// </summary>
+    /// <param name="dt"></param>
     void CountDownUpdate(float dt);
 
+    /// <summary>
+    /// 背景（天球）更新
+    /// </summary>
     void BackgroundUpdate();
 
+    /// <summary>
+    /// プレイヤー更新
+    /// </summary>
     void PlayerUpdate();
 
+    /// <summary>
+    /// ダメージパーティクル生成
+    /// </summary>
     void SpawnDamageParticles();
 
+    /// <summary>
+    /// 戦闘処理
+    /// </summary>
+    /// <param name="dt"></param>
     void BattleUpdate(float dt);
 
+    /// <summary>
+    /// UI更新
+    /// </summary>
     void UIUpdate();
 
+    /// <summary>
+    /// ダメージパーティクル更新
+    /// </summary>
+    /// <param name="dt"></param>
     void DamageParticleUpdate(float dt);
 
+    /// <summary>
+    /// エンジンスモーク更新
+    /// </summary>
+    /// <param name="dt"></param>
     void EngineSmokesUpdate(float dt);
 
+    /// <summary>
+    /// カメラ更新
+    /// </summary>
     void CameraUpdate();
 
+    /// <summary>
+    /// スピードライン更新
+    /// </summary>
+    /// <param name="dt"></param>
     void SpeedLineUpdate(float dt);
 
+    /// <summary>
+    /// クリア/失敗判定
+    /// </summary>
     void JudgeResultAndStartClear();
 
+    /// <summary>
+    /// クリア後演出更新
+    /// </summary>
+    /// <param name="dt"></param>
     void ClearAnimationUpdate(float dt);
 
 public:
