@@ -287,7 +287,7 @@ void GameScene::DamageParticleUpdate(float dt)
 
 void GameScene::EngineSmokesUpdate(float dt)
 {
-    if (!countDown_.IsInputLocked());
+    if (!countDown_.IsInputLocked()) { return; }
 
     const bool canEmit = (result_ == GameResult::None) ||
         (result_ == GameResult::Clear && isClearAnimating_);
