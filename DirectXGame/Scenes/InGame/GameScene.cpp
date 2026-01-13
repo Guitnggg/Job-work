@@ -51,7 +51,7 @@ void GameScene::Initialize() {
     damageParticles_.clear();
 
     // エンジンスモーク初期化
-    smokeModel_ = Model::Create();
+    smokeModel_ = Model::CreateSphere();
     engineSmokes_.clear();
     smokeEmitTimer_ = 0.0f;
 
@@ -95,7 +95,7 @@ void GameScene::Initialize() {
     // 弾・敵
     bulletManager_.Initialize();
     enemyManager_.Initialize();
-    enemyManager_.LoadEnemyScv("Resources/levels/stage1.json");
+    enemyManager_.LoadEnemyScv("Resources/levels/stage1_more_enemies.json");
 
     // 開始
     countDown_.Start();
@@ -235,42 +235,41 @@ void GameScene::SpawnDamageParticles() {
 }
 
 void GameScene::BattleUpdate(float dt) {
-    // 弾（戦闘中のみ）
-    if (result_ == GameResult::None) {
-        bulletManager_.Update(input_, player_, countDown_);
-    }
+	// 弾（戦闘中のみ）
+	if (result_ == GameResult::None) {
+		bulletManager_.Update(input_, player_, countDown_);
+	}
 
-    // 敵・衝突・スコア（入力ロック解除＆戦闘中のみ）
-    if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
-        // 敵更新（プレイヤー位置を基準に行動）
-        enemyManager_.Update(dt, player_->GetWorldTranslation());
+	// 敵・衝突・スコア（入力ロック解除＆戦闘中のみ）
+	if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
+		// 敵更新（プレイヤー位置を基準に行動）
+		enemyManager_.Update(dt, player_->GetWorldTranslation());
 
-        // プレイヤーと敵の衝突判定
-        CollisionManager::ResolvePlayerEnemyCollisions(player_,
-            enemyManager_.GetEnemies(),
-            countDown_
-        );
+		// ① 弾→敵 を先に処理（＝スコア対象）
+		CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
 
-        // 弾と敵の衝突判定
-        CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), 
-            enemyManager_.GetEnemies(),
-            countDown_
-        );
+		// 弾で倒された敵の数をカウントしてスコアを加算
+		int deadCount = 0;
+		for (auto& e : enemyManager_.GetEnemies()) {
+			if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
+				if (s->IsDead()) {
+					deadCount++;
+				}
+			}
+		}
+		if (deadCount > 0) {
+			uiManager_.GetScore()->Add(deadCount * kScorePerEnemy_);
+		}
 
-        // 倒された敵の数をカウントしてスコアを加算
-        int deadCount = 0;
-        for (auto& e : enemyManager_.GetEnemies()) {
-            if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
-                if (s->IsDead()) deadCount++;
-            }
-        }
-        if (deadCount > 0) {
-            uiManager_.GetScore()->Add(deadCount * kScorePerEnemy_);
-        }
+		// ② スコア加算対象（弾で倒した敵）を先に削除
+		enemyManager_.RemoveDeadEnemies();
 
-        // 死亡した敵を削除
-        enemyManager_.RemoveDeadEnemies();
-    }
+		// ③ プレイヤー→敵（体当たりなど）は後で処理（＝スコア対象外）
+		CollisionManager::ResolvePlayerEnemyCollisions(player_, enemyManager_.GetEnemies(), countDown_);
+
+		// 体当たり等で死亡した敵があれば削除（※スコアは加算しない）
+		enemyManager_.RemoveDeadEnemies();
+	}
 }
 
 void GameScene::UIUpdate(){    uiManager_.Update();}
@@ -290,14 +289,17 @@ void GameScene::DamageParticleUpdate(float dt){
 }
 
 void GameScene::EngineSmokesUpdate(float dt){
-    // カウントダウン中はスモークを出さない
-    if (!countDown_.IsInputLocked()) { return; }
+	// 戦闘開始カウントダウン中はスモークを出さない（クリア演出は例外）
+	if (result_ == GameResult::None && countDown_.IsInputLocked()) {
+		return;
+	}
 
-    // 戦闘中、またはクリア演出集のみスモークを生成
-    const bool canEmit = (result_ == GameResult::None) ||
-        (result_ == GameResult::Clear && isClearAnimating_);
+	// 戦闘中、またはクリア演出中のみスモークを生成
+	const bool canEmit = (result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_);
 
-    if (!canEmit) { return; }
+	if (!canEmit) {
+		return;
+	}
 
     smokeEmitTimer_ += dt;
 

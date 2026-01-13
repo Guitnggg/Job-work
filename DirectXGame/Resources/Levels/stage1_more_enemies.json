@@ -1,0 +1,109 @@
+{
+  "randomAreas": [
+    {
+      "count": 12,
+      "timeMin": 4.0,
+      "timeMax": 20.0,
+      "posCenter": [
+        0.0,
+        0.0,
+        200.0
+      ],
+      "posRange": [
+        18.0,
+        5.0,
+        55.0
+      ],
+      "speed": 0.7,
+      "speedRange": 0.25,
+      "turnRate": 0.15,
+      "hp": 1,
+      "radius": 1.5,
+      "lifeTime": 20.0
+    },
+    {
+      "count": 18,
+      "timeMin": 18.0,
+      "timeMax": 34.0,
+      "posCenter": [
+        0.0,
+        0.0,
+        215.0
+      ],
+      "posRange": [
+        20.0,
+        6.0,
+        65.0
+      ],
+      "speed": 0.85,
+      "speedRange": 0.3,
+      "turnRate": 0.18,
+      "hp": 1,
+      "radius": 1.5,
+      "lifeTime": 22.0
+    },
+    {
+      "count": 30,
+      "timeMin": 34.0,
+      "timeMax": 55.0,
+      "posCenter": [
+        0.0,
+        0.0,
+        235.0
+      ],
+      "posRange": [
+        24.0,
+        7.0,
+        75.0
+      ],
+      "speed": 0.95,
+      "speedRange": 0.35,
+      "turnRate": 0.22,
+      "hp": 1,
+      "radius": 1.6,
+      "lifeTime": 24.0
+    },
+    {
+      "count": 18,
+      "timeMin": 55.0,
+      "timeMax": 70.0,
+      "posCenter": [
+        0.0,
+        0.5,
+        245.0
+      ],
+      "posRange": [
+        22.0,
+        7.0,
+        70.0
+      ],
+      "speed": 1.05,
+      "speedRange": 0.35,
+      "turnRate": 0.25,
+      "hp": 2,
+      "radius": 1.7,
+      "lifeTime": 26.0
+    },
+    {
+      "count": 24,
+      "timeMin": 70.0,
+      "timeMax": 90.0,
+      "posCenter": [
+        0.0,
+        0.0,
+        260.0
+      ],
+      "posRange": [
+        26.0,
+        8.0,
+        85.0
+      ],
+      "speed": 1.1,
+      "speedRange": 0.4,
+      "turnRate": 0.28,
+      "hp": 2,
+      "radius": 1.7,
+      "lifeTime": 28.0
+    }
+  ]
+}
