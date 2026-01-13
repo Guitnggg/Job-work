@@ -5,6 +5,7 @@
 #include <random>
 #include <memory>
 #include <algorithm>
+#include <array>
 
 #include "Application/Background/Skydome/Skydome.h"
 #include "Application/Cameras/RailCamera/RailCamera.h"
@@ -27,10 +28,23 @@
 class FinishScene;
 class ClearScene;
 
+enum class GameState {
+	Instruction, // 操作説明（複数ページ）
+	CountDown,   // 3カウント
+	Playing,     // ゲーム本編
+};
+
+enum class InstructionPage {
+	Move,    // 移動
+	Roll,    // ロール
+	Attack,  // 攻撃
+	Rules,   // ルール説明
+};
+
 enum class GameResult {
     Clear,  // クリアに成功
     Fail,   // プレイヤーが倒された
-    None    // 判定前
+    None,   // 判定前
 };
 
 /// <summary>
@@ -129,6 +143,16 @@ private:
     /// <param name="dt"></param>
     void ClearAnimationUpdate(float dt);
 
+private:
+
+    void InstructionUpdate();
+
+    void NextInstructionPage();
+
+    void PrevInstructionPage();
+
+    void DrawInstruction();
+
 public:
     bool IsEnd() const override { return isEnd_; }
     IScene* NextScene() const override;
@@ -147,6 +171,15 @@ private:
 
     // ========== フレーム ==========
     float kFixedDeltaTime_ = 1.0f / 60.0f;
+
+    // ========== ステート ==========
+	GameState state_ = GameState::Instruction;
+	InstructionPage instructionPage_ = InstructionPage::Move;
+
+	static constexpr size_t kInstructionPageCount_ = 4;
+	std::array<uint32_t, kInstructionPageCount_> instructionTexHandles_{};
+	std::array<KamataEngine::Sprite*, kInstructionPageCount_> instructionSprites_{};
+	KamataEngine::Vector2 instructionPos_{640.0f, 360.0f};
 
     // ========== ３カウントUI ==========
     CountDown countDown_;

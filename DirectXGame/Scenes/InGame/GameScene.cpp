@@ -100,6 +100,21 @@ void GameScene::Initialize() {
     // 開始
     countDown_.Start();
 
+    // ステート
+	/*instructionTexHandles_[0] = TextureManager::Load("./Resources/InGame/Instr_Move.png");
+	instructionTexHandles_[1] = TextureManager::Load("./Resources/InGame/Instr_Roll.png");
+	instructionTexHandles_[2] = TextureManager::Load("./Resources/InGame/Instr_Attack.png");
+	instructionTexHandles_[3] = TextureManager::Load("./Resources/InGame/Instr_Rules.png");*/
+
+	for (size_t i = 0; i < kInstructionPageCount_; ++i) {
+		instructionSprites_[i] = Sprite::Create(instructionTexHandles_[i], instructionPos_);
+	}
+
+	// 開始：まずは操作説明から
+	state_ = GameState::Instruction;
+	instructionPage_ = InstructionPage::Move;
+
+    // その他
     isEnd_ = false;
     result_ = GameResult::None;
     clearScore_ = 0;
@@ -111,84 +126,115 @@ void GameScene::Initialize() {
 void GameScene::Update() {
     const float dt = kFixedDeltaTime_;
 
-    CountDownUpdate(dt);
     BackgroundUpdate();
-    PlayerUpdate();
-    SpawnDamageParticles();
+	CameraUpdate();
 
-    BattleUpdate(dt);
+	switch (state_) {
+	case GameState::Instruction:
+		InstructionUpdate();
+		break;
 
-    UIUpdate();
-    DamageParticleUpdate(dt);
-    EngineSmokesUpdate(dt);
+	case GameState::CountDown:
+		CountDownUpdate(dt);
+		if (!countDown_.IsInputLocked()) {
+			state_ = GameState::Playing;
+		}
+		break;
 
-    CameraUpdate();
-    SpeedLineUpdate(dt);
-
-    JudgeResultAndStartClear();
-    ClearAnimationUpdate(dt);
+	case GameState::Playing:
+		PlayerUpdate();
+		SpawnDamageParticles();
+		BattleUpdate(dt);
+		UIUpdate();
+		DamageParticleUpdate(dt);
+		EngineSmokesUpdate(dt);
+		SpeedLineUpdate(dt);
+		JudgeResultAndStartClear();
+		ClearAnimationUpdate(dt);
+		break;
+	}
 }
 
 void GameScene::Draw() {
-    ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
+	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-#pragma region 背景スプライト描画
-    Sprite::PreDraw(commandList);
+#pragma region 背景スプライト
+	Sprite::PreDraw(commandList);
+	// 背景スプライトの描画があればここ
 
-    // 背景スプライトの描画があればここに
-
-    Sprite::PostDraw();
-    dxCommon_->ClearDepthBuffer();
-#pragma endregion 
+	Sprite::PostDraw();
+	dxCommon_->ClearDepthBuffer();
+#pragma endregion
 
 #pragma region 3Dオブジェクト描画
-    Model::PreDraw();
+	Model::PreDraw();
 
-    // 天球
-    skydome_->Draw();
+	// 空/スカイドームは常に描く（雰囲気）
+	skydome_->Draw();
 
-    // スピードライン
-    if (!countDown_.IsInputLocked() && result_ == GameResult::None) {
-        speedLine_.Draw();
-    }
+	// --- 操作説明中はここでゲーム描画を止める ---
+	if (state_ == GameState::Instruction) {
+		Model::PostDraw();
 
-    // エンジンスモーク
-    if (smokeModel_) {
-        for (auto& s : engineSmokes_) {
-            s->Draw(&camera_);
-        }
-    }
+		// ===== 前景UI（操作説明スライド）=====
+		Sprite::PreDraw(commandList);
+		DrawInstruction(); // ← ここでスライドを1枚描画
+		Sprite::PostDraw();
+		return;
+	}
 
-    // ダメージパーティクル
-    if (damageParticleModel_) {
-        for (auto& p : damageParticles_) {
-            p->Draw(&camera_);
-        }
-    }
+	// ===== ここから下は「説明中以外」だけ描く =====
 
-    // ゲーム中
-    if (result_ == GameResult::None) {
-        enemyManager_.Draw(&camera_);   // 敵
-        bulletManager_.Draw(&camera_);  // 弾
-    }
+	// （任意）CountDown中もプレイヤーだけ見せたいなら描く
+	if (state_ == GameState::CountDown || state_ == GameState::Playing) {
+		player_->Draw(&camera_);
+	}
 
-    // プレイヤー
-    if (!countDown_.IsInputLocked()) {
-        player_->Draw(&camera_);
-    }
+	// ゲーム中だけ描きたいものは Playing に寄せる
+	if (state_ == GameState::Playing && result_ == GameResult::None) {
 
-    Model::PostDraw();
+		// スピードライン
+		speedLine_.Draw();
+
+		// エンジンスモーク
+		if (smokeModel_) {
+			for (auto& s : engineSmokes_) {
+				s->Draw(&camera_);
+			}
+		}
+
+		// ダメージパーティクル
+		if (damageParticleModel_) {
+			for (auto& p : damageParticles_) {
+				p->Draw(&camera_);
+			}
+		}
+
+		// 敵・弾
+		enemyManager_.Draw(&camera_);
+		bulletManager_.Draw(&camera_);
+	}
+
+	Model::PostDraw();
 #pragma endregion
 
-#pragma region 前景スプライト描画
-    Sprite::PreDraw(commandList);
+#pragma region 前景スプライト
+	Sprite::PreDraw(commandList);
 
-    countDown_.Draw();
-    uiManager_.Draw();
+	// 3カウントは CountDown 中だけ
+	if (state_ == GameState::CountDown) {
+		countDown_.Draw();
+	}
 
-    Sprite::PostDraw();
+	// UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
+	if (state_ == GameState::Playing) {
+		uiManager_.Draw();
+	}
+
+	Sprite::PostDraw();
 #pragma endregion
 }
+
 
 void GameScene::CountDownUpdate(float dt) { countDown_.Update(dt); }
 
@@ -357,8 +403,7 @@ void GameScene::EngineSmokesUpdate(float dt){
     );
 }
 
-void GameScene::CameraUpdate()
-{
+void GameScene::CameraUpdate(){
     // 
     if (isRailCameraActive_) {
         railCamera_->Update();
@@ -372,8 +417,7 @@ void GameScene::CameraUpdate()
     }
 }
 
-void GameScene::SpeedLineUpdate(float dt)
-{
+void GameScene::SpeedLineUpdate(float dt){
     // 
     if (isRailCameraActive_) {
         // 
@@ -381,8 +425,7 @@ void GameScene::SpeedLineUpdate(float dt)
     }
 }
 
-void GameScene::JudgeResultAndStartClear()
-{
+void GameScene::JudgeResultAndStartClear(){
     if (result_ == GameResult::None) {
         if (player_->IsExplosionFinished()) {
             result_ = GameResult::Fail;
@@ -397,8 +440,7 @@ void GameScene::JudgeResultAndStartClear()
     }
 }
 
-void GameScene::ClearAnimationUpdate(float dt)
-{
+void GameScene::ClearAnimationUpdate(float dt){
     // 
     if (result_ == GameResult::Clear && isClearAnimating_) {
         clearAnimTimer_ += dt;
@@ -425,6 +467,90 @@ void GameScene::ClearAnimationUpdate(float dt)
             isClearAnimating_ = false;
         }
     }
+}
+
+void GameScene::InstructionUpdate() {
+	const bool next = input_->TriggerKey(DIK_SPACE) || input_->TriggerKey(DIK_RETURN);
+	const bool prev = input_->TriggerKey(DIK_BACK);
+
+	if (prev) {
+		PrevInstructionPage();
+		return;
+	}
+	if (!next) {
+		return;
+	}
+
+	if (instructionPage_ == InstructionPage::Rules) {
+		state_ = GameState::CountDown;
+		countDown_.Start();
+		return;
+	}
+
+	NextInstructionPage();
+}
+
+void GameScene::NextInstructionPage() {
+	switch (instructionPage_) {
+	case InstructionPage::Move:
+		instructionPage_ = InstructionPage::Roll;
+		break;
+
+	case InstructionPage::Roll:
+		instructionPage_ = InstructionPage::Attack;
+		break;
+
+	case InstructionPage::Attack:
+		instructionPage_ = InstructionPage::Rules;
+		break;
+
+	case InstructionPage::Rules:
+		// ここには来ない想定（RulesはInstructionUpdate側で処理）
+		break;
+	}
+}
+
+void GameScene::PrevInstructionPage() {
+	switch (instructionPage_) {
+	case InstructionPage::Move:
+		// 最初なので何もしない
+		break;
+
+	case InstructionPage::Roll:
+		instructionPage_ = InstructionPage::Move;
+		break;
+
+	case InstructionPage::Attack:
+		instructionPage_ = InstructionPage::Roll;
+		break;
+
+	case InstructionPage::Rules:
+		instructionPage_ = InstructionPage::Attack;
+		break;
+	}
+}
+
+void GameScene::DrawInstruction() {
+	size_t index = 0;
+
+	switch (instructionPage_) {
+	case InstructionPage::Move:
+		index = 0;
+		break;
+	case InstructionPage::Roll:
+		index = 1;
+		break;
+	case InstructionPage::Attack:
+		index = 2;
+		break;
+	case InstructionPage::Rules:
+		index = 3;
+		break;
+	}
+
+	if (instructionSprites_[index]) {
+		instructionSprites_[index]->Draw();
+	}
 }
 
 IScene* GameScene::NextScene() const {
