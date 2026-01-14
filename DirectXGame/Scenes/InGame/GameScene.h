@@ -179,7 +179,7 @@ private:
 	static constexpr size_t kInstructionPageCount_ = 4;
 	std::array<uint32_t, kInstructionPageCount_> instructionTexHandles_{};
 	std::array<KamataEngine::Sprite*, kInstructionPageCount_> instructionSprites_{};
-	KamataEngine::Vector2 instructionPos_{640.0f, 360.0f};
+	KamataEngine::Vector2 instructionPos_{0.0f, 0.0f};
 
     // ========== ３カウントUI ==========
     CountDown countDown_;
@@ -238,7 +238,7 @@ private:
     int clearScore_ = 0;
 
     int kScorePerEnemy_ = 100;
-    int kClearScore_ = 5000;
+    int kClearScore_ = 100;
 
     // ========== クリア後演出用 ==========
     bool  isClearAnimating_ = false;

@@ -101,10 +101,10 @@ void GameScene::Initialize() {
     countDown_.Start();
 
     // ステート
-	/*instructionTexHandles_[0] = TextureManager::Load("./Resources/InGame/Instr_Move.png");
-	instructionTexHandles_[1] = TextureManager::Load("./Resources/InGame/Instr_Roll.png");
-	instructionTexHandles_[2] = TextureManager::Load("./Resources/InGame/Instr_Attack.png");
-	instructionTexHandles_[3] = TextureManager::Load("./Resources/InGame/Instr_Rules.png");*/
+	instructionTexHandles_[0] = TextureManager::Load("./Resources/InGame/Move.png");
+	instructionTexHandles_[1] = TextureManager::Load("./Resources/InGame/Roll.png");
+	instructionTexHandles_[2] = TextureManager::Load("./Resources/InGame/Attack.png");
+	instructionTexHandles_[3] = TextureManager::Load("./Resources/InGame/Rules.png");
 
 	for (size_t i = 0; i < kInstructionPageCount_; ++i) {
 		instructionSprites_[i] = Sprite::Create(instructionTexHandles_[i], instructionPos_);
@@ -186,7 +186,7 @@ void GameScene::Draw() {
 	// ===== ここから下は「説明中以外」だけ描く =====
 
 	// （任意）CountDown中もプレイヤーだけ見せたいなら描く
-	if (state_ == GameState::CountDown || state_ == GameState::Playing) {
+	if (state_ == GameState::Playing) {
 		player_->Draw(&camera_);
 	}
 
