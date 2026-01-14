@@ -154,6 +154,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Application\Characters\Enemy\TurretEnemy.cpp" />
     <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp" />
     <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp" />
     <ClCompile Include="Application\Effects\Smoke\Smoke.cpp" />
@@ -280,6 +281,7 @@
     <None Include="Resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application\Characters\Enemy\TurretEnemy.h" />
     <ClInclude Include="Application\Objects\Asteroid\Asteroid.h" />
     <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h" />
     <ClInclude Include="Application\Effects\Smoke\Smoke.h" />

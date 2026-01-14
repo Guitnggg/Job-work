@@ -95,7 +95,7 @@ void GameScene::Initialize() {
     // 弾・敵
     bulletManager_.Initialize();
     enemyManager_.Initialize();
-    enemyManager_.LoadEnemyScv("Resources/levels/stage1_more_enemies.json");
+    enemyManager_.LoadEnemyScv("Resources/levels/stage1_more_enemies_turret_balanced.json");
 
     // 開始
     countDown_.Start();
