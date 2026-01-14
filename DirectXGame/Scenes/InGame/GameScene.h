@@ -238,7 +238,7 @@ private:
     int clearScore_ = 0;
 
     int kScorePerEnemy_ = 100;
-    int kClearScore_ = 100;
+    int kClearScore_ = 5000;
 
     // ========== クリア後演出用 ==========
     bool  isClearAnimating_ = false;
