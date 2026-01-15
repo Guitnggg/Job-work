@@ -2,94 +2,155 @@
 
 using namespace KamataEngine;
 
-void CollisionManager::ResolvePlayerEnemyCollisions(
-    Player* player,
-    std::vector<std::unique_ptr<CharacterBase>>& enemies,
-    const CountDown& countDown)
-{
-    // 無効条件（入力ロック中、プレイヤー不在、プレイヤー爆散演出終了まちetc...）
-    if (!player || countDown.IsInputLocked() || player->IsExplosionFinished()) {
-        return;
-    }
+void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	// 無効条件（入力ロック中、プレイヤー不在、プレイヤー爆散演出終了まちetc...）
+	if (!player || countDown.IsInputLocked() || player->IsExplosionFinished()) {
+		return;
+	}
 
-    // プレイヤー側コライダー取得
-    Collider* playerCollider = player->GetCollider().get();
-    if (!playerCollider) { return; }
+	// プレイヤー側コライダー取得
+	Collider* playerCollider = player->GetCollider().get();
+	if (!playerCollider) {
+		return;
+	}
 
-    const auto p = playerCollider->GetTranslate();
-    const float pr = playerCollider->GetRadius();
+	const auto p = playerCollider->GetTranslate();
+	const float pr = playerCollider->GetRadius();
 
-    // 各敵との衝突判定ループ
-    for (auto& e : enemies) {
-        if (!e) { continue; }
-        Collider* enemyCollider = e->GetCollider().get();
-        if (!enemyCollider) { continue; }
+	// 各敵との衝突判定ループ
+	for (auto& e : enemies) {
+		if (!e) {
+			continue;
+		}
+		Collider* enemyCollider = e->GetCollider().get();
+		if (!enemyCollider) {
+			continue;
+		}
 
-        const auto q = enemyCollider->GetTranslate();
-        const float er = enemyCollider->GetRadius();
+		const auto q = enemyCollider->GetTranslate();
+		const float er = enemyCollider->GetRadius();
 
-        // 距離チェック
-        const float dx = p.x - q.x;
-        const float dy = p.y - q.y;
-        const float dz = p.z - q.z;
-        const float dist2 = dx * dx + dy * dy + dz * dz;
-        const float r = pr + er;
+		// 距離チェック
+		const float dx = p.x - q.x;
+		const float dy = p.y - q.y;
+		const float dz = p.z - q.z;
+		const float dist2 = dx * dx + dy * dy + dz * dz;
+		const float r = pr + er;
 
-        // 半径の合計より近ければ衝突
-        if (dist2 <= r * r) {
-            player->OnCollision(e.get());
-            e->OnCollision(player);
-        }
-    }
+		// 半径の合計より近ければ衝突
+		if (dist2 <= r * r) {
+			player->OnCollision(e.get());
+			e->OnCollision(player);
+		}
+	}
 }
 
-void CollisionManager::ResolveBulletEnemyCollisions(
-    std::vector<std::unique_ptr<Bullet>>& bullets,
-    std::vector<std::unique_ptr<CharacterBase>>& enemies,
-    const CountDown& countDown) 
-{
-    // カウントダウン中は無効
-    if (countDown.IsInputLocked()) { return; }
+void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	// カウントダウン中は無効
+	if (countDown.IsInputLocked()) {
+		return;
+	}
 
-    // 全弾ループ
-    for (auto& b : bullets) {
-        if (!b || b->IsDead()) { continue; }
+	// 全弾ループ
+	for (auto& b : bullets) {
+		if (!b || b->IsDead()) {
+			continue;
+		}
 
-        Collider* bc = b->GetCollider().get();
-        if (!bc) { continue; }
+		Collider* bc = b->GetCollider().get();
+		if (!bc) {
+			continue;
+		}
 
-        const auto bp = bc->GetTranslate();
-        const float br = bc->GetRadius();
+		const auto bp = bc->GetTranslate();
+		const float br = bc->GetRadius();
 
-        // 各敵と衝突チェック
-        for (auto& e : enemies) {
-            if (!e) { continue; }
+		// 各敵と衝突チェック
+		for (auto& e : enemies) {
+			if (!e) {
+				continue;
+			}
 
-            // 既に死んだ敵は飛ばす
-            if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
-                if (s->IsDead()) { continue; }
-            }
+			// 既に死んだ敵は飛ばす
+			if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
+				if (s->IsDead()) {
+					continue;
+				}
+			}
 
-            Collider* enemyCollider = e->GetCollider().get();
-            if (!enemyCollider) { continue; }
+			Collider* enemyCollider = e->GetCollider().get();
+			if (!enemyCollider) {
+				continue;
+			}
 
-            const auto ep = enemyCollider->GetTranslate();
-            const float er = enemyCollider->GetRadius();
+			const auto ep = enemyCollider->GetTranslate();
+			const float er = enemyCollider->GetRadius();
 
-            // 球判定
-            const float dx = bp.x - ep.x;
-            const float dy = bp.y - ep.y;
-            const float dz = bp.z - ep.z;
-            const float dist2 = dx * dx + dy * dy + dz * dz;
-            const float rr = br + er;
+			// 球判定
+			const float dx = bp.x - ep.x;
+			const float dy = bp.y - ep.y;
+			const float dz = bp.z - ep.z;
+			const float dist2 = dx * dx + dy * dy + dz * dz;
+			const float rr = br + er;
 
-            if (dist2 <= rr * rr) {
-                // 相互通知：敵は死に、弾は消える
-                e->OnCollision(b.get());
-                b->OnCollision(e.get());
-                // 1発で1体想定
-                break;
-            }
-        }
-    }
+			if (dist2 <= rr * rr) {
+				// 相互通知：敵は死に、弾は消える
+				e->OnCollision(b.get());
+				b->OnCollision(e.get());
+				// 1発で1体想定
+				break;
+			}
+		}
+	}
+}
+
+void CollisionManager::ResolveRazerEnemyCollisions(std::vector<std::unique_ptr<Razer>>& razers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	// カウントダウン中は衝突無効
+	if (countDown.IsInputLocked()) {
+		return;
+	}
+
+	// レーザー×敵
+	for (auto& r : razers) {
+		if (!r || r->IsDead()) {
+			continue;
+		}
+
+		Collider* razerCollider = r->GetCollider().get();
+		if (!razerCollider) {
+			continue;
+		}
+
+		const auto rp = razerCollider->GetTranslate();
+		const float rr = razerCollider->GetRadius();
+
+		for (auto& e : enemies) {
+			if (!e || e->IsDead()) {
+				continue;
+			}
+
+			Collider* enemyCollider = e->GetCollider().get();
+			if (!enemyCollider) {
+				continue;
+			}
+
+			const auto ep = enemyCollider->GetTranslate();
+			const float er = enemyCollider->GetRadius();
+
+			const float dx = rp.x - ep.x;
+			const float dy = rp.y - ep.y;
+			const float dz = rp.z - ep.z;
+			const float dist2 = dx * dx + dy * dy + dz * dz;
+			const float rsum = rr + er;
+
+			if (dist2 <= rsum * rsum) {
+				// 相互通知：敵側がダメージ処理、レーザー側は「消える/貫通」どちらでもOK
+				e->OnCollision(r.get());
+				r->OnCollision(e.get());
+
+				// 1発で1体想定（貫通レーザーにしたいなら break を外す）
+				break;
+			}
+		}
+	}
 }
