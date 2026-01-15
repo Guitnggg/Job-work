@@ -1,0 +1,56 @@
+{
+  "randomAreas": [
+    {
+      "type": "turret",
+      "count": 3,
+      "timeMin": 2.0,
+      "timeMax": 8.0,
+      "posCenter": [0.0, 0.0, 180.0],
+      "posRange":  [12.0, 4.0, 25.0],
+      "hp": 2,
+      "radius": 1.3,
+      "shootIntervalFrames": 75,
+      "bulletSpeed": 2.6,
+      "bulletLifeTime": 2.5
+    },
+    {
+      "type": "turret",
+      "count": 4,
+      "timeMin": 12.0,
+      "timeMax": 24.0,
+      "posCenter": [0.0, 0.0, 210.0],
+      "posRange":  [16.0, 5.0, 35.0],
+      "hp": 2,
+      "radius": 1.35,
+      "shootIntervalFrames": 60,
+      "bulletSpeed": 2.9,
+      "bulletLifeTime": 2.7
+    },
+    {
+      "type": "turret",
+      "count": 5,
+      "timeMin": 28.0,
+      "timeMax": 42.0,
+      "posCenter": [0.0, 0.0, 240.0],
+      "posRange":  [20.0, 6.0, 45.0],
+      "hp": 3,
+      "radius": 1.4,
+      "shootIntervalFrames": 50,
+      "bulletSpeed": 3.1,
+      "bulletLifeTime": 3.0
+    },
+    {
+      "type": "turret",
+      "count": 6,
+      "timeMin": 46.0,
+      "timeMax": 60.0,
+      "posCenter": [0.0, 0.0, 270.0],
+      "posRange":  [24.0, 7.0, 55.0],
+      "hp": 3,
+      "radius": 1.45,
+      "shootIntervalFrames": 45,
+      "bulletSpeed": 3.3,
+      "bulletLifeTime": 3.2
+    }
+  ]
+}
