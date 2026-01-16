@@ -9,7 +9,7 @@ namespace {
 constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 
 // 見た目スケール（細長いレーザー）
-constexpr Vector3 kRazerScale{0.25f, 0.25f, 10.5f};
+constexpr Vector3 kRazerScale{1.0f, 1.0f, 10.0f};
 
 // コライダー半径（少し太めにして当てやすく）
 constexpr float kColliderRadius = 0.55f;
@@ -23,7 +23,7 @@ void Razer::Initialize() {
 	CharacterBase::Initialize();
 
 	// 見た目
-	model_.reset(Model::CreateSphere());
+	model_.reset(Model::CreateFromOBJ("Beam", true));
 
 	// 細長く
 	worldTransform_.scale_ = kRazerScale;

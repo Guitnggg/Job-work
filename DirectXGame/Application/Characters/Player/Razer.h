@@ -59,11 +59,11 @@ private:
 	uint32_t textureHandle_ = 0u;
 
 	KamataEngine::Vector3 dir_ = {0, 0, 1}; // +Z方向
-	float speed_ = 2.8f;                    // 1フレームあたりの前進量
+	float speed_ = 3.5f;                    // 1フレームあたりの前進量
 	float lifeTimeSec_ = 3.0f;              // 弾の寿命
 	float t_ = 0.0f;                        // 経過時間
 	bool isDead_ = false;
 
 	KamataEngine::Vector3 startPos_ = {0, 0, 0};
-	float maxDistance_ = 200.0f; // Playerからの最大距離
+	float maxDistance_ = 500.0f; // Playerからの最大距離
 };
