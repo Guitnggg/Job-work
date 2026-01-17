@@ -104,7 +104,7 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
 	}
 }
 
-void CollisionManager::ResolveRazerEnemyCollisions(std::vector<std::unique_ptr<Razer>>& razers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+void CollisionManager::ResolveRazerEnemyCollisions(std::vector<std::unique_ptr<Lazer>>& razers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
 	// カウントダウン中は衝突無効
 	if (countDown.IsInputLocked()) {
 		return;

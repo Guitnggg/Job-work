@@ -7,7 +7,7 @@
 #include "3d/Camera.h"
 #include "Application/Characters/CharacterBase.h"
 
-class Razer : public CharacterBase {
+class Lazer : public CharacterBase {
 public:
 	/// <summary>
 	/// 初期化処理

@@ -155,7 +155,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application\Characters\Enemy\TurretEnemy.cpp" />
-    <ClCompile Include="Application\Characters\Player\Razer.cpp" />
+    <ClCompile Include="Application\Characters\Player\Lazer.cpp" />
     <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp" />
     <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp" />
     <ClCompile Include="Application\Effects\Smoke\Smoke.cpp" />
@@ -283,7 +283,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Characters\Enemy\TurretEnemy.h" />
-    <ClInclude Include="Application\Characters\Player\Razer.h" />
+    <ClInclude Include="Application\Characters\Player\Lazer.h" />
     <ClInclude Include="Application\Objects\Asteroid\Asteroid.h" />
     <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h" />
     <ClInclude Include="Application\Effects\Smoke\Smoke.h" />

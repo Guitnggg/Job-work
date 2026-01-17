@@ -6,7 +6,7 @@
 
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/Player.h"
-#include "Application/Characters/Player/Razer.h"
+#include "Application/Characters/Player/Lazer.h"
 #include "UI/CountDown/CountDown.h"
 
 /// <summary>
@@ -52,7 +52,7 @@ public:
 	/// 現在飛行中のレーザー(Razer)のコンテナを参照で返す。
 	/// 外部でレーザーとの当たり判定を行う用途で使用する。
 	/// </summary>
-	std::vector<std::unique_ptr<Razer>>& GetRazers() { return razers_; }
+	std::vector<std::unique_ptr<Lazer>>& GetRazers() { return razers_; }
 
 private:
 	/// <summary>
@@ -76,7 +76,7 @@ private:
 
 private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
-	std::vector<std::unique_ptr<Razer>> razers_;
+	std::vector<std::unique_ptr<Lazer>> razers_;
 
 	// ===== チャージショット用 =====
 	bool isCharging_ = false;

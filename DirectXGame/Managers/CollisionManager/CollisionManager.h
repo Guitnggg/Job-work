@@ -7,7 +7,7 @@
 #include "Application/Characters/Enemy/SeekerEnemy.h"
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/Player.h"
-#include "Application/Characters/Player/Razer.h"
+#include "Application/Characters/Player/Lazer.h"
 
 #include "UI/CountDown/CountDown.h"
 
@@ -46,5 +46,5 @@ public:
 	/// <param name="razers">衝突対象のレーザーのリスト</param>
 	/// <param name="enemies">衝突対象の敵のリスト</param>
 	/// <param name="countDown">カウントダウン中は衝突を無効にするため使用</param>
-	static void ResolveRazerEnemyCollisions(std::vector<std::unique_ptr<Razer>>& razers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+	static void ResolveRazerEnemyCollisions(std::vector<std::unique_ptr<Lazer>>& razers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 };

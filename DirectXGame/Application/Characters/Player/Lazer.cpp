@@ -1,4 +1,4 @@
-#include "Razer.h"
+#include "Lazer.h"
 #include <cmath>
 
 using namespace KamataEngine;
@@ -18,7 +18,7 @@ constexpr float kColliderRadius = 0.55f;
 constexpr Vector3 kZeroRot{0.0f, 0.0f, 0.0f};
 } // namespace
 
-void Razer::Initialize() {
+void Lazer::Initialize() {
 	// 親クラスの初期化
 	CharacterBase::Initialize();
 
@@ -37,7 +37,7 @@ void Razer::Initialize() {
 	}
 }
 
-void Razer::FireFrom(const Vector3& worldPos, const Vector3& dir) {
+void Lazer::FireFrom(const Vector3& worldPos, const Vector3& dir) {
 	// 座標、進行方向セット
 	worldTransform_.translation_ = worldPos;
 	dir_ = dir;
@@ -60,7 +60,7 @@ void Razer::FireFrom(const Vector3& worldPos, const Vector3& dir) {
 	}
 }
 
-void Razer::Update() {
+void Lazer::Update() {
 	if (isDead_) {
 		return;
 	}
@@ -96,7 +96,7 @@ void Razer::Update() {
 	}
 }
 
-void Razer::Draw(Camera* camera) {
+void Lazer::Draw(Camera* camera) {
 	if (!camera || isDead_) {
 		return;
 	}
@@ -105,7 +105,7 @@ void Razer::Draw(Camera* camera) {
 	}
 }
 
-void Razer::OnCollision(CharacterBase* /*other*/) {
+void Lazer::OnCollision(CharacterBase* /*other*/) {
 	// レーザーの挙動は好みで切替：
 	// 1) 1発で消えるレーザー：isDead_ = true;
 	// 2) 貫通レーザー：何もしない（デフォルト）

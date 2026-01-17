@@ -68,7 +68,7 @@ void BulletManager::HandleShooting(Input* input, Player* player, const CountDown
 
 		if (chargeFrames_ >= kChargeLaserMinFrames) {
 			// ===== レーザー（Razer）発射 =====
-			auto r = std::make_unique<Razer>();
+			auto r = std::make_unique<Lazer>();
 			r->Initialize();
 
 			// チャージ量に応じて「速度」「寿命」を少しだけ伸ばす（演出用）
@@ -121,7 +121,7 @@ void BulletManager::UpdateBullets() {
 void BulletManager::RemoveDeadBullets() {
 	bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(), [](const std::unique_ptr<Bullet>& b) { return !b || b->IsDead(); }), bullets_.end());
 
-	razers_.erase(std::remove_if(razers_.begin(), razers_.end(), [](const std::unique_ptr<Razer>& r) { return !r || r->IsDead(); }), razers_.end());
+	razers_.erase(std::remove_if(razers_.begin(), razers_.end(), [](const std::unique_ptr<Lazer>& r) { return !r || r->IsDead(); }), razers_.end());
 }
 
 void BulletManager::Update(Input* input, Player* player, const CountDown& countDown) {
