@@ -154,6 +154,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Application\Cameras\RailCamera\CameraShake.cpp" />
     <ClCompile Include="Application\Characters\Enemy\TurretEnemy.cpp" />
     <ClCompile Include="Application\Characters\Player\Lazer.cpp" />
     <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp" />
@@ -282,6 +283,7 @@
     <None Include="Resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application\Cameras\RailCamera\CameraShake.h" />
     <ClInclude Include="Application\Characters\Enemy\TurretEnemy.h" />
     <ClInclude Include="Application\Characters\Player\Lazer.h" />
     <ClInclude Include="Application\Objects\Asteroid\Asteroid.h" />

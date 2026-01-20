@@ -57,6 +57,11 @@ public:
 	static KamataEngine::Vector3 Normalize(const KamataEngine::Vector3& v);
 
 	// =========================
+	// Clamp
+	// =========================
+	static float Clamp(float value, float min, float max);
+
+	// =========================
 	// Matrix
 	// =========================
 	static KamataEngine::Matrix4x4 Multiply(const KamataEngine::Matrix4x4& m1, const KamataEngine::Matrix4x4& m2);

@@ -19,7 +19,7 @@ GameScene::~GameScene() {
 }
 
 void GameScene::Initialize() {
-	// 各初期化処理
+	// ===== 基本 =====
 	dxCommon_ = DirectXCommon::GetInstance();
 	input_ = Input::GetInstance();
 	audio_ = Audio::GetInstance();
@@ -30,32 +30,34 @@ void GameScene::Initialize() {
 
 	model_ = Model::Create();
 
-	// レールカメラ
+	// =====レールカメラ =====
 	railCamera_ = new RailCamera();
 	railCamera_->Initialize();
 
-	// 天球
+	// ===== 天球 =====
 	skydome_ = new Skydome();
 	skydome_->Initialize(&camera_);
 
-	// プレイヤー
+	// ===== プレイヤー =====
 	player_ = new Player();
 	player_->Initialize(&camera_);
 	player_->SetParent(&railCamera_->GetWorldTransform());
 
-	// スピードライン初期化
+	previousPlayerPos_ = player_->GetWorldTranslation();  // プレイヤー位置情報
+
+	// ===== スピードライン初期化 =====
 	speedLine_.Initialize(&camera_, 10);
 
-	// ダメージ演出
+	// ===== ダメージ演出 =====
 	damageParticleModel_ = Model::Create();
 	damageParticles_.clear();
 
-	// エンジンスモーク初期化
+	// ===== エンジンスモーク初期化 =====
 	smokeModel_ = Model::CreateSphere();
 	engineSmokes_.clear();
 	smokeEmitTimer_ = 0.0f;
 
-	// 通常時スモーク
+	// ===== 通常時スモーク =====
 	normalSmokeParams_ = {
 	    0.08f, // emitInterval
 	    0.15f, // lifeTime
@@ -64,7 +66,7 @@ void GameScene::Initialize() {
 	    -0.8f  // baseZSpeed
 	};
 
-	// クリア演出（ブースト）
+	// ===== クリア演出（ブースト） =====
 	boostSmokeParams_ = {
 	    0.01f, // emitInterval
 	    0.30f, // lifeTime
@@ -73,26 +75,29 @@ void GameScene::Initialize() {
 	    -1.6f  // baseZSpeed
 	};
 
-	// カウントダウン
+	// ===== カウントダウン =====
 	countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/GO.png");
 	countDown_.SetTimings(0.1f, 0.5f, 0.4f);
 	countDown_.SetScaleRange(1.2f, 1.0f);
 	countDown_.SetBackOvershoot(1.7f);
 
-	countDown_.SetAudio(audio_->LoadWave("./Resources/SE/CountBeep.wav"), audio_->LoadWave("./Resources/SE/Start.wav"));
+	countDown_.SetAudio(
+		audio_->LoadWave("./Resources/SE/CountBeep.wav"),
+		audio_->LoadWave("./Resources/SE/Start.wav")
+	);
 
-	// UI（HPバー／スコア）
+	// ===== UI（HPバー／スコア） =====
 	uiManager_.Initialize(player_);
 
-	// 弾・敵
+	// ===== 弾・敵 =====
 	bulletManager_.Initialize();
 	enemyManager_.Initialize();
 	enemyManager_.LoadEnemyScv("Resources/levels/stage1_more_enemies_turret_balanced.json");
 
-	// 開始
+	// ===== 開始 =====
 	countDown_.Start();
 
-	// ステート
+	// ===== ステート =====
 	instructionTexHandles_[0] = TextureManager::Load("./Resources/InGame/Move.png");
 	instructionTexHandles_[1] = TextureManager::Load("./Resources/InGame/Roll.png");
 	instructionTexHandles_[2] = TextureManager::Load("./Resources/InGame/Attack.png");
@@ -106,7 +111,7 @@ void GameScene::Initialize() {
 	state_ = GameState::Instruction;
 	instructionPage_ = InstructionPage::Move;
 
-	// その他
+	// ===== その他 =====
 	isEnd_ = false;
 	result_ = GameResult::None;
 	clearScore_ = 0;
@@ -118,8 +123,7 @@ void GameScene::Initialize() {
 void GameScene::Update() {
 	const float dt = kFixedDeltaTime_;
 
-	BackgroundUpdate();
-	CameraUpdate();
+	BackgroundUpdate();	
 
 	switch (state_) {
 	case GameState::Instruction:
@@ -145,6 +149,8 @@ void GameScene::Update() {
 		ClearAnimationUpdate(dt);
 		break;
 	}
+
+	CameraUpdate();
 }
 
 void GameScene::Draw() {
@@ -289,10 +295,10 @@ void GameScene::BattleUpdate(float dt) {
 			uiManager_.GetScore()->Add(deadCount * kScorePerEnemy_);
 		}
 
-		// ② スコア加算対象（弾で倒した敵）を先に削除
+		// スコア加算対象（弾で倒した敵）を先に削除
 		enemyManager_.RemoveDeadEnemies();
 
-		// ③ プレイヤー→敵（体当たりなど）は後で処理（＝スコア対象外）
+		// プレイヤー→敵（体当たりなど）は後で処理（＝スコア対象外）
 		CollisionManager::ResolvePlayerEnemyCollisions(player_, enemyManager_.GetEnemies(), countDown_);
 
 		// 体当たり等で死亡した敵があれば削除（※スコアは加算しない）
@@ -359,18 +365,31 @@ void GameScene::EngineSmokesUpdate(float dt) {
 }
 
 void GameScene::CameraUpdate() {
-	//
 	if (isRailCameraActive_) {
+
+		// ===== プレイヤー移動量から入力を作る =====
+		Vector3 now = player_->GetWorldTranslation();
+		float deltaX = now.x - previousPlayerPos_.x;
+
+		float inputX = MyMath::Clamp(deltaX * 40.0f, -1.0f, 1.0f);
+
+		// 先に入力を渡す
+		railCamera_->SetMoveInput(inputX);
+
+		// その後でカメラ更新
 		railCamera_->Update();
+
+		// 描画用 Camera に反映
 		camera_.matView = railCamera_->GetCamera()->matView;
 		camera_.matProjection = railCamera_->GetCamera()->matProjection;
 		camera_.TransferMatrix();
-	}
-	//
-	else {
+
+		previousPlayerPos_ = now;
+	} else {
 		camera_.UpdateMatrix();
 	}
 }
+
 
 void GameScene::SpeedLineUpdate(float dt) {
 	//

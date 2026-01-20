@@ -49,6 +49,19 @@ Vector3 MyMath::Normalize(const Vector3& v) {
 }
 
 // =========================
+// Clamp
+// =========================
+float MyMath::Clamp(float value, float min, float max) {
+	if (value < min) {
+		return min;
+	}
+	if (value > max) {
+		return max;
+	}
+	return value;
+}
+
+// =========================
 // Matrix
 // =========================
 Matrix4x4 MyMath::Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
