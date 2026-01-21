@@ -54,7 +54,7 @@ void Smoke::Update(float dt) {
     worldTransform_.UpdateMatrix();
 }
 
-void Smoke::Draw(KamataEngine::Camera* camera) {
+void Smoke::Draw(const Camera* camera) {
     if (isFinished_) { return; }
     model_->Draw(worldTransform_, *camera);
 }

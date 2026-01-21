@@ -129,7 +129,7 @@ void BulletManager::Update(Input* input, Player* player, const CountDown& countD
 	UpdateBullets();
 }
 
-void BulletManager::Draw(Camera* camera) {
+void BulletManager::Draw(const Camera* camera) {
 	// 通常弾
 	for (auto& b : bullets_) {
 		b->Draw(camera);

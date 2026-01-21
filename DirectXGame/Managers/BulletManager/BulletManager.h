@@ -39,7 +39,7 @@ public:
 	/// 描画処理
 	/// </summary>
 	/// <param name="camera">描画に使用するカメラ</param>
-	void Draw(KamataEngine::Camera* camera);
+	void Draw(const KamataEngine::Camera* camera);
 
 	/// <summary>
 	/// 現在飛行中の弾のコンテナを参照で返す。

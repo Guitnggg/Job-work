@@ -155,6 +155,7 @@ void GameScene::Update() {
 
 void GameScene::Draw() {
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
+	const Camera* cam = railCamera_->GetCamera();
 
 #pragma region 背景スプライト
 	Sprite::PreDraw(commandList);
@@ -185,7 +186,7 @@ void GameScene::Draw() {
 
 	// （任意）CountDown中もプレイヤーだけ見せたいなら描く
 	if (state_ == GameState::Playing) {
-		player_->Draw(&camera_);
+		player_->Draw(cam);
 	}
 
 	// ゲーム中だけ描きたいものは Playing に寄せる
@@ -197,20 +198,20 @@ void GameScene::Draw() {
 		// エンジンスモーク
 		if (smokeModel_) {
 			for (auto& s : engineSmokes_) {
-				s->Draw(&camera_);
+				s->Draw(cam);
 			}
 		}
 
 		// ダメージパーティクル
 		if (damageParticleModel_) {
 			for (auto& p : damageParticles_) {
-				p->Draw(&camera_);
+				p->Draw(cam);
 			}
 		}
 
 		// 敵・弾
-		enemyManager_.Draw(&camera_);
-		bulletManager_.Draw(&camera_);
+		enemyManager_.Draw(cam);
+		bulletManager_.Draw(cam);
 	}
 
 	Model::PostDraw();
@@ -251,6 +252,9 @@ void GameScene::SpawnDamageParticles() {
 	if (!player_->ConsumeTookDamageEvent()) {
 		return;
 	}
+
+	// カメラシェイク追加
+	railCamera_->AddShake({ 0.0f, 0.0f, -1.0f }, 0.5f);
 
 	Vector3 pos = player_->GetWorldTranslation();
 	static std::mt19937 rng{(std::random_device{}())};

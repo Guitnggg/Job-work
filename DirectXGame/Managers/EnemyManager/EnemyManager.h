@@ -41,7 +41,7 @@ public:
 	void Initialize();
 	void LoadEnemyScv(const std::string& path);
 	void Update(float dt, const KamataEngine::Vector3& playerPos);
-	void Draw(KamataEngine::Camera* camera);
+	void Draw(const KamataEngine::Camera* camera);
 
 	std::vector<std::unique_ptr<CharacterBase>>& GetEnemies() { return enemies_; }
 	void RemoveDeadEnemies();

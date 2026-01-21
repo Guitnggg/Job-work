@@ -33,7 +33,7 @@ public:
     /// 描画処理
     /// </summary>
     /// <param name="camera">描画に使用するカメラ</param>
-    virtual void Draw(KamataEngine::Camera* camera) = 0;
+    virtual void Draw(const KamataEngine::Camera* camera) = 0;
 
     /// <summary>
     /// 当たり判定時の処理
