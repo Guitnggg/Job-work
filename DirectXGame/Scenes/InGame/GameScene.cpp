@@ -219,7 +219,7 @@ void GameScene::Draw() {
 
 #pragma region 前景スプライト
 	Sprite::PreDraw(commandList);
-
+	
 	// 3カウントは CountDown 中だけ
 	if (state_ == GameState::CountDown) {
 		countDown_.Draw();

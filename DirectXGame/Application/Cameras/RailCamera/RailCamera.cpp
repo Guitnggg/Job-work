@@ -45,9 +45,11 @@ void RailCamera::Update() {
 	Vector3 finalCameraPos = MyMath::Add(lagCameraPos_, cameraShake_.GetOffset());
 
 	// --- Cameraに反映（順番重要） ---
+	finalCameraPos.x += rollAngle_ * 5.0f;
+	finalCameraPos.y += rollAngle_ * 0.5f;
+
 	camera_->translation_ = finalCameraPos;
-	camera_->rotation_.z = rollAngle_;
-	finalCameraPos.x += rollAngle_ * 2.0f;
+	camera_->rotation_.z = rollAngle_;	
 	camera_->UpdateMatrix();
 }
 
