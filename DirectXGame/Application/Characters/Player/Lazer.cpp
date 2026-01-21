@@ -12,7 +12,7 @@ constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 constexpr Vector3 kRazerScale{1.0f, 1.0f, 10.0f};
 
 // コライダー半径（少し太めにして当てやすく）
-constexpr float kColliderRadius = 0.55f;
+constexpr float kColliderRadius = 1.0f;
 
 // 姿勢リセット
 constexpr Vector3 kZeroRot{0.0f, 0.0f, 0.0f};
