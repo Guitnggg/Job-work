@@ -254,7 +254,9 @@ void GameScene::SpawnDamageParticles() {
 	}
 
 	// カメラシェイク追加
-	railCamera_->AddShake({ 0.0f, 0.0f, -1.0f }, 0.5f);
+	float sx = (rand() % 200 - 100) / 100.0f;
+	float sy = (rand() % 200 - 100) / 100.0f;
+	railCamera_->AddShake({ sx, sy, 0.0f }, 1.0f);
 
 	Vector3 pos = player_->GetWorldTranslation();
 	static std::mt19937 rng{(std::random_device{}())};
@@ -281,7 +283,7 @@ void GameScene::BattleUpdate(float dt) {
 		// 敵更新（プレイヤー位置を基準に行動）
 		enemyManager_.Update(dt, player_->GetWorldTranslation());
 
-		// ① 弾→敵 を先に処理（＝スコア対象）
+		// 弾→敵 を先に処理（＝スコア対象）
 		CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
 		// チャージレーザー（Razer）
 		CollisionManager::ResolveRazerEnemyCollisions(bulletManager_.GetRazers(), enemyManager_.GetEnemies(), countDown_);
