@@ -174,7 +174,7 @@ void EnemyManager::Update(float dt, const Vector3& playerPos) {
 	    std::remove_if(explosionParticles_.begin(), explosionParticles_.end(), [](const std::unique_ptr<DamageParticle>& p) { return p->IsFinished(); }), explosionParticles_.end());
 }
 
-void EnemyManager::Draw(Camera* camera) {
+void EnemyManager::Draw(const Camera* camera) {
 	for (auto& e : enemies_) {
 		e->Draw(camera);
 	}

@@ -6,7 +6,10 @@ using namespace KamataEngine;
 
 RailCamera::RailCamera() {}
 
-RailCamera::~RailCamera() {}
+RailCamera::~RailCamera() { 
+	delete camera_;
+	camera_ = nullptr;
+}
 
 void RailCamera::Initialize() {
     // ワールド変換データ初期化
@@ -19,12 +22,39 @@ void RailCamera::Initialize() {
 }
 
 void RailCamera::Update() {
-    // ワールド変換データの座標の数値を加算したりする（移動）
-    worldTransform_.translation_.z += kMoveSpeedZ;
 
-    // ワールド変換データの行列を更新
-    worldTransform_.UpdateMatrix();
+	// --- レール移動 ---
+	worldTransform_.translation_.z += kMoveSpeedZ;
+	worldTransform_.UpdateMatrix();
 
-    // カメラの位置をワールド変換データの位置に合わせる
-    camera_->matView = MyMath::Inverse(worldTransform_.matWorld_);
+	// --- 遅延追従 ---
+	const Vector3 basePos = worldTransform_.translation_;
+
+	Vector3 posDiff = MyMath::Subtract(basePos, lagCameraPos_);
+	posDiff = MyMath::Multiply(posDiff, followRate_);
+	lagCameraPos_ = MyMath::Add(lagCameraPos_, posDiff);
+
+	// --- カメラシェイク ---
+	cameraShake_.Update();
+
+	// --- ロール補間 ---
+	float rollDiff = targetRollAngle_ - rollAngle_;
+	rollAngle_ += rollDiff * rollFollowRate_;
+
+	// --- 合成 ---
+	Vector3 finalCameraPos = MyMath::Add(lagCameraPos_, cameraShake_.GetOffset());
+
+	// --- Cameraに反映（順番重要） ---
+	camera_->translation_ = finalCameraPos;
+	camera_->rotation_.z = rollAngle_;
+	finalCameraPos.x += rollAngle_ * 2.0f;
+	camera_->UpdateMatrix();
+}
+
+
+void RailCamera::AddShake(const Vector3& dir, float power) { cameraShake_.AddShake(dir, power); }
+
+void RailCamera::SetMoveInput(float inputX) {
+	// 左右入力→傾き反映
+	targetRollAngle_ = maxRollAngle_ * -inputX;
 }

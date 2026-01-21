@@ -78,7 +78,7 @@ void TurretEnemy::Update() {
 	UpdateBullets_();
 }
 
-void TurretEnemy::Draw(Camera* camera) {
+void TurretEnemy::Draw(const Camera* camera) {
 	if (!camera) {
 		return;
 	}

@@ -193,6 +193,7 @@ private:
 
     // ========== プレイヤー ==========
     Player* player_ = nullptr;
+	KamataEngine::Vector3 previousPlayerPos_{};
 
     // ========== 弾・敵管理 ==========
     EnemyManager enemyManager_;

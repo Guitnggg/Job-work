@@ -191,7 +191,7 @@ void SeekerEnemy::Update() {
     }
 }
 
-void SeekerEnemy::Draw(Camera* camera) {
+void SeekerEnemy::Draw(const Camera* camera) {
     if (!camera || isDead_ || !model_) { return; }
 
     // 一旦スケールを保存

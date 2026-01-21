@@ -41,7 +41,7 @@ void DamageParticle::Update(float dt) {
     worldTransform_.UpdateMatrix();
 }
 
-void DamageParticle::Draw(KamataEngine::Camera* camera) {
+void DamageParticle::Draw(const Camera* camera) {
     // モデルが有効の時に描画
     if (model_ && !IsFinished()) {
         model_->Draw(worldTransform_, *camera);

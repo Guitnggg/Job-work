@@ -96,7 +96,7 @@ void Lazer::Update() {
 	}
 }
 
-void Lazer::Draw(Camera* camera) {
+void Lazer::Draw(const Camera* camera) {
 	if (!camera || isDead_) {
 		return;
 	}

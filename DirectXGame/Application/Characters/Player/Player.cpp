@@ -219,7 +219,7 @@ void Player::UpdateMoveAndBank_(float dt) {
     worldTransform_.rotation_.z = currentTiltZ_;
 }
 
-void Player::Draw(Camera* camera) {
+void Player::Draw(const Camera* camera) {
     if (isExplosionFinished_) { return; }
     if (!model_ || !camera_) { return; }
 

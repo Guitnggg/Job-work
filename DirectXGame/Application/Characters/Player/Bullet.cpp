@@ -85,7 +85,7 @@ void Bullet::Update() {
     }
 }
 
-void Bullet::Draw(Camera* camera) {
+void Bullet::Draw(const Camera* camera) {
     if (!camera || isDead_) { return; }
     if (model_) { model_->Draw(worldTransform_, *camera, textureHandle_); }
 
