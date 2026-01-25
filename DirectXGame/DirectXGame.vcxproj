@@ -161,10 +161,10 @@
     <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp" />
     <ClCompile Include="Application\Effects\Smoke\Smoke.cpp" />
     <ClCompile Include="Application\Effects\Damage\DamageParticle.cpp" />
-    <ClCompile Include="UI\CountDown\CountDown.cpp" />
+    <ClCompile Include="Application\UI\CountDown\CountDown.cpp" />
     <ClCompile Include="Application\Characters\CharacterBase.cpp" />
     <ClCompile Include="Application\Characters\Collider.cpp" />
-    <ClCompile Include="UI\HPBar\Graph.cpp" />
+    <ClCompile Include="Application\UI\HPBar\Graph.cpp" />
     <ClCompile Include="Application\Characters\Player\Bullet.cpp" />
     <ClCompile Include="Managers\BulletManager\BulletManager.cpp" />
     <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
@@ -182,7 +182,7 @@
     <ClCompile Include="Scenes\Title\TitleScene.cpp" />
     <ClCompile Include="Application\Utility\MyMath\WorldTransformEx.cpp" />
     <ClCompile Include="Application\Characters\Enemy\SeekerEnemy.cpp" />
-    <ClCompile Include="UI\Score\Score.cpp" />
+    <ClCompile Include="Application\UI\Score\Score.cpp" />
     <ClCompile Include="Managers\UIManager\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -290,10 +290,10 @@
     <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h" />
     <ClInclude Include="Application\Effects\Smoke\Smoke.h" />
     <ClInclude Include="Application\Effects\Damage\DamageParticle.h" />
-    <ClInclude Include="UI\CountDown\CountDown.h" />
+    <ClInclude Include="Application\UI\CountDown\CountDown.h" />
     <ClInclude Include="Application\Characters\CharacterBase.h" />
     <ClInclude Include="Application\Characters\Collider.h" />
-    <ClInclude Include="UI\HPBar\Graph.h" />
+    <ClInclude Include="Application\UI\HPBar\Graph.h" />
     <ClInclude Include="Application\Characters\Player\Bullet.h" />
     <ClInclude Include="Managers\BulletManager\BulletManager.h" />
     <ClInclude Include="Scenes\Clear\ClearScene.h" />
@@ -311,7 +311,7 @@
     <ClInclude Include="Application\Background\Skydome\Skydome.h" />
     <ClInclude Include="Scenes\Title\TitleScene.h" />
     <ClInclude Include="Application\Characters\Enemy\SeekerEnemy.h" />
-    <ClInclude Include="UI\Score\Score.h" />
+    <ClInclude Include="Application\UI\Score\Score.h" />
     <ClInclude Include="Managers\UIManager\UIManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

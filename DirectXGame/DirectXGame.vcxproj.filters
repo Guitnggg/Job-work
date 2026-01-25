@@ -72,7 +72,7 @@
     <ClCompile Include="Application\Utility\MyMath\WorldTransformEx.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UI\CountDown\CountDown.cpp">
+    <ClCompile Include="Application\UI\CountDown\CountDown.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Application\Characters\CharacterBase.cpp">
@@ -87,13 +87,13 @@
     <ClCompile Include="Application\Characters\Enemy\SeekerEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UI\HPBar\Graph.cpp">
+    <ClCompile Include="Application\UI\HPBar\Graph.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Application\Characters\Player\Bullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UI\Score\Score.cpp">
+    <ClCompile Include="Application\UI\Score\Score.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Managers\BulletManager\BulletManager.cpp">
@@ -213,7 +213,7 @@
     <ClInclude Include="Scenes\Title\TitleScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UI\CountDown\CountDown.h">
+    <ClInclude Include="Application\UI\CountDown\CountDown.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Application\Characters\CharacterBase.h">
@@ -228,13 +228,13 @@
     <ClInclude Include="Application\Characters\Enemy\SeekerEnemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UI\HPBar\Graph.h">
+    <ClInclude Include="Application\UI\HPBar\Graph.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Application\Characters\Player\Bullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UI\Score\Score.h">
+    <ClInclude Include="Application\UI\Score\Score.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Managers\BulletManager\BulletManager.h">

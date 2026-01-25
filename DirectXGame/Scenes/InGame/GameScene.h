@@ -15,9 +15,9 @@
 #include "Application/Effects/Damage/DamageParticle.h"
 #include "Application/Objects/Asteroid/Asteroid.h"
 
-#include "UI/CountDown/CountDown.h"
-#include "UI/HPBar/Graph.h"
-#include "UI/Score/Score.h"
+#include "Application/UI/CountDown/CountDown.h"
+#include "Application/UI/HPBar/Graph.h"
+#include "Application/UI/Score/Score.h"
 
 #include "Managers/EnemyManager/EnemyManager.h"
 #include "Managers/BulletManager/BulletManager.h"
