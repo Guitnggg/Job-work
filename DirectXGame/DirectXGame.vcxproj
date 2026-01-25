@@ -166,6 +166,7 @@
     <ClCompile Include="Application\Characters\Collider.cpp" />
     <ClCompile Include="Application\UI\HPBar\Graph.cpp" />
     <ClCompile Include="Application\Characters\Player\Bullet.cpp" />
+    <ClCompile Include="Application\UI\PauseMenu\PauseMenu.cpp" />
     <ClCompile Include="Managers\BulletManager\BulletManager.cpp" />
     <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
     <ClCompile Include="Managers\CollisionManager\CollisionManager.cpp" />
@@ -295,6 +296,7 @@
     <ClInclude Include="Application\Characters\Collider.h" />
     <ClInclude Include="Application\UI\HPBar\Graph.h" />
     <ClInclude Include="Application\Characters\Player\Bullet.h" />
+    <ClInclude Include="Application\UI\PauseMenu\PauseMenu.h" />
     <ClInclude Include="Managers\BulletManager\BulletManager.h" />
     <ClInclude Include="Scenes\Clear\ClearScene.h" />
     <ClInclude Include="Managers\CollisionManager\CollisionManager.h" />

@@ -2,6 +2,7 @@
 
 #include "Scenes/Clear/ClearScene.h"
 #include "Scenes/Finish/FinishScene.h"
+#include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
 
@@ -111,6 +112,10 @@ void GameScene::Initialize() {
 	state_ = GameState::Instruction;
 	instructionPage_ = InstructionPage::Move;
 
+	// ===== Pause =====
+	pauseMenu_ = std::make_unique<PauseMenu>();
+	pauseMenu_->Initialize();
+
 	// ===== その他 =====
 	isEnd_ = false;
 	result_ = GameResult::None;
@@ -123,6 +128,39 @@ void GameScene::Initialize() {
 void GameScene::Update() {
 	const float dt = kFixedDeltaTime_;
 
+	// ===== Pause 切り替え =====
+	if (input_->TriggerKey(DIK_ESCAPE) && state_ == GameState::Playing) {
+		isPaused_ = !isPaused_;
+		pauseMenu_->ResetResult();
+	}
+
+	// ===== Pause 中 =====
+	if (isPaused_) {
+		pauseMenu_->Update();
+
+		switch (pauseMenu_->GetResult()) {
+		case PauseMenu::Result::Resume:
+			isPaused_ = false;
+			break;
+
+		case PauseMenu::Result::Retry:
+			requestRetry_ = true;
+			isEnd_ = true; // Scene 終了を通知
+			break;
+
+		case PauseMenu::Result::ToTitle:
+			requestToTitle_ = true;
+			isEnd_ = true; // Scene 終了を通知
+			break;
+
+		default:
+			break;
+		}
+
+		return;
+	}
+
+	// ===== 通常更新 =====
 	BackgroundUpdate();	
 
 	switch (state_) {
@@ -228,6 +266,11 @@ void GameScene::Draw() {
 	// UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
 	if (state_ == GameState::Playing) {
 		uiManager_.Draw();
+	}
+
+	// Pauseメニュー
+	if (isPaused_) {
+		pauseMenu_->Draw();
 	}
 
 	Sprite::PostDraw();
@@ -533,6 +576,15 @@ void GameScene::DrawInstruction() {
 }
 
 IScene* GameScene::NextScene() const {
+	// Pause 由来の遷移を最優先
+	if (requestRetry_) {
+		return new GameScene();
+	}
+
+	if (requestToTitle_) {
+		return new TitleScene();
+	}
+
 	// 結果に応じて遷移先を切り替える
 	if (result_ == GameResult::Clear) {
 		return new ClearScene(clearScore_); // クリア時

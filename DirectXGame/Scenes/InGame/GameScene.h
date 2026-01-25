@@ -15,6 +15,7 @@
 #include "Application/Effects/Damage/DamageParticle.h"
 #include "Application/Objects/Asteroid/Asteroid.h"
 
+#include "Application/UI/PauseMenu/PauseMenu.h"
 #include "Application/UI/CountDown/CountDown.h"
 #include "Application/UI/HPBar/Graph.h"
 #include "Application/UI/Score/Score.h"
@@ -27,6 +28,7 @@
 #include "Scenes/IScene.h"
 class FinishScene;
 class ClearScene;
+class TitleScene;
 
 enum class GameState {
 	Instruction, // 操作説明（複数ページ）
@@ -240,6 +242,14 @@ private:
 
     int kScorePerEnemy_ = 100;
     int kClearScore_ = 5000;
+
+    // ========== Pauseメニュー ==========
+	bool isPaused_ = false;
+	std::unique_ptr<PauseMenu> pauseMenu_;
+
+    // ポーズからの遷移要求
+	bool requestRetry_ = false;
+	bool requestToTitle_ = false;
 
     // ========== クリア後演出用 ==========
     bool  isClearAnimating_ = false;
