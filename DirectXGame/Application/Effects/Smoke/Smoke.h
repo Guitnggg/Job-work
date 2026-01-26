@@ -58,8 +58,8 @@ private:
 
     KamataEngine::Vector3 velocity_ = { 0.0f, 0.0f, 0.0f }; // 速度
 
-    float life_ = 0.0f;  // 経過時間
-    float maxLife_ = 1.0f;  // 寿命
+    float elapsedTimeSec_ = 0.0f;  // 経過時間
+    float lifeTimeSec_ = 1.0f;  // 寿命
     float startScale_ = 1.0f;
     float endScale_ = 0.0f;
 

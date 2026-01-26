@@ -85,12 +85,12 @@ public:  /// === Getters === ///
     /// <summary>
     /// HPの取得
     /// </summary>
-    int GetHP() { return hp_; }
+    int32_t GetHP() { return hp_; }
 
     /// <summary>
     /// 最大HPの取得
     /// </summary>
-    int GetMaxHP() { return maxHp_; }
+    int32_t GetMaxHP() { return maxHp_; }
 
 public:  /// === Setters === ///
     /// <summary>
@@ -120,7 +120,7 @@ public:  /// === Setters === ///
     /// <summary>
     /// HPの設定
     /// </summary>
-    void SetHP(int hp) { hp_ = hp; }
+    void SetHP(int32_t hp) { hp_ = hp; }
 
 protected:
     // ワールド変換情報
@@ -133,8 +133,8 @@ protected:
     std::unique_ptr<Collider> collider_;
 
     // 体力
-    int hp_ = 0;
+    int32_t hp_ = 0;
 
     // 最大体力
-    int maxHp_ = 0;
+    int32_t maxHp_ = 0;
 };

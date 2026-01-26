@@ -6,24 +6,24 @@
 class CameraShake {
 public:
 	/// <summary>
-	///
+	/// カメラに揺れを追加する
 	/// </summary>
-	/// <param name="direction"></param>
-	/// <param name="power"></param>
+	/// <param name="direction">揺れの方向</param>
+	/// <param name="power">揺れの強さ</param>
 	void AddShake(const KamataEngine::Vector3& direction, float power);
 
 	/// <summary>
-	///
+	/// 更新処理
 	/// </summary>
 	void Update();
 
 	/// <summary>
-	///
+	/// リセット
 	/// </summary>
 	void Reset();
 
 	/// <summary>
-	/// 
+	/// オフセット
 	/// </summary>
 	/// <returns></returns>
 	const KamataEngine::Vector3& GetOffset() const { return offset_; }

@@ -7,7 +7,7 @@
 #include "3d/Camera.h"
 #include "Application/Characters/CharacterBase.h"
 
-class Lazer : public CharacterBase {
+class Laser : public CharacterBase {
 public:
 	/// <summary>
 	/// 初期化処理
@@ -47,7 +47,7 @@ public: // パラメータ
 	/// <summary>
 	/// 飛行速度の設定（１フレーム当たりの移動距離）
 	/// </summary>
-	void SetSpeed(float s) { speed_ = s; }
+	void SetSpeed(float speed) { speed_ = speed; }
 
 	/// <summary>
 	/// 寿命の設定（秒）
@@ -61,7 +61,7 @@ private:
 	KamataEngine::Vector3 dir_ = {0, 0, 1}; // +Z方向
 	float speed_ = 3.5f;                    // 1フレームあたりの前進量
 	float lifeTimeSec_ = 3.0f;              // 弾の寿命
-	float t_ = 0.0f;                        // 経過時間
+	float elapsedTimeSec_ = 0.0f;           // 経過時間
 	bool isDead_ = false;
 
 	KamataEngine::Vector3 startPos_ = {0, 0, 0};

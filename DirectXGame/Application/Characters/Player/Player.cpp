@@ -22,10 +22,10 @@ namespace {
     constexpr float kColliderRadius = 1.0f;
 
     // 初期HP
-    constexpr int kInitialHp = 100;
+    constexpr int32_t kInitialHp = 100;
 
     // 衝突ダメージ（OnCollisionで固定ならここ）
-    constexpr int kCollisionDamage = 20;
+    constexpr int32_t kCollisionDamage = 20;
 
     // 被弾演出（波の周波数・振幅）
     constexpr float kHitRollAmp = 0.18f;     // ロール揺れ振幅
@@ -191,7 +191,7 @@ void Player::UpdateMoveAndBank_(float dt) {
     if (!inputEnabled_ || !input_) { return; }
 
     // 入力ベクトル（矢印キー＆WASD両対応）
-    int ix = 0, iy = 0;
+    int32_t ix = 0, iy = 0;
     if (input_->PushKey(DIK_RIGHT) || input_->PushKey(DIK_D)) { ix += 1; }
     if (input_->PushKey(DIK_LEFT) || input_->PushKey(DIK_A)) { ix -= 1; }
     if (input_->PushKey(DIK_UP) || input_->PushKey(DIK_W)) { iy += 1; }
@@ -239,7 +239,7 @@ void Player::OnCollision(CharacterBase* /*enemy*/) {
     Damage(kCollisionDamage);
 }
 
-void Player::Damage(int amount) {
+void Player::Damage(int32_t amount) {
     if (isExploding_ || isDead_) { return; }
 
     tookDamageEvent_ = true;

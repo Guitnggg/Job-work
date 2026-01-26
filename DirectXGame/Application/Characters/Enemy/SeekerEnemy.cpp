@@ -12,7 +12,7 @@ namespace {
     constexpr float kYawRotateSpeed = 0.6f;
 
     // 衝突時ダメージ
-    constexpr int kCollisionDamage = 1;
+    constexpr int32_t kCollisionDamage = 1;
 
     // 強制消滅範囲
     constexpr float kKillZ = -40.0f;
@@ -211,7 +211,7 @@ void SeekerEnemy::Draw(const Camera* camera) {
         // 簡易点滅（最初の方だけチカチカ）
         bool visible = true;
         if (t > 0.5f) {
-            int blink = static_cast<int>(t * 10.0f);
+            int32_t blink = static_cast<int>(t * 10.0f);
             visible = (blink % 2) == 0;
         }
 

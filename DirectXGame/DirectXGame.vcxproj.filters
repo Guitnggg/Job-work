@@ -123,7 +123,7 @@
     <ClCompile Include="Application\Characters\Enemy\TurretEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Characters\Player\Lazer.cpp">
+    <ClCompile Include="Application\Characters\Player\Laser.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Application\Cameras\RailCamera\CameraShake.cpp">
@@ -264,7 +264,7 @@
     <ClInclude Include="Application\Characters\Enemy\TurretEnemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Characters\Player\Lazer.h">
+    <ClInclude Include="Application\Characters\Player\Laser.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Application\Cameras\RailCamera\CameraShake.h">

@@ -55,7 +55,7 @@ void Bullet::Update() {
     if (isDead_) { return; }
 
     const float dt = kFixedDeltaTime;
-    t_ += dt;
+    elapsedTimeSec_ += dt;
 
     // 前進
     worldTransform_.translation_.x += dir_.x * speed_;
@@ -80,7 +80,7 @@ void Bullet::Update() {
     }
 
     // 寿命でも消す（保険）
-    if (t_ >= lifeTimeSec_) {
+    if (elapsedTimeSec_ >= lifeTimeSec_) {
         isDead_ = true;
     }
 }

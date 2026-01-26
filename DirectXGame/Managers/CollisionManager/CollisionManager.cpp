@@ -104,25 +104,25 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
 	}
 }
 
-void CollisionManager::ResolveRazerEnemyCollisions(std::vector<std::unique_ptr<Lazer>>& razers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+void CollisionManager::ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
 	// カウントダウン中は衝突無効
 	if (countDown.IsInputLocked()) {
 		return;
 	}
 
 	// レーザー×敵
-	for (auto& r : razers) {
+	for (auto& r : lasers) {
 		if (!r || r->IsDead()) {
 			continue;
 		}
 
-		Collider* razerCollider = r->GetCollider().get();
-		if (!razerCollider) {
+		Collider* laserCollider = r->GetCollider().get();
+		if (!laserCollider) {
 			continue;
 		}
 
-		const auto rp = razerCollider->GetTranslate();
-		const float rr = razerCollider->GetRadius();
+		const auto rp = laserCollider->GetTranslate();
+		const float rr = laserCollider->GetRadius();
 
 		for (auto& e : enemies) {
 			if (!e || e->IsDead()) {

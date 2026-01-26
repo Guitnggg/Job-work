@@ -58,7 +58,7 @@ public: // ---- 外部から設定（必要なら使う）----
 	/// <summary>
 	/// 発射間隔（フレーム）
 	/// </summary>
-	void SetShootIntervalFrames(int frames) { shootIntervalFrames_ = frames; }
+	void SetShootIntervalFrames(int32_t frames) { shootIntervalFrames_ = frames; }
 
 	/// <summary>
 	/// 弾速度（Bullet::SetSpeed に渡す）
@@ -73,7 +73,7 @@ public: // ---- 外部から設定（必要なら使う）----
 	/// <summary>
 	/// 初期HP
 	/// </summary>
-	void SetInitialHP(int hp) { initialHP_ = hp; }
+	void SetInitialHP(int32_t hp) { initialHP_ = hp; }
 
 	/// <summary>
 	/// コライダー半径
@@ -96,7 +96,7 @@ private:
 	// ---- 砲台パラメータ ----
 	State state_ = State::Active;
 
-	int initialHP_ = 3;
+	int32_t initialHP_ = 3;
 	float colliderRadius_ = 1.2f;
 
 	// 狙い
@@ -104,8 +104,8 @@ private:
 	bool hasTarget_ = false;
 
 	// 射撃タイマー（フレーム管理）
-	int shootTimerFrames_ = 0;
-	int shootIntervalFrames_ = 60; // 1秒@60fps
+	int32_t shootTimerFrames_ = 0;
+	int32_t shootIntervalFrames_ = 60; // 1秒@60fps
 
 	// 弾パラメータ
 	float bulletSpeed_ = 2.8f; // Bullet標準に合わせる

@@ -65,7 +65,7 @@ public:  // ==== 外部から設定するパラメータ ====
     /// <summary>
     /// HPの設定
     /// </summary>
-    void SetInitialHP(int hp) { initialHP_ = hp; }
+    void SetInitialHP(int32_t hp) { initialHP_ = hp; }
 
     /// <summary>
     /// 寿命の設定
@@ -94,7 +94,7 @@ private:
     float speed_ = 0.2f;
     float turnRate_ = 0.15f;
     float colliderRadius_ = 1.0f;
-    int   initialHP_ = 1;
+    int32_t initialHP_ = 1;
     float lifeTimeSec_ = 30.0f;
 
     // 目標
