@@ -1,15 +1,15 @@
-#include "Lazer.h"
+#include "Laser.h"
 #include <cmath>
 
 using namespace KamataEngine;
 
-// ===== Razer.cpp 専用定数（実装詳細）=====
+// ===== Laser.cpp 専用定数（実装詳細）=====
 namespace {
 // 固定Δt
 constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 
 // 見た目スケール（細長いレーザー）
-constexpr Vector3 kRazerScale{1.0f, 1.0f, 10.0f};
+constexpr Vector3 kLaserScale{1.0f, 1.0f, 10.0f};
 
 // コライダー半径（少し太めにして当てやすく）
 constexpr float kColliderRadius = 1.0f;
@@ -18,7 +18,7 @@ constexpr float kColliderRadius = 1.0f;
 constexpr Vector3 kZeroRot{0.0f, 0.0f, 0.0f};
 } // namespace
 
-void Lazer::Initialize() {
+void Laser::Initialize() {
 	// 親クラスの初期化
 	CharacterBase::Initialize();
 
@@ -26,7 +26,7 @@ void Lazer::Initialize() {
 	model_.reset(Model::CreateFromOBJ("Beam", true));
 
 	// 細長く
-	worldTransform_.scale_ = kRazerScale;
+	worldTransform_.scale_ = kLaserScale;
 	worldTransform_.UpdateMatrix();
 
 	// コライダー
@@ -37,7 +37,7 @@ void Lazer::Initialize() {
 	}
 }
 
-void Lazer::FireFrom(const Vector3& worldPos, const Vector3& dir) {
+void Laser::FireFrom(const Vector3& worldPos, const Vector3& dir) {
 	// 座標、進行方向セット
 	worldTransform_.translation_ = worldPos;
 	dir_ = dir;
@@ -50,7 +50,7 @@ void Lazer::FireFrom(const Vector3& worldPos, const Vector3& dir) {
 	worldTransform_.UpdateMatrix();
 
 	// 経過時間・生存
-	t_ = 0.0f;
+	elapsedTimeSec_ = 0.0f;
 	isDead_ = false;
 
 	// コライダー追従
@@ -60,13 +60,13 @@ void Lazer::FireFrom(const Vector3& worldPos, const Vector3& dir) {
 	}
 }
 
-void Lazer::Update() {
+void Laser::Update() {
 	if (isDead_) {
 		return;
 	}
 
 	const float dt = kFixedDeltaTime;
-	t_ += dt;
+	elapsedTimeSec_ += dt;
 
 	// 前進（Bullet よりやや速めにしたい場合は speed_ を上げる）
 	worldTransform_.translation_.x += dir_.x * speed_;
@@ -91,12 +91,12 @@ void Lazer::Update() {
 	}
 
 	// 寿命でも消す
-	if (t_ >= lifeTimeSec_) {
+	if (elapsedTimeSec_ >= lifeTimeSec_) {
 		isDead_ = true;
 	}
 }
 
-void Lazer::Draw(const Camera* camera) {
+void Laser::Draw(const Camera* camera) {
 	if (!camera || isDead_) {
 		return;
 	}
@@ -105,7 +105,7 @@ void Lazer::Draw(const Camera* camera) {
 	}
 }
 
-void Lazer::OnCollision(CharacterBase* /*other*/) {
+void Laser::OnCollision(CharacterBase* /*other*/) {
 	// レーザーの挙動は好みで切替：
 	// 1) 1発で消えるレーザー：isDead_ = true;
 	// 2) 貫通レーザー：何もしない（デフォルト）

@@ -32,15 +32,15 @@ SpeedLine::SpeedLine() {}
 SpeedLine::~SpeedLine() {
     // WorldTransform の破棄
     for (auto& line : lines_) {
-        delete line.worldTransform;
-        line.worldTransform = nullptr;
+        delete line.worldTransform_;
+        line.worldTransform_ = nullptr;
     }
 
     delete model_;
     model_ = nullptr;
 }
 
-void SpeedLine::Initialize(Camera* camera, int lineCount) {
+void SpeedLine::Initialize(Camera* camera, int32_t lineCount) {
     camera_ = camera;
 
     // 必要に応じて専用モデルの読み込みに差し替えてください
@@ -55,15 +55,15 @@ void SpeedLine::Initialize(Camera* camera, int lineCount) {
 
     Vector3 dummyPlayerPos{ 0.0f, 0.0f, 0.0f };
     for (auto& line : lines_) {
-        line.worldTransform = new WorldTransform();
-        line.worldTransform->Initialize();
+        line.worldTransform_ = new WorldTransform();
+        line.worldTransform_->Initialize();
 
-        Respawn(line, dummyPlayerPos, /*randomDepth=*/true);
+        Respawn_(line, dummyPlayerPos, /*randomDepth=*/true);
     }
 }
 
-void SpeedLine::Respawn(LineParticle& p, const Vector3& basePos, bool randomDepth) {
-    if (!p.worldTransform) {
+void SpeedLine::Respawn_(LineParticle& p, const Vector3& basePos, bool randomDepth) {
+    if (!p.worldTransform_) {
         return;
     }
 
@@ -73,7 +73,7 @@ void SpeedLine::Respawn(LineParticle& p, const Vector3& basePos, bool randomDept
     float u = dist01(random_);        // 0〜1
     float angle = distAngle(random_);     // 0〜2π
 
-    // ★ さらに外側だけ：内側 80% は完全に空けるイメージ
+    // さらに外側だけ：内側 80% は完全に空けるイメージ
     float innerRadius = maxRadius_ * kInnerRadiusRate;
     float outerRadius = maxRadius_;
 
@@ -90,10 +90,10 @@ void SpeedLine::Respawn(LineParticle& p, const Vector3& basePos, bool randomDept
         z = distZ(random_);
 
         float depthFactor = (spawnZMax_ - z) / (spawnZMax_ - spawnZMin_); // 0〜1 : 奥→手前
-        p.alpha *= depthFactor;   // 奥ほど alpha が弱くなる
+        p.alpha_ *= depthFactor;   // 奥ほど alpha が弱くなる
     }
 
-    auto& wt = *p.worldTransform;
+    auto& wt = *p.worldTransform_;
 
     // 基準位置（いまは RailCamera の位置を渡している）
     wt.translation_.x = basePos.x + x;
@@ -104,11 +104,11 @@ void SpeedLine::Respawn(LineParticle& p, const Vector3& basePos, bool randomDept
     wt.scale_ = { kLineScale, kLineScale, kLineScale };
 
     std::uniform_real_distribution<float> distSpeed(kSpeedMin,kSpeedMax);
-    p.speed = distSpeed(random_);
+    p.speed_ = distSpeed(random_);
 
     // 外側ほど少し明るく（でも全体は薄め）
     float edgeFactor = (r - innerRadius) / (outerRadius - innerRadius); // 0〜1
-    p.alpha = kAlphaBase + edgeFactor * kAlphaRange;
+    p.alpha_ = kAlphaBase + edgeFactor * kAlphaRange;
 
     wt.rotation_ = { 0.0f, 0.0f, 0.0f };
     wt.UpdateMatrix();
@@ -120,14 +120,14 @@ void SpeedLine::Update(float dt, const Vector3& playerPos) {
     }
 
     for (auto& line : lines_) {
-        if (!line.worldTransform) {
+        if (!line.worldTransform_) {
             continue;
         }
 
-        auto& wt = *line.worldTransform;
+        auto& wt = *line.worldTransform_;
 
         // Z方向にプレイヤーへ近づける（カメラは後ろにいる想定なので -Z）
-        wt.translation_.z -= line.speed * dt;
+        wt.translation_.z -= line.speed_ * dt;
 
         // ほんの少しだけゆらぎを入れるとブラー感UP
         wt.translation_.x *= (1.0f + kJitterX * dt);
@@ -135,7 +135,7 @@ void SpeedLine::Update(float dt, const Vector3& playerPos) {
 
         // プレイヤー位置より手前まで来たら再配置
         if (wt.translation_.z < playerPos.z + despawnOffsetZ_) {
-            Respawn(line, playerPos, /*randomDepth=*/false);
+            Respawn_(line, playerPos, /*randomDepth=*/false);
         }
 
         wt.UpdateMatrix();
@@ -148,11 +148,11 @@ void SpeedLine::Draw() {
     }
 
     for (auto& line : lines_) {
-        if (!line.worldTransform) {
+        if (!line.worldTransform_) {
             continue;
         }
 
-        auto& wt = *line.worldTransform;
+        auto& wt = *line.worldTransform_;
 
         // ★ エンジン側に色/アルファ設定APIがあるならここで line.alpha を使うと
         //    「薄くて残像っぽいスピードライン」が表現できます。

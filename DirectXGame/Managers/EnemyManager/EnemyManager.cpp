@@ -120,15 +120,13 @@ void EnemyManager::SpawnEnemiesByScv(const Vector3& playerPos) {
 
 		Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
 
-		// ★ここが本題：typeで分岐
 		if (d.type == "turret") {
 			auto turret = std::make_unique<TurretEnemy>();
 			turret->GetWorldTransform().translation_ = spawnPos;
-			turret->Initialize();
-			turret->SetInitialHP(d.hp);
-			turret->SetColliderRadius(d.radius);
 
 			// Turret専用パラメータ
+			turret->SetInitialHP(d.hp);
+			turret->SetColliderRadius(d.radius);
 			turret->SetShootIntervalFrames(d.shootIntervalFrames);
 			turret->SetBulletSpeed(d.bulletSpeed);
 			turret->SetBulletLifeTime(d.bulletLifeTime);

@@ -48,7 +48,7 @@ public:
     /// ダメージを受ける
     /// </summary>
     /// <param name="amount">受けるダメージ量</param>
-    void Damage(int amount);
+    void Damage(int32_t amount);
 
     /// <summary>
     /// 爆発処理を開始（HP0のとき）
@@ -128,10 +128,10 @@ private:
     KamataEngine::Audio* audio_ = nullptr;    // オーディオ
 
     // ===== 通常移動・傾き =====
-    const float kMoveSpeedXY_ = 10.0f;   // 画面内のXY移動速度
-    const float kBankMaxRadZ_ = 0.35f;   // 最大傾き角度
-    const float kPitchMaxRadX_ = 0.25f;  // 最大ピッチ角
-    const float kTiltLerp_ = 0.20f;      // 傾きの追従速度
+    static constexpr float kMoveSpeedXY_ = 10.0f;   // 画面内のXY移動速度
+    static constexpr float kBankMaxRadZ_ = 0.35f;   // 最大傾き角度
+    static constexpr float kPitchMaxRadX_ = 0.25f;  // 最大ピッチ角
+    static constexpr float kTiltLerp_ = 0.20f;      // 傾きの追従速度
 
     float targetTiltZ_ = 0.0f;   // 入力から求めた目標z傾き
     float targetTiltX_ = 0.0f;   // 入力から求めた目標x傾き
@@ -153,25 +153,25 @@ private:
     float rollMoveDistance_ = 7.0f;         // ロールで横にスライドする距離
 
     // --- ダブルタップ検出（A/D）---
-    int  doubleTapFrameA_ = 0;            // Aキーの２回押し検出カウンタ
-    int  doubleTapFrameD_ = 0;            // Dキーの２回押し検出カウンタ
-    const int kDoubleTapThreshold_ = 18;  // 約0.3秒@60fps
+    int32_t  doubleTapFrameA_ = 0;                       // Aキーの２回押し検出カウンタ
+    int32_t  doubleTapFrameD_ = 0;                       // Dキーの２回押し検出カウンタ
+    static constexpr int32_t kDoubleTapThreshold_ = 18;  // 約0.3秒@60fps
 
     // ===== 爆発・死亡 =====
-    int   seExplosion_ = -1;              // 爆発SE
-    bool  isDead_ = false;                // 死亡フラグ
-    bool  isExploding_ = false;           // 爆発中フラグ
-    bool  isExplosionFinished_ = false;   // 爆発終了フラグ
-    int   explosionFrame_ = 0;            // 爆発アニメ進行
-    int   explosionDurationFrames_ = 60;  // 爆発時間
+    int32_t seExplosion_ = -1;              // 爆発SE
+    bool  isDead_ = false;                  // 死亡フラグ
+    bool  isExploding_ = false;             // 爆発中フラグ
+    bool  isExplosionFinished_ = false;     // 爆発終了フラグ
+    int32_t explosionFrame_ = 0;            // 爆発アニメ進行
+    int32_t explosionDurationFrames_ = 60;  // 爆発時間
     KamataEngine::Vector3 initialScale_ = { 1.0f, 1.0f, 1.0f };  // 通常スケール
 
     // ===== 被弾・無敵 =====
-    bool  inputEnabled_ = true;           // 入力有効フラグ
-    bool  tookDamageEvent_ = false;       // このフレームで被弾したか
-    int   hitFlashFrames_ = 0;            // 被弾中の演出フレーム
-    int   invincibleFrames_ = 0;          // 点滅用
-    const int kHitFlashDuration_ = 18;    // 0.3秒@60fps
-    const int kInvincibleDuration_ = 30;  // 無敵持続時間
-    float lastHitRollOffset_ = 0.0f;      // 前フレームで加えた被弾ゆれZオフセット
+    bool inputEnabled_ = true;                           // 入力有効フラグ
+    bool tookDamageEvent_ = false;                       // このフレームで被弾したか
+    int32_t hitFlashFrames_ = 0;                         // 被弾中の演出フレーム
+    int32_t invincibleFrames_ = 0;                       // 点滅用
+    static constexpr int32_t kHitFlashDuration_ = 18;    // 0.3秒@60fps
+    static constexpr int32_t kInvincibleDuration_ = 30;  // 無敵持続時間
+    float lastHitRollOffset_ = 0.0f;                     // 前フレームで加えた被弾ゆれZオフセット
 };

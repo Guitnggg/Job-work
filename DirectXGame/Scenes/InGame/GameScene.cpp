@@ -329,7 +329,7 @@ void GameScene::BattleUpdate(float dt) {
 		// 弾→敵 を先に処理（＝スコア対象）
 		CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
 		// チャージレーザー（Razer）
-		CollisionManager::ResolveRazerEnemyCollisions(bulletManager_.GetRazers(), enemyManager_.GetEnemies(), countDown_);
+		CollisionManager::ResolveLaserEnemyCollisions(bulletManager_.GetLasers(), enemyManager_.GetEnemies(), countDown_);
 
 		// 弾で倒された敵の数をカウントしてスコアを加算
 		int deadCount = 0;

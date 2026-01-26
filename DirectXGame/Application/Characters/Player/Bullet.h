@@ -50,7 +50,7 @@ public:  // パラメータ
     /// <summary>
     /// 飛行速度の設定（１フレーム当たりの移動距離）
     /// </summary>
-    void SetSpeed(float s) { speed_ = s; }
+    void SetSpeed(float speed) { speed_ = speed; }
 
     /// <summary>
     /// 寿命の設定（秒）
@@ -61,10 +61,10 @@ private:
     std::unique_ptr<KamataEngine::Model> model_;
     uint32_t textureHandle_ = 0u;
 
-    KamataEngine::Vector3 dir_ = { 0,0,1 }; // +Z方向
-    float speed_ = 2.8f;                   // 1フレームあたりの前進量
-    float lifeTimeSec_ = 3.0f;            // 弾の寿命
-    float t_ = 0.0f;                      // 経過時間
+    KamataEngine::Vector3 dir_ = { 0,0,1 };  // +Z方向
+    float speed_ = 2.8f;                     // 1フレームあたりの前進量
+    float lifeTimeSec_ = 3.0f;               // 弾の寿命
+    float elapsedTimeSec_ = 0.0f;            // 経過時間
     bool isDead_ = false;
 
     KamataEngine::Vector3 startPos_ = { 0,0,0 };

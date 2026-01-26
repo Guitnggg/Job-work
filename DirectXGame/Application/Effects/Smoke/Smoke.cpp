@@ -12,8 +12,8 @@ void Smoke::Initialize(KamataEngine::Model* model,
     // パラメータ受け取り
     model_ = model;
     velocity_ = velocity;
-    life_ = 0.0f;
-    maxLife_ = lifeTime;
+    elapsedTimeSec_ = 0.0f;
+    lifeTimeSec_ = lifeTime;
     startScale_ = startScale;
     endScale_ = endScale;
     isFinished_ = false;
@@ -30,8 +30,8 @@ void Smoke::Update(float dt) {
     if (isFinished_) { return; }
 
     // 経過時間
-    life_ += dt;
-    if (life_ >= maxLife_) {
+    elapsedTimeSec_ += dt;
+    if (elapsedTimeSec_ >= lifeTimeSec_) {
         isFinished_ = true;
         return;
     }
@@ -42,13 +42,13 @@ void Smoke::Update(float dt) {
     worldTransform_.translation_.z += velocity_.z;
 
     // スケール補間（線形）
-    float t = life_ / maxLife_;
+    float t = elapsedTimeSec_ / lifeTimeSec_;
     if (t < 0.0f) t = 0.0f;
     if (t > 1.0f) t = 1.0f;
-    float s = startScale_ + (endScale_ - startScale_) * t;
-    if (s < 0.0f) s = 0.0f;
+    float scale = startScale_ + (endScale_ - startScale_) * t;
+    if (scale < 0.0f) scale = 0.0f;
 
-    worldTransform_.scale_ = { s, s, s };
+    worldTransform_.scale_ = { scale, scale, scale };
 
     // 行列更新
     worldTransform_.UpdateMatrix();

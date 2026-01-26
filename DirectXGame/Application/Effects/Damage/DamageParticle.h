@@ -18,7 +18,7 @@ public:
     /// </summary>
     /// <param name="model">描画に使用するモデル</param>
     /// <param name="pos">パーティクル発生位置</param>
-    /// <param name="vel">悲惨方向＆速度</param>
+    /// <param name="vel">飛散方向＆速度</param>
     /// <param name="lifeTime">寿命（秒）</param>
     /// <param name="startScale">出現直後のスケール</param>
     /// <param name="endScale">寿命末期のスケール</param>

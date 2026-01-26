@@ -6,7 +6,7 @@
 
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/Player.h"
-#include "Application/Characters/Player/Lazer.h"
+#include "Application/Characters/Player/Laser.h"
 #include "UI/CountDown/CountDown.h"
 
 /// <summary>
@@ -49,10 +49,10 @@ public:
 	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
 
 	/// <summary>
-	/// 現在飛行中のレーザー(Razer)のコンテナを参照で返す。
+	/// 現在飛行中のレーザー(Laser)のコンテナを参照で返す。
 	/// 外部でレーザーとの当たり判定を行う用途で使用する。
 	/// </summary>
-	std::vector<std::unique_ptr<Lazer>>& GetRazers() { return razers_; }
+	std::vector<std::unique_ptr<Laser>>& GetLasers() { return lasers_; }
 
 private:
 	/// <summary>
@@ -62,33 +62,33 @@ private:
 	/// <param name="input">入力処理</param>
 	/// <param name="player">弾の発射位置参照元</param>
 	/// <param name="countDown">カウントダウン中は射撃抑制に使用</param>
-	void HandleShooting(KamataEngine::Input* input, Player* player, const CountDown& countDown);
+	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown);
 
 	/// <summary>
 	/// 全飛行弾の更新処理を行う。
 	/// </summary>
-	void UpdateBullets();
+	void UpdateBullets_();
 
 	/// <summary>
 	/// 死亡状態（寿命切れ／衝突／距離制限）の弾をコンテナから削除する。
 	/// </summary>
-	void RemoveDeadBullets();
+	void RemoveDeadBullets_();
 
 private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
-	std::vector<std::unique_ptr<Lazer>> razers_;
+	std::vector<std::unique_ptr<Laser>> lasers_;
 
 	// ===== チャージショット用 =====
 	bool isCharging_ = false;
-	int chargeFrames_ = 0;
+	int32_t chargeFrames_ = 0;
 	bool prevShootDown_ = false;
 
 	// クールダウン
-	int fireCooldownFrames_ = 0;
-	static constexpr int kFireCooldownMax = 9;   // 通常弾：約0.15秒@60fps
-	static constexpr int kLaserCooldownMax = 24; // レーザー後：少し長め
+	int32_t fireCooldownFrames_ = 0;
+	static constexpr int32_t kFireCooldownMax = 9;   // 通常弾：約0.15秒@60fps
+	static constexpr int32_t kLaserCooldownMax = 24; // レーザー後：少し長め
 
 	// チャージ閾値
-	static constexpr int kChargeLaserMinFrames = 36; // 0.6秒@60fps 以上でレーザー
-	static constexpr int kChargeLaserMaxFrames = 72; // 1.2秒@60fps（上限）
+	static constexpr int32_t kChargeLaserMinFrames = 36; // 0.6秒@60fps 以上でレーザー
+	static constexpr int32_t kChargeLaserMaxFrames = 72; // 1.2秒@60fps（上限）
 };

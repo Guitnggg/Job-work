@@ -15,7 +15,6 @@ class Player;
 /// </summary>
 class Asteroid {
 public:
-
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -47,7 +46,6 @@ public:
     void Draw(const KamataEngine::Camera& camera);
 
 public:
-
     /// <summary>
     /// Z座標の取得
     /// </summary>
@@ -64,7 +62,6 @@ public:
     void SetPlayer(Player* player) { player_ = player; }
 
 private:
-
     KamataEngine::WorldTransform worldTransform_; // 位置・回転・スケール
     KamataEngine::Model* model_ = nullptr;        // 3Dモデル（共有・非所有）
     KamataEngine::Vector3 velocity_ = { 0,0,0 };  // 移動速度
