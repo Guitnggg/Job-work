@@ -6,7 +6,7 @@ using namespace KamataEngine;
 
 // =========================
 // イージング関数
-// =========================
+// =========================　
 float EaseOutBack(float t) {
     const float c1 = 1.70158f;
     const float c3 = c1 + 1.0f;
@@ -30,7 +30,7 @@ void PauseMenu::Initialize() {
         texHandles[i] = TextureManager::Load(kMenuTexPaths[i]);
     }
 
-    const uint32_t resumeTex = texHandles[static_cast<int>(MenuTex::Resume)];
+    const uint32_t resumeTex = texHandles[static_cast<int>(MenuTex::HowTo)];
     const uint32_t restartTex = texHandles[static_cast<int>(MenuTex::Restart)];
     const uint32_t titleTex = texHandles[static_cast<int>(MenuTex::ToTitle)];
     const uint32_t whiteTex = texHandles[static_cast<int>(MenuTex::White)];
@@ -119,11 +119,17 @@ void PauseMenu::Update() {
 
     MoveCursor();
 
-    if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+    if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
         switch (selectIndex_) {
-        case 0: result_ = Result::Resume;  break;
-        case 1: result_ = Result::Retry;   break;
-        case 2: result_ = Result::ToTitle; break;
+        case 0:
+            result_ = Result::Resume;
+            break;
+        case 1:
+            result_ = Result::Retry;
+            break;
+        case 2:
+            result_ = Result::ToTitle;
+            break;
         }
     }
 }
