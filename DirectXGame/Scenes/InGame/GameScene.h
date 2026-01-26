@@ -244,8 +244,9 @@ private:
     int kClearScore_ = 5000;
 
     // ========== Pauseメニュー ==========
-	bool isPaused_ = false;
-	std::unique_ptr<PauseMenu> pauseMenu_;
+    bool isPaused_ = false;
+    bool wasPaused_ = false;
+    std::unique_ptr<PauseMenu> pauseMenu_;
 
     // ポーズからの遷移要求
 	bool requestRetry_ = false;

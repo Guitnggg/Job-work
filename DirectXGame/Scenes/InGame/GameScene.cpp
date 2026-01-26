@@ -131,7 +131,14 @@ void GameScene::Update() {
 	// ===== Pause 切り替え =====
 	if (input_->TriggerKey(DIK_ESCAPE) && state_ == GameState::Playing) {
 		isPaused_ = !isPaused_;
-		pauseMenu_->ResetResult();
+
+		if (isPaused_) {
+			pauseMenu_->ResetResult();
+			pauseMenu_->StartOpenAnimation();
+		}
+		else {
+			pauseMenu_->StartCloseAnimation();
+		}
 	}
 
 	// ===== Pause 中 =====
@@ -140,17 +147,18 @@ void GameScene::Update() {
 
 		switch (pauseMenu_->GetResult()) {
 		case PauseMenu::Result::Resume:
+			pauseMenu_->StartCloseAnimation();
 			isPaused_ = false;
 			break;
 
 		case PauseMenu::Result::Retry:
 			requestRetry_ = true;
-			isEnd_ = true; // Scene 終了を通知
+			isEnd_ = true;
 			break;
 
 		case PauseMenu::Result::ToTitle:
 			requestToTitle_ = true;
-			isEnd_ = true; // Scene 終了を通知
+			isEnd_ = true;
 			break;
 
 		default:
