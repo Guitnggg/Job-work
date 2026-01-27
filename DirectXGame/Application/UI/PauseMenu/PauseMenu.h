@@ -58,7 +58,7 @@ private:
 	};
 
 	static constexpr const char* kMenuTexPaths[static_cast<int>(MenuTex::Count)] = {
-		"./Resources/UI/Resume.png",
+		"./Resources/UI/HowTo.png",
 		"./Resources/UI/Restart.png",
 		"./Resources/UI/ToTitle.png",
 		"./Resources/White1x1.png"
