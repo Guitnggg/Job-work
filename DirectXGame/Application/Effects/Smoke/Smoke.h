@@ -1,68 +1,75 @@
 #pragma once
 
-#include "3d/WorldTransform.h"
-#include "3d/Model.h"
 #include "3d/Camera.h"
+#include "3d/Model.h"
+#include "3d/WorldTransform.h"
 #include "math/Vector3.h"
 
 /// <summary>
 /// 被弾・爆発・推進エンジンなどの演出に使用する残留系パーティクル（煙）。
-/// 時間経過とともに移動し、スケールが変化し、寿命で消滅する。
-/// DamageParticle より長く残るふわっとした演出向き。
+/// ・速度ベースで移動（dt対応）
+/// ・寿命（秒）で消滅
+/// ・開始スケール → 終了スケールを補間
+///
+/// DamageParticle よりも寿命が長く、
+/// ふわっと残る演出（煙・蒸気・残像）を想定したクラス。
 /// </summary>
-class Smoke{
+class Smoke {
 public:
-    /// <summary>
-    /// コンストラクタ / デストラクタ 
-    /// </summary>
-    Smoke() = default;
-    ~Smoke() = default;
+	/// <summary>
+	/// コンストラクタ / デストラクタ
+	/// </summary>
+	Smoke() = default;
+	~Smoke() = default;
 
-    /// <summary>
-    /// 初期化処理
-    /// </summary>
-    /// <param name="model">描画に使用するモデル</param>
-    /// <param name="position">初期位置</param>
-    /// <param name="velocity">初期速度</param>
-    /// <param name="lifeTime">寿命（秒）</param>
-    /// <param name="startScale">開始スケール</param>
-    /// <param name="endScale">終了スケール</param>
-    void Initialize(KamataEngine::Model* model,
-        const KamataEngine::Vector3& position,
-        const KamataEngine::Vector3& velocity,
-        float lifeTime,
-        float startScale,
-        float endScale
-    );
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
+	/// <param name="model">
+	/// </param>
+	/// <param name="position">生成位置（ワールド座標）</param>
+	/// <param name="velocity">移動速度（1秒あたり）</param>
+	/// <param name="lifeTime">寿命（秒）</param>
+	/// <param name="startScale">初期スケール</param>
+	/// <param name="endScale">終了スケール</param>
+	void Initialize(KamataEngine::Model* model, const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float lifeTime, float startScale, float endScale);
 
-    /// <summary>
-    /// 更新処理
-    /// </summary>
-    /// <param name="dt">デルタタイム（秒）</param>
-    void Update(float dt);
+	/// <summary>
+	/// 更新処理
+	/// </summary>
+	/// <param name="dt">前フレームからの経過時間（秒）</param>
+	void Update(float dt);
 
-    /// <summary>
-    /// 描画処理
-    /// </summary>
-    /// <param name="camera">描画に使用するカメラ</param>
-    void Draw(const KamataEngine::Camera* camera);
+	/// <summary>
+	/// 描画処理
+	/// </summary>
+	/// <param name="camera">描画に使用するカメラ</param>
+	void Draw(const KamataEngine::Camera* camera);
 
-    /// <summary>
-    /// 終了しているか
-    /// </summary>
-    bool IsFinished()const { return isFinished_; }
+	/// <summary>
+	/// 寿命が尽きているかどうか
+	/// 管理クラス側で削除判定に使用する。
+	/// </summary>
+	bool IsFinished() const { return isFinished_; }
 
 private:
-    KamataEngine::WorldTransform worldTransform_; // 変換情報
-    KamataEngine::Model* model_ = nullptr;        // モデル（非所有）
+	// ワールド変換情報
+	KamataEngine::WorldTransform worldTransform_;
 
-    KamataEngine::Vector3 velocity_ = { 0.0f, 0.0f, 0.0f }; // 速度
+	// 描画用モデル（非所有）
+	KamataEngine::Model* model_ = nullptr;
 
-    float elapsedTimeSec_ = 0.0f;  // 経過時間
-    float lifeTimeSec_ = 1.0f;  // 寿命
-    float startScale_ = 1.0f;
-    float endScale_ = 0.0f;
+	// 移動速度（1秒あたり）
+	KamataEngine::Vector3 velocity_{};
 
-    bool isFinished_ = false;
+	// 時間管理
+	float elapsedTimeSec_ = 0.0f; // 経過時間
+	float lifeTimeSec_ = 1.0f;    // 寿命
+
+	// スケール補間
+	float startScale_ = 1.0f;
+	float endScale_ = 0.0f;
+
+	// 終了フラグ
+	bool isFinished_ = false;
 };
-

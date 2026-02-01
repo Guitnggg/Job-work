@@ -1,7 +1,6 @@
 #pragma once
 
 #include "math/Vector3.h"
-#include "Application/Utility/MyMath/MyMath.h"
 
 class CameraShake {
 public:
@@ -29,9 +28,15 @@ public:
 	const KamataEngine::Vector3& GetOffset() const { return offset_; }
 
 private:
+	// ===== 定数 =====
+	static constexpr float kDecayRate = 0.85f;            // 減衰率
+	static constexpr float kMinDirectionLength = 0.0001f; // 有効な方向とみなす最小長
 
+	static constexpr KamataEngine::Vector3 kZeroVector{0.0f, 0.0f, 0.0f};
+
+private:
+	// ===== メンバ変数 =====
 	KamataEngine::Vector3 offset_{};  // カメラオフセット
 	KamataEngine::Vector3 velocity_{};  // カメラ速度
 
-	float decay_ = 0.85f;  // 減衰率
 };

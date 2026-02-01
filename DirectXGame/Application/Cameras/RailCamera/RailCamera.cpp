@@ -31,7 +31,7 @@ void RailCamera::Update() {
 	const Vector3 basePos = worldTransform_.translation_;
 
 	Vector3 posDiff = MyMath::Subtract(basePos, lagCameraPos_);
-	posDiff = MyMath::Multiply(posDiff, followRate_);
+	posDiff = MyMath::Multiply(posDiff, kFollowRate);
 	lagCameraPos_ = MyMath::Add(lagCameraPos_, posDiff);
 
 	// --- カメラシェイク ---
@@ -39,7 +39,7 @@ void RailCamera::Update() {
 
 	// --- ロール補間 ---
 	float rollDiff = targetRollAngle_ - rollAngle_;
-	rollAngle_ += rollDiff * rollFollowRate_;
+	rollAngle_ += rollDiff * kRollFollowRate;
 
 	// --- 合成 ---
 	Vector3 finalCameraPos = MyMath::Add(lagCameraPos_, cameraShake_.GetOffset());
@@ -58,5 +58,5 @@ void RailCamera::AddShake(const Vector3& dir, float power) { cameraShake_.AddSha
 
 void RailCamera::SetMoveInput(float inputX) {
 	// 左右入力→傾き反映
-	targetRollAngle_ = maxRollAngle_ * -inputX;
+	targetRollAngle_ = kMaxRollAngle * -inputX;
 }

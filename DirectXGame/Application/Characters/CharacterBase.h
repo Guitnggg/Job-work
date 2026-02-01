@@ -1,140 +1,133 @@
 #pragma once
 
-#include "3d/WorldTransform.h"
 #include "3d/Camera.h"
+#include "3d/WorldTransform.h"
 #include "math/Vector3.h"
 #include <memory>
 
 #include "Application/Characters/Collider.h"
 
 /// <summary>
-/// キャラクター共通の基底クラス
-/// ワールド変換・移動量・コライダー・HP など、
-/// プレイヤー／敵などのキャラで共通となる機能を提供する。
+/// キャラクター共通の基底クラス。
+/// ワールド変換・当たり判定・HP など、
+/// プレイヤーや敵に共通する最低限の振る舞いを提供する。
 /// </summary>
 class CharacterBase {
 public:
-    /// <summary>
-    /// 仮想デストラクタ
-    /// </summary>
-    virtual ~CharacterBase() = default;
+	/// <summary>
+	/// 仮想デストラクタ
+	/// </summary>
+	virtual ~CharacterBase() = default;
 
-    /// <summary>
-    /// 初期化処理
-    /// </summary>
-    virtual void Initialize();
+	/// <summary>
+	/// 初期化処理
+	/// ワールド変換とコライダーの初期化を行う。
+	/// </summary>
+	virtual void Initialize();
 
-    /// <summary>
-    /// 更新処理
-    /// </summary>
-    virtual void Update();
+	/// <summary>
+	/// 更新処理
+	/// ワールド行列更新とコライダー同期を行う。
+	/// </summary>
+	virtual void Update();
 
-    /// <summary>
-    /// 描画処理
-    /// </summary>
-    /// <param name="camera">描画に使用するカメラ</param>
-    virtual void Draw(const KamataEngine::Camera* camera) = 0;
+	/// <summary>
+	/// 描画処理
+	/// </summary>
+	/// <param name="camera">描画に使用するカメラ</param>
+	virtual void Draw(const KamataEngine::Camera* camera) = 0;
 
-    /// <summary>
-    /// 当たり判定時の処理
-    /// </summary>
-    /// <param name="enemy">衝突相手となるキャラクター</param>
-    virtual void OnCollision(CharacterBase* enemy) = 0;
+	/// <summary>
+	/// 当たり判定時の処理
+	/// </summary>
+	/// <param name="enemy">衝突相手</param>
+	virtual void OnCollision(CharacterBase* enemy) = 0;
 
-    /// <summary>
-    /// 死亡判定
-    /// </summary>
-    virtual bool IsDead()const { return false; }
+	/// <summary>
+	/// 死亡判定
+	/// </summary>
+	virtual bool IsDead() const { return hp_ <= 0; }
 
-    /// <summary>
-    /// 当たり判定の有効（死亡中/無敵時間などで使用）
-    /// </summary>
-    virtual bool IsCollidable()const { return true; }
+	/// <summary>
+	/// 当たり判定の有効判定
+	/// </summary>
+	virtual bool IsCollidable() const { return !IsDead(); }
 
-public:  /// === Getters === ///
-    /// <summary>
-    /// ワールド座標の取得
-    /// </summary>
-    KamataEngine::Vector3 GetWorldTranslation();
+public: /// === Getters === ///
+	/// <summary>
+	/// ワールド座標の取得
+	/// </summary>
+	KamataEngine::Vector3 GetWorldTranslation() const;
 
-    /// <summary>
-    /// WorldTransform の参照取得（編集や親子付けに使用）
-    /// </summary>
-    KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
+	/// <summary>
+	/// WorldTransform の参照取得（親子付けなどに使用）
+	/// </summary>
+	KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
 
-    /// <summary>
-    /// 座標の取得
-    /// </summary>
-    KamataEngine::Vector3 GetTranslation() { return worldTransform_.translation_; }
+	/// <summary>
+	/// ローカル座標の取得
+	/// </summary>
+	KamataEngine::Vector3 GetTranslation() const { return worldTransform_.translation_; }
 
-    /// <summary>
-    /// 角度の取得
-    /// </summary>
-    KamataEngine::Vector3 GetRotation() { return worldTransform_.rotation_; }
+	/// <summary>
+	/// 回転の取得
+	/// </summary>
+	KamataEngine::Vector3 GetRotation() const { return worldTransform_.rotation_; }
 
-    /// <summary>
-    /// 回転の取得
-    /// </summary>
-    KamataEngine::Vector3 GetRotate() { return worldTransform_.rotation_; }
+	/// <summary>
+	/// コライダーの参照取得（所有権は保持しない）
+	/// </summary>
+	Collider* GetCollider() const { return collider_.get(); }
 
-    /// <summary>
-    /// コライダーの取得
-    /// </summary>
-    std::unique_ptr<Collider>& GetCollider() { return collider_; }
+	/// <summary>
+	/// HP の取得
+	/// </summary>
+	int32_t GetHP() const { return hp_; }
 
-    /// <summary>
-    /// HPの取得
-    /// </summary>
-    int32_t GetHP() { return hp_; }
+	/// <summary>
+	/// 最大 HP の取得
+	/// </summary>
+	int32_t GetMaxHP() const { return maxHp_; }
 
-    /// <summary>
-    /// 最大HPの取得
-    /// </summary>
-    int32_t GetMaxHP() { return maxHp_; }
+public: /// === Setters === ///
+	/// <summary>
+	/// 親の設定（RailCamera など）
+	/// </summary>
+	void SetParent(KamataEngine::WorldTransform* parent) { worldTransform_.parent_ = parent; }
 
-public:  /// === Setters === ///
-    /// <summary>
-    /// 親の設定（RailCamera などの WT を渡す）
-    /// </summary>
-    /// <param name="parent">親となる WorldTransform（保持は非所有）</param>
-    void SetParent(KamataEngine::WorldTransform* parent) { worldTransform_.parent_ = parent; }
+	/// <summary>
+	/// 座標の設定
+	/// </summary>
+	void SetTranslate(const KamataEngine::Vector3& translate) { worldTransform_.translation_ = translate; }
 
-    /// <summary>
-    /// 座標の設定
-    /// </summary>
-    /// <param name="translate">modelの座標</param>
-    void SetTranslate(KamataEngine::Vector3 translate) { worldTransform_.translation_ = translate; }
+	/// <summary>
+	/// 回転の設定
+	/// </summary>
+	void SetRotate(const KamataEngine::Vector3& rotate) { worldTransform_.rotation_ = rotate; }
 
-    /// <summary>
-    /// 回転の設定
-    /// </summary>
-    /// <param name="rotate">modelの向き</param>
-    void SetRotate(KamataEngine::Vector3 rotate) { worldTransform_.rotation_ = rotate; }
+	/// <summary>
+	/// スケールの設定
+	/// </summary>
+	void SetScale(const KamataEngine::Vector3& scale) { worldTransform_.scale_ = scale; }
 
-    /// <summary>
-    /// 大きさの設定
-    /// </summary>
-    /// <param name="scale">modelの大きさ</param>
-    void SetScale(KamataEngine::Vector3 scale) { worldTransform_.scale_ = scale; }
-
-    /// <summary>
-    /// HPの設定
-    /// </summary>
-    void SetHP(int32_t hp) { hp_ = hp; }
+	/// <summary>
+	/// HP の設定
+	/// </summary>
+	void SetHP(int32_t hp) { hp_ = hp; }
 
 protected:
-    // ワールド変換情報
-    KamataEngine::WorldTransform worldTransform_;
+	// ワールド変換情報
+	KamataEngine::WorldTransform worldTransform_;
 
-    // 速度
-    KamataEngine::Vector3 velocity_ = { 0.0f,0.0f,0.0f };
+	// 移動速度（派生クラスで使用）
+	KamataEngine::Vector3 velocity_{0.0f, 0.0f, 0.0f};
 
-    // 当たり判定
-    std::unique_ptr<Collider> collider_;
+	// 当たり判定（CharacterBase が所有）
+	std::unique_ptr<Collider> collider_;
 
-    // 体力
-    int32_t hp_ = 0;
+	// 体力
+	int32_t hp_ = 0;
 
-    // 最大体力
-    int32_t maxHp_ = 0;
+	// 最大体力
+	int32_t maxHp_ = 0;
 };

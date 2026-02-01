@@ -8,30 +8,15 @@ using json = nlohmann::json;
 
 using namespace KamataEngine;
 
-namespace {
-constexpr float kDefaultSpeed = 0.2f;
-constexpr float kDefaultSpeedVar = 0.0f;
-constexpr float kDefaultTurnRate = 0.15f;
-constexpr int kDefaultHp = 1;
-constexpr float kDefaultRadius = 1.0f;
-constexpr float kDefaultLifeTime = 30.0f;
-
-constexpr uint64_t kSpawnSeed = 123456789ull;
-
-constexpr int kExplosionParticleCount = 16;
-constexpr float kExplosionSpeed = 3.0f;
-constexpr float kExplosionLifeTime = 0.6f;
-constexpr float kExplosionStartScale = 0.25f;
-constexpr float kExplosionEndScale = 0.0f;
-} // namespace
-
 void EnemyManager::Initialize() {
 	enemies_.clear();
 	enemySpawnList_.clear();
+	explosionParticles_.clear();
+
 	enemySpawnTimer_ = 0.0f;
 
+	// 爆発用モデル生成（KamataEngine 管理）
 	explosionModel_ = Model::Create();
-	explosionParticles_.clear();
 }
 
 void EnemyManager::LoadEnemyScv(const std::string& path) {
@@ -45,65 +30,64 @@ void EnemyManager::LoadEnemyScv(const std::string& path) {
 	json root;
 	ifs >> root;
 
-	if (root.contains("randomAreas")) {
-		static std::mt19937_64 rng{kSpawnSeed};
+	if (!root.contains("randomAreas")) {
+		return;
+	}
 
-		for (auto& r : root["randomAreas"]) {
-			int count = r.value("count", 0);
-			float timeMin = r.value("timeMin", 0.0f);
-			float timeMax = r.value("timeMax", timeMin);
+	static std::mt19937_64 rng{123456789ull};
 
-			auto centerNode = r["posCenter"];
-			Vector3 center{centerNode[0].get<float>(), centerNode[1].get<float>(), centerNode[2].get<float>()};
+	for (auto& r : root["randomAreas"]) {
+		const int32_t count = r.value("count", 0);
+		const float timeMin = r.value("timeMin", 0.0f);
+		const float timeMax = r.value("timeMax", timeMin);
 
-			auto rangeNode = r["posRange"];
-			Vector3 range{rangeNode[0].get<float>(), rangeNode[1].get<float>(), rangeNode[2].get<float>()};
+		const auto centerNode = r["posCenter"];
+		const Vector3 center{centerNode[0].get<float>(), centerNode[1].get<float>(), centerNode[2].get<float>()};
 
-			// ★追加：敵タイプ（未指定は seeker）
-			std::string type = r.value("type", std::string("seeker"));
+		const auto rangeNode = r["posRange"];
+		const Vector3 range{rangeNode[0].get<float>(), rangeNode[1].get<float>(), rangeNode[2].get<float>()};
 
-			// Seeker用
-			float baseSpeed = r.value("speed", kDefaultSpeed);
-			float speedRange = r.value("speedRange", kDefaultSpeedVar);
-			float turnRate = r.value("turnRate", kDefaultTurnRate);
+		const std::string type = r.value("type", std::string("seeker"));
 
-			// 共通
-			int hp = r.value("hp", kDefaultHp);
-			float radius = r.value("radius", kDefaultRadius);
-			float lifeTime = r.value("lifeTime", kDefaultLifeTime);
+		// Seeker
+		const float baseSpeed = r.value("speed", kDefaultSeekerSpeed);
+		const float speedRange = r.value("speedRange", 0.0f);
+		const float turnRate = r.value("turnRate", kDefaultSeekerTurnRate);
 
-			// ★追加：Turret用（未指定はデフォルト）
-			int shootIntervalFrames = r.value("shootIntervalFrames", 60);
-			float bulletSpeed = r.value("bulletSpeed", 2.8f);
-			float bulletLifeTime = r.value("bulletLifeTime", 3.0f);
+		// 共通
+		const int32_t hp = r.value("hp", kDefaultHp);
+		const float radius = r.value("radius", kDefaultColliderRadius);
+		const float lifeTime = r.value("lifeTime", kDefaultLifeTime);
 
-			std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
-			std::uniform_real_distribution<float> dx(-range.x, range.x);
-			std::uniform_real_distribution<float> dy(-range.y, range.y);
-			std::uniform_real_distribution<float> dz(-range.z, range.z);
-			std::uniform_real_distribution<float> speedDist(baseSpeed - speedRange, baseSpeed + speedRange);
+		// Turret
+		const int32_t shootIntervalFrames = r.value("shootIntervalFrames", kDefaultShootIntervalFrames);
+		const float bulletSpeed = r.value("bulletSpeed", kDefaultBulletSpeed);
+		const float bulletLifeTime = r.value("bulletLifeTime", kDefaultBulletLifeTime);
 
-			for (int i = 0; i < count; ++i) {
-				EnemySpawnData d;
+		std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
+		std::uniform_real_distribution<float> dx(-range.x, range.x);
+		std::uniform_real_distribution<float> dy(-range.y, range.y);
+		std::uniform_real_distribution<float> dz(-range.z, range.z);
+		std::uniform_real_distribution<float> speedDist(baseSpeed - speedRange, baseSpeed + speedRange);
 
-				d.time = timeDist(rng);
-				d.pos = {center.x + dx(rng), center.y + dy(rng), center.z + dz(rng)};
+		for (int32_t i = 0; i < count; ++i) {
+			EnemySpawnData d;
+			d.time = timeDist(rng);
+			d.pos = {center.x + dx(rng), center.y + dy(rng), center.z + dz(rng)};
+			d.type = type;
 
-				d.type = type;
+			d.speed = speedDist(rng);
+			d.turnRate = turnRate;
 
-				d.speed = speedDist(rng);
-				d.turnRate = turnRate;
+			d.hp = hp;
+			d.radius = radius;
+			d.lifeTime = lifeTime;
 
-				d.hp = hp;
-				d.radius = radius;
-				d.lifeTime = lifeTime;
+			d.shootIntervalFrames = shootIntervalFrames;
+			d.bulletSpeed = bulletSpeed;
+			d.bulletLifeTime = bulletLifeTime;
 
-				d.shootIntervalFrames = shootIntervalFrames;
-				d.bulletSpeed = bulletSpeed;
-				d.bulletLifeTime = bulletLifeTime;
-
-				enemySpawnList_.push_back(d);
-			}
+			enemySpawnList_.push_back(d);
 		}
 	}
 
@@ -111,20 +95,20 @@ void EnemyManager::LoadEnemyScv(const std::string& path) {
 }
 
 void EnemyManager::SpawnEnemiesByScv(const Vector3& playerPos) {
-	const float t = enemySpawnTimer_;
+	const float currentTime = enemySpawnTimer_;
 
 	while (!enemySpawnList_.empty()) {
-		const auto& d = enemySpawnList_.front();
-		if (t < d.time)
+		const EnemySpawnData& d = enemySpawnList_.front();
+		if (currentTime < d.time) {
 			break;
+		}
 
-		Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
+		const Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
 
 		if (d.type == "turret") {
 			auto turret = std::make_unique<TurretEnemy>();
 			turret->GetWorldTransform().translation_ = spawnPos;
 
-			// Turret専用パラメータ
 			turret->SetInitialHP(d.hp);
 			turret->SetColliderRadius(d.radius);
 			turret->SetShootIntervalFrames(d.shootIntervalFrames);
@@ -133,17 +117,17 @@ void EnemyManager::SpawnEnemiesByScv(const Vector3& playerPos) {
 
 			turret->Initialize();
 			enemies_.push_back(std::move(turret));
-		} else { // "seeker" or unknown => seeker 扱い
-			auto s = std::make_unique<SeekerEnemy>();
-			s->SetInitialPosition(spawnPos);
-			s->SetSpeed(d.speed);
-			s->SetTurnRate(d.turnRate);
-			s->SetInitialHP(d.hp);
-			s->SetColliderRadius(d.radius);
-			s->SetLifeTime(d.lifeTime);
-			s->Initialize();
+		} else {
+			auto seeker = std::make_unique<SeekerEnemy>();
+			seeker->SetInitialPosition(spawnPos);
+			seeker->SetSpeed(d.speed);
+			seeker->SetTurnRate(d.turnRate);
+			seeker->SetInitialHP(d.hp);
+			seeker->SetColliderRadius(d.radius);
+			seeker->SetLifeTime(d.lifeTime);
 
-			enemies_.push_back(std::move(s));
+			seeker->Initialize();
+			enemies_.push_back(std::move(seeker));
 		}
 
 		enemySpawnList_.erase(enemySpawnList_.begin());
@@ -154,52 +138,58 @@ void EnemyManager::Update(float dt, const Vector3& playerPos) {
 	enemySpawnTimer_ += dt;
 	SpawnEnemiesByScv(playerPos);
 
-	// ★TurretもSeekerも「ターゲット設定」を行う
-	for (auto& e : enemies_) {
-		if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
-			s->SetTarget(playerPos);
+	// 敵更新
+	for (auto& enemy : enemies_) {
+		// 敵タイプごとにターゲット設定
+		// dynamic_cast を使用している理由：
+		// EnemyManager は CharacterBase のみを保持し、
+		// 各敵固有の機能は派生クラスに委譲する設計のため
+		if (auto* seeker = dynamic_cast<SeekerEnemy*>(enemy.get())) {
+			seeker->SetTarget(playerPos);
+		} else if (auto* turret = dynamic_cast<TurretEnemy*>(enemy.get())) {
+			turret->SetTarget(playerPos);
 		}
-		if (auto* t = dynamic_cast<TurretEnemy*>(e.get())) {
-			t->SetTarget(playerPos);
-		}
-		e->Update();
+
+		enemy->Update();
 	}
 
+	// 爆発エフェクト更新
 	for (auto& p : explosionParticles_) {
 		p->Update(dt);
 	}
+
 	explosionParticles_.erase(
 	    std::remove_if(explosionParticles_.begin(), explosionParticles_.end(), [](const std::unique_ptr<DamageParticle>& p) { return p->IsFinished(); }), explosionParticles_.end());
 }
 
 void EnemyManager::Draw(const Camera* camera) {
-	for (auto& e : enemies_) {
-		e->Draw(camera);
+	for (auto& enemy : enemies_) {
+		enemy->Draw(camera);
 	}
-	if (explosionModel_) {
-		for (auto& p : explosionParticles_) {
-			p->Draw(camera);
-		}
-	}
-}
 
-void EnemyManager::SpawnExplosionAt(const KamataEngine::Vector3& pos) {
-	if (!explosionModel_)
-		return;
-
-	static std::mt19937 rng{std::random_device{}()};
-	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-
-	for (int i = 0; i < kExplosionParticleCount; ++i) {
-		Vector3 vel{dist(rng) * kExplosionSpeed, dist(rng) * kExplosionSpeed, dist(rng) * kExplosionSpeed};
-
-		auto p = std::make_unique<DamageParticle>();
-		p->Initialize(explosionModel_, pos, vel, kExplosionLifeTime, kExplosionStartScale, kExplosionEndScale);
-		explosionParticles_.push_back(std::move(p));
+	for (auto& p : explosionParticles_) {
+		p->Draw(camera);
 	}
 }
 
 void EnemyManager::RemoveDeadEnemies() {
-	// ★Seeker固定だったのを共通化（Turretも含めて削除できる）
 	enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
+}
+
+void EnemyManager::SpawnExplosionAt(const Vector3& pos) {
+	if (!explosionModel_) {
+		return;
+	}
+
+	static std::mt19937 rng{std::random_device{}()};
+	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+	for (int32_t i = 0; i < kExplosionParticleCount; ++i) {
+		Vector3 vel{dist(rng) * kExplosionSpeed, dist(rng) * kExplosionSpeed, dist(rng) * kExplosionSpeed};
+
+		auto p = std::make_unique<DamageParticle>();
+		p->Initialize(explosionModel_, pos, vel, kExplosionLifeTime, kExplosionStartScale, kExplosionEndScale);
+
+		explosionParticles_.push_back(std::move(p));
+	}
 }

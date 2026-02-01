@@ -1,29 +1,33 @@
 #include "CameraShake.h"
 
+#include "Application/Utility/MyMath/MyMath.h"
+
 using namespace KamataEngine;
 
-void CameraShake::AddShake(const KamataEngine::Vector3& direction, float power) {
-	// 方向ベクトルの長さが極端に小さい場合は無視
-	if (MyMath::Length(direction) < 0.0001f) {
+void CameraShake::AddShake(const Vector3& direction, float power) {
+	// 極端に小さい方向ベクトルはノイズになるため無視する
+	if (MyMath::Length(direction) < kMinDirectionLength) {
 		return;
 	}
 
-	// 正規化してから力を加える
-	Vector3 dir = MyMath::Normalize(direction);
-	velocity_ = MyMath::Add(velocity_, MyMath::Multiply(dir, power));
+	// 方向のみを利用するため正規化してから力を加える
+	const Vector3 normalizedDir = MyMath::Normalize(direction);
+	velocity_ = MyMath::Add(velocity_, MyMath::Multiply(normalizedDir, power));
 }
 
 void CameraShake::Update() {
-	// 速度を加算
+	// 速度を位置に反映
 	offset_ = MyMath::Add(offset_, velocity_);
-	// 減衰
-	velocity_ = MyMath::Multiply(velocity_, decay_);
-	// オフセットも減衰
-	offset_ = MyMath::Multiply(offset_, decay_);
+
+	// 速度を減衰させ、揺れが徐々に収束するようにする
+	velocity_ = MyMath::Multiply(velocity_, kDecayRate);
+
+	// オフセット自体も減衰させ、残り揺れを抑える
+	offset_ = MyMath::Multiply(offset_, kDecayRate);
 }
 
 void CameraShake::Reset() {
-	// リセット
-	offset_ = {0, 0, 0};
-	velocity_ = {0, 0, 0};
+	// 揺れ状態を完全に初期化する
+	offset_ = kZeroVector;
+	velocity_ = kZeroVector;
 }

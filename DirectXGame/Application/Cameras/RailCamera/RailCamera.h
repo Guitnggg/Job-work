@@ -57,22 +57,29 @@ public:
 	KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
 
 private:
-	KamataEngine::WorldTransform worldTransform_; // ワールド変換データ
-	KamataEngine::Camera* camera_ = nullptr;      // カメラ（ビューポート）
-
+	// ===== 定数 =====
 	static constexpr float kInitialZ = -50.0f; // 初期Z位置
 	static constexpr float kMoveSpeedZ = 0.1f; // Z方向移動速度（1フレーム）
 
+	static constexpr float kFollowRate = 0.1f;      // 遅延追従補間率
+	static constexpr float kMaxRollAngle = 0.35f;   // 最大ロール角（ラジアン）
+	static constexpr float kRollFollowRate = 0.15f; // ロール補間率
+
+	static constexpr float kRollPosOffsetX = 5.0f; // ロールによるX位置補正量
+	static constexpr float kRollPosOffsetY = 0.5f; // ロールによるY位置補正量
+
+private:
+	// ===== 基本 =====
+	KamataEngine::WorldTransform worldTransform_; // ワールド変換データ
+	KamataEngine::Camera* camera_ = nullptr;      // カメラ（ビューポート）
+
+	// ===== 遅延追従 =====
 	KamataEngine::Vector3 lagCameraPos_{};
-	float followRate_ = 0.1f;
 
 	// ===== カメラシェイク =====
 	CameraShake cameraShake_;
 
-	// ===== カメラの傾き =====
-	float rollAngle_ = 0.0f;       // 現在の傾き角度
-	float targetRollAngle_ = 0.0f; // 目標傾き角度
-
-	float maxRollAngle_ = 0.35f;   // 最大傾き角度（ラジアン）
-	float rollFollowRate_ = 0.15f; // 補完率
+	// ===== ロール補間 =====
+	float rollAngle_ = 0.0f;       // 現在のロール角
+	float targetRollAngle_ = 0.0f; // 目標ロール角
 };

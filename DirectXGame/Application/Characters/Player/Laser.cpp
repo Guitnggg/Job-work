@@ -1,59 +1,49 @@
 #include "Laser.h"
+
 #include <cmath>
 
 using namespace KamataEngine;
 
-// ===== Laser.cpp 専用定数（実装詳細）=====
-namespace {
-// 固定Δt
-constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
-// 見た目スケール（細長いレーザー）
-constexpr Vector3 kLaserScale{1.0f, 1.0f, 10.0f};
-
-// コライダー半径（少し太めにして当てやすく）
-constexpr float kColliderRadius = 1.0f;
-
-// 姿勢リセット
-constexpr Vector3 kZeroRot{0.0f, 0.0f, 0.0f};
-} // namespace
-
 void Laser::Initialize() {
-	// 親クラスの初期化
+	// 基底クラス初期化
 	CharacterBase::Initialize();
 
-	// 見た目
+	// モデル生成（レーザー用）
 	model_.reset(Model::CreateFromOBJ("Beam", true));
 
-	// 細長く
+	// 細長いスケール
 	worldTransform_.scale_ = kLaserScale;
 	worldTransform_.UpdateMatrix();
 
-	// コライダー
+	// コライダー設定
 	if (collider_) {
 		collider_->SetRadius(kColliderRadius);
 		collider_->SetTranslate(GetWorldTranslation());
 		collider_->Update();
 	}
+
+	// 状態初期化
+	isDead_ = false;
+	elapsedTimeSec_ = 0.0f;
 }
 
 void Laser::FireFrom(const Vector3& worldPos, const Vector3& dir) {
-	// 座標、進行方向セット
+	// 発射位置・方向設定
 	worldTransform_.translation_ = worldPos;
 	dir_ = dir;
 
-	// 飛行距離カウントの基準座標
+	// 距離計測の基準点
 	startPos_ = worldPos;
 
-	// 姿勢リセット
-	worldTransform_.rotation_ = kZeroRot;
+	// 姿勢初期化
+	worldTransform_.rotation_ = kZeroRotation;
 	worldTransform_.UpdateMatrix();
 
-	// 経過時間・生存
+	// 状態リセット
 	elapsedTimeSec_ = 0.0f;
 	isDead_ = false;
 
-	// コライダー追従
+	// コライダー同期
 	if (collider_) {
 		collider_->SetTranslate(GetWorldTranslation());
 		collider_->Update();
@@ -65,10 +55,10 @@ void Laser::Update() {
 		return;
 	}
 
-	const float dt = kFixedDeltaTime;
-	elapsedTimeSec_ += dt;
+	// 固定Δt
+	elapsedTimeSec_ += kFixedDeltaTime;
 
-	// 前進（Bullet よりやや速めにしたい場合は speed_ を上げる）
+	// 前進
 	worldTransform_.translation_.x += dir_.x * speed_;
 	worldTransform_.translation_.y += dir_.y * speed_;
 	worldTransform_.translation_.z += dir_.z * speed_;
@@ -81,16 +71,17 @@ void Laser::Update() {
 		collider_->Update();
 	}
 
-	// 発射位置からの距離を計算して一定距離を超えたら消す
-	const Vector3 p = GetWorldTranslation();
-	Vector3 diff = {p.x - startPos_.x, p.y - startPos_.y, p.z - startPos_.z};
-	float distanceSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+	// 距離判定
+	const Vector3 pos = GetWorldTranslation();
+	const Vector3 diff{pos.x - startPos_.x, pos.y - startPos_.y, pos.z - startPos_.z};
 
-	if (distanceSq > maxDistance_ * maxDistance_) {
+	const float distanceSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+
+	if (distanceSq > kMaxDistance * kMaxDistance) {
 		isDead_ = true;
 	}
 
-	// 寿命でも消す
+	// 寿命判定
 	if (elapsedTimeSec_ >= lifeTimeSec_) {
 		isDead_ = true;
 	}
@@ -100,16 +91,14 @@ void Laser::Draw(const Camera* camera) {
 	if (!camera || isDead_) {
 		return;
 	}
+
 	if (model_) {
 		model_->Draw(worldTransform_, *camera, textureHandle_);
 	}
 }
 
 void Laser::OnCollision(CharacterBase* /*other*/) {
-	// レーザーの挙動は好みで切替：
-	// 1) 1発で消えるレーザー：isDead_ = true;
-	// 2) 貫通レーザー：何もしない（デフォルト）
-	//
-	// まずは「貫通」だと強すぎる場合があるので、必要なら下を有効化してください。
+	// デフォルトは貫通レーザー
+	// 即消滅にしたい場合は下を有効化
 	// isDead_ = true;
 }

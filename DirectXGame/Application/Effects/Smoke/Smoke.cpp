@@ -2,59 +2,66 @@
 
 using namespace KamataEngine;
 
-void Smoke::Initialize(KamataEngine::Model* model,
-    const KamataEngine::Vector3& position,
-    const KamataEngine::Vector3& velocity,
-    float lifeTime,
-    float startScale,
-    float endScale
-) {
-    // パラメータ受け取り
-    model_ = model;
-    velocity_ = velocity;
-    elapsedTimeSec_ = 0.0f;
-    lifeTimeSec_ = lifeTime;
-    startScale_ = startScale;
-    endScale_ = endScale;
-    isFinished_ = false;
+void Smoke::Initialize(Model* model, const Vector3& position, const Vector3& velocity, float lifeTime, float startScale, float endScale) {
+	// ===== パラメータ設定 =====
+	model_ = model;          // 非所有
+	velocity_ = velocity;    // 移動速度
+	lifeTimeSec_ = lifeTime; // 寿命
+	startScale_ = startScale;
+	endScale_ = endScale;
 
-    // ワールド変換の初期化
-    worldTransform_.Initialize();
-    worldTransform_.translation_ = position;
-    worldTransform_.rotation_ = { 0.0f, 0.0f, 0.0f };
-    worldTransform_.scale_ = { startScale_, startScale_, startScale_ };
-    worldTransform_.UpdateMatrix();
+	elapsedTimeSec_ = 0.0f;
+	isFinished_ = false;
+
+	// ===== ワールド変換初期化 =====
+	worldTransform_.Initialize();
+	worldTransform_.translation_ = position;
+	worldTransform_.rotation_ = {0.0f, 0.0f, 0.0f};
+	worldTransform_.scale_ = {startScale_, startScale_, startScale_};
+
+	worldTransform_.UpdateMatrix();
 }
 
 void Smoke::Update(float dt) {
-    if (isFinished_) { return; }
+	// 終了している場合は更新しない
+	if (isFinished_) {
+		return;
+	}
 
-    // 経過時間
-    elapsedTimeSec_ += dt;
-    if (elapsedTimeSec_ >= lifeTimeSec_) {
-        isFinished_ = true;
-        return;
-    }
+	// ===== 時間進行 =====
+	elapsedTimeSec_ += dt;
+	if (elapsedTimeSec_ >= lifeTimeSec_) {
+		isFinished_ = true;
+		return;
+	}
 
-    // 位置更新
-    worldTransform_.translation_.x += velocity_.x;
-    worldTransform_.translation_.y += velocity_.y;
-    worldTransform_.translation_.z += velocity_.z;
+	// ===== 移動（dt対応）=====
+	worldTransform_.translation_.x += velocity_.x * dt;
+	worldTransform_.translation_.y += velocity_.y * dt;
+	worldTransform_.translation_.z += velocity_.z * dt;
 
-    // スケール補間（線形）
-    float t = elapsedTimeSec_ / lifeTimeSec_;
-    if (t < 0.0f) t = 0.0f;
-    if (t > 1.0f) t = 1.0f;
-    float scale = startScale_ + (endScale_ - startScale_) * t;
-    if (scale < 0.0f) scale = 0.0f;
+	// ===== スケール補間 =====
+	float t = 1.0f;
+	if (lifeTimeSec_ > 0.0f) {
+		t = elapsedTimeSec_ / lifeTimeSec_;
+		if (t < 0.0f)
+			t = 0.0f;
+		if (t > 1.0f)
+			t = 1.0f;
+	}
 
-    worldTransform_.scale_ = { scale, scale, scale };
+	const float scale = startScale_ + (endScale_ - startScale_) * t;
+	worldTransform_.scale_ = {(scale < 0.0f) ? 0.0f : scale, (scale < 0.0f) ? 0.0f : scale, (scale < 0.0f) ? 0.0f : scale};
 
-    // 行列更新
-    worldTransform_.UpdateMatrix();
+	// ===== 行列更新 =====
+	worldTransform_.UpdateMatrix();
 }
 
 void Smoke::Draw(const Camera* camera) {
-    if (isFinished_) { return; }
-    model_->Draw(worldTransform_, *camera);
+	// 無効な状態では描画しない
+	if (isFinished_ || !camera || !model_) {
+		return;
+	}
+
+	model_->Draw(worldTransform_, *camera);
 }
