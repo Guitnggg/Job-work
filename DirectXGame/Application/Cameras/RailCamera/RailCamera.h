@@ -33,26 +33,26 @@ public:
 
 public:
 	/// <summary>
-	/// カメラシェイク追加
+	/// カメラシェイクを追加する
 	/// </summary>
-	/// <param name="dir"></param>
-	/// <param name="power"></param>
+	/// <param name="dir">揺れの方向</param>
+	/// <param name="power">揺れの強さ</param>
 	void AddShake(const KamataEngine::Vector3& dir, float power);
 
 	/// <summary>
-	/// 移動入力による傾き設定
+	/// 移動入力によるロール角の目標値を設定
 	/// </summary>
-	/// <param name="inputX">-1.0(左)～+1.0(右)</param>
+	/// <param name="inputX">-1.0（左）～ +1.0（右）</param>
 	void SetMoveInput(float inputX);
 
 public:
 	/// <summary>
-	/// カメラの取得
+	/// カメラ取得（所有権は渡さない）
 	/// </summary>
-	const KamataEngine::Camera* GetCamera() { return camera_; }
+	const KamataEngine::Camera* GetCamera() const { return camera_; }
 
 	/// <summary>
-	/// Getter
+	/// ワールド変換取得
 	/// </summary>
 	KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
 
@@ -65,16 +65,16 @@ private:
 	static constexpr float kMaxRollAngle = 0.35f;   // 最大ロール角（ラジアン）
 	static constexpr float kRollFollowRate = 0.15f; // ロール補間率
 
-	static constexpr float kRollPosOffsetX = 5.0f; // ロールによるX位置補正量
-	static constexpr float kRollPosOffsetY = 0.5f; // ロールによるY位置補正量
+	static constexpr float kRollPosOffsetX = 5.0f;  // ロールによるX位置補正量
+	static constexpr float kRollPosOffsetY = 0.5f;  // ロールによるY位置補正量
 
 private:
 	// ===== 基本 =====
-	KamataEngine::WorldTransform worldTransform_; // ワールド変換データ
-	KamataEngine::Camera* camera_ = nullptr;      // カメラ（ビューポート）
+	KamataEngine::WorldTransform worldTransform_; // レール基準のワールド変換
+	KamataEngine::Camera* camera_ = nullptr;      // カメラ（このクラスが生成・破棄を管理）
 
 	// ===== 遅延追従 =====
-	KamataEngine::Vector3 lagCameraPos_{};
+	KamataEngine::Vector3 lagCameraPos_{}; // 遅延追従用の仮想カメラ位置
 
 	// ===== カメラシェイク =====
 	CameraShake cameraShake_;
