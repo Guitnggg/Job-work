@@ -3,19 +3,22 @@
 using namespace KamataEngine;
 
 void Skydome::Initialize(KamataEngine::Camera* camera) {
-    // Skydome.objからモデル読み込み
+    // 天球モデルを読み込み
+    // ※ Model の生成・破棄はエンジン側で管理される想定
     model_ = Model::CreateFromOBJ("skydome");
+
     // ワールド変換を初期化
-    worldTransform_.Initialize();   
-    // カメラ参照を保存
+    worldTransform_.Initialize();
+
+    // 描画に使用するカメラ参照を保持（所有権は持たない）
     camera_ = camera;
 }
 
 void Skydome::Update() {
-    // 現状特に処理なし
+    // 天球は常時固定表示のため、現状更新処理なし
 }
 
 void Skydome::Draw() {
-    // ワールド変換とカメラ行列を使用してモデルを描画
+    // ワールド変換とカメラを使用して天球を描画
     model_->Draw(worldTransform_, *camera_);
 }

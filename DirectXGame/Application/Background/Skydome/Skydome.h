@@ -6,6 +6,7 @@
 
 /// <summary>
 /// 天球描画クラス
+/// ゲームシーンの背景として常時表示される天球モデルを描画する
 /// </summary>
 class Skydome {
 public:

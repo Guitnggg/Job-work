@@ -2,6 +2,10 @@
 
 #include "math/Vector3.h"
 
+/// <summary>
+/// カメラシェイク制御クラス
+/// カメラに対して揺れ演出（シェイク）を付加する
+/// </summary>
 class CameraShake {
 public:
 	/// <summary>
@@ -17,12 +21,12 @@ public:
 	void Update();
 
 	/// <summary>
-	/// リセット
+	/// 揺れ状態をリセットする
 	/// </summary>
 	void Reset();
 
 	/// <summary>
-	/// オフセット
+	/// 現在のカメラオフセットを取得する
 	/// </summary>
 	/// <returns></returns>
 	const KamataEngine::Vector3& GetOffset() const { return offset_; }
@@ -37,6 +41,6 @@ private:
 private:
 	// ===== メンバ変数 =====
 	KamataEngine::Vector3 offset_{};  // カメラオフセット
-	KamataEngine::Vector3 velocity_{};  // カメラ速度
+	KamataEngine::Vector3 velocity_{};  // 揺れ用速度ベクトル
 
 };
