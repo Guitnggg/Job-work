@@ -9,7 +9,7 @@ void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<
 	}
 
 	// プレイヤー側コライダー取得
-	Collider* playerCollider = player->GetCollider().get();
+	Collider* playerCollider = player->GetCollider();
 	if (!playerCollider) {
 		return;
 	}
@@ -22,7 +22,7 @@ void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<
 		if (!e) {
 			continue;
 		}
-		Collider* enemyCollider = e->GetCollider().get();
+		Collider* enemyCollider = e->GetCollider();
 		if (!enemyCollider) {
 			continue;
 		}
@@ -57,7 +57,7 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
 			continue;
 		}
 
-		Collider* bc = b->GetCollider().get();
+		Collider* bc = b->GetCollider();
 		if (!bc) {
 			continue;
 		}
@@ -78,7 +78,7 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
 				}
 			}
 
-			Collider* enemyCollider = e->GetCollider().get();
+			Collider* enemyCollider = e->GetCollider();
 			if (!enemyCollider) {
 				continue;
 			}
@@ -116,7 +116,7 @@ void CollisionManager::ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<L
 			continue;
 		}
 
-		Collider* laserCollider = r->GetCollider().get();
+		Collider* laserCollider = r->GetCollider();
 		if (!laserCollider) {
 			continue;
 		}
@@ -129,7 +129,7 @@ void CollisionManager::ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<L
 				continue;
 			}
 
-			Collider* enemyCollider = e->GetCollider().get();
+			Collider* enemyCollider = e->GetCollider();
 			if (!enemyCollider) {
 				continue;
 			}
