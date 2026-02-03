@@ -1,13 +1,11 @@
 #pragma once
 
 #include <KamataEngine.h>
-#include <vector>
-#include <random>
-#include <memory>
 #include <algorithm>
 #include <cmath>
+#include <memory>
 
-#include "Application/Objects/Asteroid/Asteroid.h"
+#include "Application/Objects/Asteroid/AsteroidField.h"
 #include "Application/Background/Skydome/Skydome.h"
 #include "UI/Score/Score.h"
 
@@ -64,7 +62,7 @@ public:
     /// <summary>
     /// シーン終了後に遷移するシーンを返す
     /// </summary>
-    IScene* NextScene() const override;
+    std::unique_ptr<IScene> NextScene() const override;
 
     /// <summary>
     /// デバック用：シーン名取得
@@ -76,7 +74,6 @@ private:
     // DirectX / 入力 / カメラ / 行列
     KamataEngine::DirectXCommon* dxCommon_ = nullptr;
     KamataEngine::Input* input_ = nullptr;
-    KamataEngine::WorldTransform* worldTransform_ = nullptr;
     KamataEngine::Camera camera_;
 
     // 効果音
@@ -84,16 +81,8 @@ private:
     uint32_t pointSEHandle_ = 0;
 
     // 背景（天球 / 小惑星）
-    Skydome* skydome_ = nullptr;
-    KamataEngine::Model* asteroidModel_ = nullptr;
-    std::vector<Asteroid*> asteroids_;
-    int   asteroidCount_ = 10;
-    float spawnZMin_ = 0.0f;
-    float spawnZMax_ = 140.0f;
-    float recycleZ_ = -50.0f;
-    float spawnInterval_ = 1.0f;
-    float spawnTimer_ = 0.0f;
-    std::mt19937 mt_{ std::random_device{}() };
+	std::unique_ptr<Skydome> skydome_;
+	AsteroidField asteroidField_;
 
     // 演出フェーズ
     ClearPhase phase_ = ClearPhase::CameraMove;
@@ -105,25 +94,13 @@ private:
     Score scoreUI_;
 
     // GAME CLEAR テキスト
-    KamataEngine::Sprite* clearTextSprite_ = nullptr;
+	std::unique_ptr<KamataEngine::Sprite> clearTextSprite_;
     KamataEngine::Vector2 clearTextBaseSize_ = { 512.0f * 2, 128.0f * 2 };
 
     // RETURN テキスト（スペースでタイトルに戻る）
-    KamataEngine::Sprite* returnTextSprite_ = nullptr;
+	std::unique_ptr<KamataEngine::Sprite> returnTextSprite_;
     KamataEngine::Vector2 returnTextBaseSize_ = { 1024.0f, 128.8f };
 
     // 終了フラグ
     bool isEnd_ = false;
-
-private:
-
-    /// <summary>
-    /// 小惑星を生成して配列へ登録
-    /// </summary>
-    Asteroid* SpawnAsteroid();
-
-    /// <summary>
-    /// 指定範囲の乱数を返す
-    /// </summary>
-    float Rand(float min, float max);
 };

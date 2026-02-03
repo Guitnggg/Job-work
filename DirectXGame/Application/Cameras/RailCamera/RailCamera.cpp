@@ -6,10 +6,7 @@ using namespace KamataEngine;
 
 RailCamera::RailCamera() {}
 
-RailCamera::~RailCamera() { 
-	delete camera_;
-	camera_ = nullptr;
-}
+RailCamera::~RailCamera() {}
 
 void RailCamera::Initialize() {
     // ワールド変換データ初期化
@@ -17,7 +14,7 @@ void RailCamera::Initialize() {
     worldTransform_.translation_ = { 0,0,kInitialZ };
 
     // カメラ生成
-    camera_ = new Camera();
+	camera_ = std::make_unique<Camera>();
     camera_->Initialize();
 }
 

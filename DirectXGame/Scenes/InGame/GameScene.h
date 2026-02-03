@@ -157,7 +157,7 @@ private:
 
 public:
     bool IsEnd() const override { return isEnd_; }
-    IScene* NextScene() const override;
+	std::unique_ptr<IScene> NextScene() const override;
 
     SceneName GetSceneName() const override { return SceneName::InGame; }
 

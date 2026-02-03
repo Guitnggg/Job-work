@@ -93,7 +93,7 @@ void GameScene::Initialize() {
 	// ===== 弾・敵 =====
 	bulletManager_.Initialize();
 	enemyManager_.Initialize();
-	enemyManager_.LoadEnemyScv("Resources/levels/stage1_more_enemies_turret_balanced.json");
+	enemyManager_.LoadEnemyCsv("Resources/levels/stage1_more_enemies_turret_balanced.json");
 
 	// ===== 開始 =====
 	countDown_.Start();
@@ -583,20 +583,20 @@ void GameScene::DrawInstruction() {
 	}
 }
 
-IScene* GameScene::NextScene() const {
+std::unique_ptr<IScene> GameScene::NextScene() const {
 	// Pause 由来の遷移を最優先
 	if (requestRetry_) {
-		return new GameScene();
+		return std::make_unique<GameScene>();
 	}
 
 	if (requestToTitle_) {
-		return new TitleScene();
+		return std::make_unique<TitleScene>();
 	}
 
 	// 結果に応じて遷移先を切り替える
 	if (result_ == GameResult::Clear) {
-		return new ClearScene(clearScore_); // クリア時
+		return std::make_unique<ClearScene>(clearScore_); // クリア時
 	} else {
-		return new FinishScene(); // 失敗時（Fail or None）
+		return std::make_unique<FinishScene>(); // 失敗時（Fail or None）
 	}
 }

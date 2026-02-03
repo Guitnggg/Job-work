@@ -1,11 +1,10 @@
 #pragma once
 
 #include <KamataEngine.h>
-#include <vector>
-#include <random>
+#include <memory>
 
 #include "Application/Background/Skydome/Skydome.h"
-#include "Application/Objects/Asteroid/Asteroid.h"
+#include "Application/Objects/Asteroid/AsteroidField.h"
 
 #include "Scenes/IScene.h"
 class TitleScene;
@@ -52,7 +51,7 @@ public:
     /// <summary>
     /// シーン終了後の遷移先
     /// </summary>
-    IScene* NextScene() const override;
+	std::unique_ptr<IScene> NextScene() const override;
 
     /// <summary>
     /// デバック・識別用シーン名取得
@@ -64,14 +63,13 @@ private:
     // DirectX / カメラ / 入力
     KamataEngine::DirectXCommon* dxCommon_ = nullptr;
     KamataEngine::Input* input_ = nullptr;
-    KamataEngine::WorldTransform* worldTransform_ = nullptr;
     KamataEngine::Camera camera_;
 
     // UIスプライト
     uint32_t finishTextureHandle_ = 0;
-    KamataEngine::Sprite* finishSprite_ = nullptr;
+	std::unique_ptr<KamataEngine::Sprite> finishSprite_;
     uint32_t returnTextureHandle_ = 0;
-    KamataEngine::Sprite* returnSprite_ = nullptr;
+	std::unique_ptr<KamataEngine::Sprite> returnSprite_;
 
     // 効果音
     uint32_t changeSEHandle_ = 0;
@@ -81,29 +79,9 @@ private:
     float blinkInterval_ = 1.0f;
 
     // 背景演出（天球 / 小惑星）
-    Skydome* skydome_ = nullptr;
-    KamataEngine::Model* asteroidModel_ = nullptr;
-    std::vector<Asteroid*> asteroids_;
-    int   asteroidCount_ = 10;
-    float spawnZMin_ = 0.0f;
-    float spawnZMax_ = 140.0f;
-    float recycleZ_ = -50.0f;
-    float spawnInterval_ = 1.0f;
-    float spawnTimer_ = 0.0f;
-    std::mt19937 mt_{ std::random_device{}() };
+	std::unique_ptr<Skydome> skydome_;
+	AsteroidField asteroidField_;
 
     // 終了フラグ
     bool isEnd_ = false;
-
-private:
-
-    /// <summary>
-    /// 小惑星をランダム生成して登録
-    /// </summary>
-    Asteroid* SpawnAsteroid();
-
-    /// <summary>
-    /// 乱数を[min,max]の範囲で生成
-    /// </summary>
-    float Rand(float min, float max);
 };

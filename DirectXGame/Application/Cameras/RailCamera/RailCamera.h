@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <3d/Camera.h>
 #include <3d/WorldTransform.h>
 
@@ -49,7 +51,7 @@ public:
 	/// <summary>
 	/// カメラの取得
 	/// </summary>
-	const KamataEngine::Camera* GetCamera() { return camera_; }
+	const KamataEngine::Camera* GetCamera() { return camera_.get(); }
 
 	/// <summary>
 	/// Getter
@@ -71,7 +73,7 @@ private:
 private:
 	// ===== 基本 =====
 	KamataEngine::WorldTransform worldTransform_; // ワールド変換データ
-	KamataEngine::Camera* camera_ = nullptr;      // カメラ（ビューポート）
+	std::unique_ptr<KamataEngine::Camera> camera_; // カメラ（ビューポート）
 
 	// ===== 遅延追従 =====
 	KamataEngine::Vector3 lagCameraPos_{};

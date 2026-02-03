@@ -22,27 +22,21 @@ namespace {
     constexpr float kAsteroidSpeedMax = -0.1f;
     constexpr float kAsteroidRotMin = 0.01f;
     constexpr float kAsteroidRotMax = 0.03f;
+
+    constexpr int kAsteroidCount = 10;
+    constexpr float kAsteroidSpawnZMin = 0.0f;
+    constexpr float kAsteroidSpawnZMax = 140.0f;
+    constexpr float kAsteroidRecycleZ = -50.0f;
+    constexpr float kAsteroidSpawnInterval = 1.0f;
 }
 
 TitleScene::TitleScene() {}
 
-TitleScene::~TitleScene() {
-    delete titleSprite_;
-    delete startSprite_;
-    delete asteroidModel_;
-    for (auto asteroid : asteroids_) {
-        delete asteroid;
-    }
-    delete skydome_;
-}
+TitleScene::~TitleScene() {}
 
 void TitleScene::Initialize() {
     // 各初期化処理
     dxCommon_ = DirectXCommon::GetInstance();
-
-    // ワールド変換データ
-    worldTransform_ = new WorldTransform();
-    worldTransform_->Initialize();
 
     // カメラ
     camera_.Initialize();
@@ -52,24 +46,32 @@ void TitleScene::Initialize() {
 
     // 各種テクスチャ
     titleTextureHandle_ = TextureManager::Load("./Resources/title/GameTitle.png");
-    titleSprite_ = Sprite::Create(titleTextureHandle_, titlePosition_);
+	titleSprite_.reset(Sprite::Create(titleTextureHandle_, titlePosition_));
 
     startTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
-    startSprite_ = Sprite::Create(startTextureHandle_, { 150.0f,550.0f });
+	startSprite_.reset(Sprite::Create(startTextureHandle_, {150.0f, 550.0f}));
     startSprite_->SetColor({ 1.0f,1.0f,1.0f,0.0f });  // 最初は透明
 
     // 各種サウンド
     changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
 
     // 小惑星生成
-    asteroidModel_ = Model::CreateFromOBJ("Asteroid", true);
-    asteroids_.reserve(kAsteroidCount);
-    for (int i = 0; i < kAsteroidCount; i++) {
-        SpawnAsteroid();
-    }
+	AsteroidFieldConfig asteroidConfig{};
+	asteroidConfig.count = kAsteroidCount;
+	asteroidConfig.spawnZMin = kAsteroidSpawnZMin;
+	asteroidConfig.spawnZMax = kAsteroidSpawnZMax;
+	asteroidConfig.recycleZ = kAsteroidRecycleZ;
+	asteroidConfig.spawnInterval = kAsteroidSpawnInterval;
+	asteroidConfig.rangeX = kAsteroidRangeX;
+	asteroidConfig.rangeY = kAsteroidRangeY;
+	asteroidConfig.speedMin = kAsteroidSpeedMin;
+	asteroidConfig.speedMax = kAsteroidSpeedMax;
+	asteroidConfig.rotationMin = kAsteroidRotMin;
+	asteroidConfig.rotationMax = kAsteroidRotMax;
+	asteroidField_.Initialize(asteroidConfig);
 
     // 天球
-    skydome_ = new Skydome();
+	skydome_ = std::make_unique<Skydome>();
     skydome_->Initialize(&camera_);
 }
 
@@ -78,28 +80,7 @@ void TitleScene::Update() {
     skydome_->Update();
 
     // 小惑星出現タイマー更新
-    const float dt = kFixedDeltaTime;
-    spawnTimer_ += dt;
-
-    // 小惑星更新
-    for (auto* asteroid : asteroids_) {
-        asteroid->Update();
-
-        // 画面から見えなくなったらリスポーン
-        if (asteroid->GetZ() < recycleZ_ && spawnTimer_ >= spawnInterval_) {
-            spawnTimer_ = 0.0f;
-
-            Vector3 pos = {
-                Rand(-25.0f,25.0f),
-                Rand(-15.0f,15.0f),
-                Rand(spawnZMin_,spawnZMax_)
-            };
-            Vector3 velocity = { 0.0f,0.0f,Rand(-0.3f,-0.1f) };
-            Vector3 rotate = { Rand(0.01f,0.03f),Rand(0.01f,0.03f),Rand(0.01f,0.03f) };
-
-            asteroid->Respawn(pos, velocity, rotate);
-        }
-    }
+	asteroidField_.Update();
 
     // Title落下用
     if (titlePosition_.y < titleTargetPosition_.y) {
@@ -165,9 +146,7 @@ void TitleScene::Draw() {
     /// </summary>
 
     // 小惑星描画
-    for (auto asteroid : asteroids_) {
-        asteroid->Draw(camera_);
-    }
+	asteroidField_.Draw(camera_);
 
     // 天球描画
     skydome_->Draw();
@@ -193,33 +172,4 @@ void TitleScene::Draw() {
 
 }
 
-IScene* TitleScene::NextScene() const {
-    return new IntroductionScene();
-}
-
-Asteroid* TitleScene::SpawnAsteroid() {
-    // 位置、速度、回転をランダムに決定
-    Vector3 pos = {
-        Rand(-kAsteroidRangeX, kAsteroidRangeX),
-        Rand(-kAsteroidRangeY, kAsteroidRangeY),
-        Rand(spawnZMin_,spawnZMax_)
-    };
-    Vector3 velocity = { 0.0f,0.0f,Rand(kAsteroidSpeedMin,kAsteroidSpeedMax) };
-    Vector3 rotate = { Rand(kAsteroidRotMin, kAsteroidRotMax),
-        Rand(kAsteroidRotMin, kAsteroidRotMax),
-        Rand(kAsteroidRotMin, kAsteroidRotMax) 
-    };
-
-    // インスタンス生成
-    Asteroid* asteroid = new Asteroid();
-    asteroid->Initialize(asteroidModel_, pos, velocity, rotate);
-
-    // 配列に登録
-    asteroids_.push_back(asteroid);
-    return asteroid;
-}
-
-float TitleScene::Rand(float min, float max) {
-    std::uniform_real_distribution<float> dist(min, max);
-    return dist(mt_);
-}
+std::unique_ptr<IScene> TitleScene::NextScene() const { return std::make_unique<IntroductionScene>(); }

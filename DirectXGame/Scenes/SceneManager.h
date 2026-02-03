@@ -32,7 +32,6 @@ enum class SceneTransitionState {
 /// </summary>
 class SceneManager {
 public:
-
     /// <summary>
     /// コンストラクタ：初期化処理
     /// </summary>
@@ -47,7 +46,7 @@ public:
     /// シーンを新しいものに切り替える
     /// </summary>
     /// <param name="newScene">次に実行するシーン</param>
-    void ChangeScene(IScene* newScene);
+	void ChangeScene(std::unique_ptr<IScene> newScene);
 
     /// <summary>
     /// 現在のシーンの更新処理
@@ -74,10 +73,9 @@ public:
     ///  最初のsceneを設定する
     /// </summary>
     /// <param name="scene"></param>
-    void SetInitialScene(IScene* scene);
+	void SetInitialScene(std::unique_ptr<IScene> scene);
 
 private:
-
     /// <summary>
     /// 自動演出判定用
     /// Title → Introduction : 黒フェード
@@ -87,8 +85,8 @@ private:
 
 private:
 
-    IScene* currentScene_ = nullptr;  // 現在実行中のシーン
-    IScene* nextScene_ = nullptr;     // 遷移予定のシーン
+    std::unique_ptr<IScene> currentScene_ = nullptr; // 現在実行中のシーン
+	std::unique_ptr<IScene> nextScene_ = nullptr;    // 遷移予定のシーン
 
     SceneTransitionState transitionState_ = SceneTransitionState::None;
 
@@ -106,6 +104,6 @@ private:
 
     bool pendingWhiteFlash_ = false;
 
-    KamataEngine::Sprite* fadeSprite_ = nullptr;
-    KamataEngine::Sprite* flashSprite_ = nullptr;
+    std::unique_ptr<KamataEngine::Sprite> fadeSprite_;
+    std::unique_ptr<KamataEngine::Sprite> flashSprite_;
 };

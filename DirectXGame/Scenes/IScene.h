@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "SceneName.h"
 
 /// <summary>
@@ -60,7 +62,7 @@ public:
     /// <summary>
     /// 次のシーンを返す（nullptr を返すとゲーム終了）
     /// </summary>
-    virtual IScene* NextScene() const = 0;
+	virtual std::unique_ptr<IScene> NextScene() const = 0;
 
     /// <summary>
     /// 現在のシーン名を返す（デバッグや切替の判定に使える）

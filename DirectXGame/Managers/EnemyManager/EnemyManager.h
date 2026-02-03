@@ -58,7 +58,7 @@ public:
 	/// <summary>
 	/// JSON 形式の敵出現データ読み込み
 	/// </summary>
-	void LoadEnemyScv(const std::string& path);
+	void LoadEnemyCsv(const std::string& path);
 
 	/// <summary>
 	/// 更新処理
@@ -86,7 +86,7 @@ private:
 	/// <summary>
 	/// 出現時間に達した敵を生成する
 	/// </summary>
-	void SpawnEnemiesByScv(const KamataEngine::Vector3& playerPos);
+	void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
 
 	/// <summary>
 	/// 指定位置に爆発エフェクトを生成する

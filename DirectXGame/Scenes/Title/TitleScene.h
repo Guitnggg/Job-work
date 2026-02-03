@@ -1,11 +1,10 @@
 #pragma once
 
 #include <KamataEngine.h>
-#include <vector>
-#include <random>
+#include <memory>
 
 #include "Application/Background/Skydome/Skydome.h"
-#include "Application/Objects/Asteroid/Asteroid.h"
+#include "Application/Objects/Asteroid/AsteroidField.h"
 
 #include "Scenes/IScene.h"
 class IntroductionScene;
@@ -52,7 +51,7 @@ public:
     /// <summary>
     /// 遷移先のシーン取得
     /// </summary>
-    IScene* NextScene()const override;
+	std::unique_ptr<IScene> NextScene() const override;
 
     /// <summary>
     /// デバック識別用のシーン名取得
@@ -62,18 +61,16 @@ public:
 private:
     KamataEngine::DirectXCommon* dxCommon_ = nullptr;  // DirectX関連の管理クラス
     KamataEngine::Input* input_ = nullptr;             // 入力管理クラス
-    KamataEngine::WorldTransform* worldTransform_;     // ワールド変換管理クラス
     KamataEngine::Camera camera_;                      // カメラ管理クラス
 
     // 各種テクスチャ
     uint32_t titleTextureHandle_ = 0;
-    KamataEngine::Sprite* titleSprite_ = nullptr;
+	std::unique_ptr<KamataEngine::Sprite> titleSprite_;
     uint32_t startTextureHandle_ = 0;
-    KamataEngine::Sprite* startSprite_ = nullptr;
+	std::unique_ptr<KamataEngine::Sprite> startSprite_;
 
     // 各種サウンド
     uint32_t changeSEHandle_ = 0;  // シーン変遷SE
-    KamataEngine::Audio* changeSE_ = nullptr;
 
     // スタート点滅用
     float blinkTimer_ = 0.0f;     // 点滅タイマー
@@ -86,30 +83,12 @@ private:
     bool isTitleFallFinished_ = false;  // 移動終了判定
 
     // 天球
-    Skydome* skydome_ = nullptr;
+	std::unique_ptr<Skydome> skydome_;
 
     // 小惑星
-    KamataEngine::Model* asteroidModel_ = nullptr;
-    std::vector<Asteroid*> asteroids_;
-    static constexpr int kAsteroidCount = 10;    // 背景に流す数
-    float spawnZMin_ = 0.0f;                     // 出現Z（奥）
-    float spawnZMax_ = 140.0f;
-    float recycleZ_ = -50.0f;                    // カメラを超えたら再出現
-    float spawnInterval_ = 1.0f;                 // 出現間隔
-    float spawnTimer_ = 0.0f;                    // 出現タイマー
-
-    // ランダム生成器
-    std::mt19937 mt_{ std::random_device{}() };
+	AsteroidField asteroidField_;
 
     // 終了フラグ
     bool isEnd_ = false;
-
-private:
-
-    // 生成
-    Asteroid* SpawnAsteroid();
-
-    // 乱数
-    float Rand(float min, float max);
 };
 

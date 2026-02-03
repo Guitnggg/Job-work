@@ -19,7 +19,7 @@ void EnemyManager::Initialize() {
 	explosionModel_ = Model::Create();
 }
 
-void EnemyManager::LoadEnemyScv(const std::string& path) {
+void EnemyManager::LoadEnemyCsv(const std::string& path) {
 	enemySpawnList_.clear();
 
 	std::ifstream ifs(path);
@@ -94,7 +94,7 @@ void EnemyManager::LoadEnemyScv(const std::string& path) {
 	std::sort(enemySpawnList_.begin(), enemySpawnList_.end(), [](const EnemySpawnData& a, const EnemySpawnData& b) { return a.time < b.time; });
 }
 
-void EnemyManager::SpawnEnemiesByScv(const Vector3& playerPos) {
+void EnemyManager::SpawnEnemiesByCsv(const Vector3& playerPos) {
 	const float currentTime = enemySpawnTimer_;
 
 	while (!enemySpawnList_.empty()) {
@@ -136,7 +136,7 @@ void EnemyManager::SpawnEnemiesByScv(const Vector3& playerPos) {
 
 void EnemyManager::Update(float dt, const Vector3& playerPos) {
 	enemySpawnTimer_ += dt;
-	SpawnEnemiesByScv(playerPos);
+	SpawnEnemiesByCsv(playerPos);
 
 	// 敵更新
 	for (auto& enemy : enemies_) {
