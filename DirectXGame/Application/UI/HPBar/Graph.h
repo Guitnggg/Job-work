@@ -55,5 +55,7 @@ private:
 
     float kBarWidth = 200.0f;
     float kBarHeight = 10.0f;
+    float kBarPosX = 24.0f;
+    float kBarPosY = 64.0f;
 };
 

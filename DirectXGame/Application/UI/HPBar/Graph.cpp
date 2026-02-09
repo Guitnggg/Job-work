@@ -16,8 +16,8 @@ void Graph::Initialize() {
 
     texHandle_ = TextureManager::Load("./Resources/white1x1.png");
 
-    backBar_ = Sprite::Create(texHandle_, { 10, 10 }, { 1, 0, 0, 1 });
-    frontBar_ = Sprite::Create(texHandle_, { 10, 10 }, { 0, 1, 0, 1 });
+    backBar_ = Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, { 1, 0, 0, 1 });
+    frontBar_ = Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, { 0, 1, 0, 1 });
 
     // 初期値を100%に設定
     value_ = 1.0f;

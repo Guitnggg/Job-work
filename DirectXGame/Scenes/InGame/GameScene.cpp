@@ -115,6 +115,11 @@ void GameScene::Initialize() {
 	// ===== Pause =====
 	pauseMenu_ = std::make_unique<PauseMenu>();
 	pauseMenu_->Initialize();
+	pauseTitleTexHandle_ = TextureManager::Load("./Resources/InGame/Pause.png");
+	pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, { kPauseTitlePosX_, kPauseTitlePosY_ }));
+	pauseTitleSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+	const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
+	pauseTitleSprite_->SetSize({ pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f });
 
 	// ===== その他 =====
 	isEnd_ = false;
@@ -277,8 +282,15 @@ void GameScene::Draw() {
 	}
 
 	// Pauseメニュー
-	if (isPaused_) {
+	if (isPaused_) {		
 		pauseMenu_->Draw();
+	}
+
+	// Pauseガイド
+	if (!isPaused_ && state_ == GameState::Playing) {
+		if (pauseTitleSprite_) {
+			pauseTitleSprite_->Draw();
+		}
 	}
 
 	Sprite::PostDraw();

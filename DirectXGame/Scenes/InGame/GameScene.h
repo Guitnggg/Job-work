@@ -247,6 +247,11 @@ private:
     bool isPaused_ = false;
     bool wasPaused_ = false;
     std::unique_ptr<PauseMenu> pauseMenu_;
+    std::unique_ptr<KamataEngine::Sprite> pauseTitleSprite_;
+    uint32_t pauseTitleTexHandle_ = 0;
+    static constexpr float kScreenWidth_ = 1280.0f;
+    static constexpr float kPauseTitlePosX_ = 20.0f;
+    static constexpr float kPauseTitlePosY_ = 16.0f;
 
     // ポーズからの遷移要求
 	bool requestRetry_ = false;
