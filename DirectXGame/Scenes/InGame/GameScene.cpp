@@ -16,7 +16,6 @@ GameScene::~GameScene() {
 	delete worldTransform_;
 	delete model_;
 
-	delete smokeModel_;
 }
 
 void GameScene::Initialize() {
@@ -54,16 +53,16 @@ void GameScene::Initialize() {
 	damageParticles_.clear();
 
 	// ===== エンジンスモーク初期化 =====
-	smokeModel_ = Model::CreateSphere();
-	engineSmokes_.clear();
+	engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
+	engineSmokeEmitter_->Initialize(256);
 	smokeEmitTimer_ = 0.0f;
 
 	// ===== 通常時スモーク =====
 	normalSmokeParams_ = {
 	    0.08f, // emitInterval
-	    0.15f, // lifeTime
+	    1.0f, // lifeTime
 	    0.14f, // startScale
-	    1,     // burstCount
+	    3,     // burstCount
 	    -0.8f  // baseZSpeed
 	};
 
@@ -194,10 +193,10 @@ void GameScene::Update() {
 		BattleUpdate(dt);
 		UIUpdate();
 		DamageParticleUpdate(dt);
-		EngineSmokesUpdate(dt);
-		SpeedLineUpdate(dt);
 		JudgeResultAndStartClear();
 		ClearAnimationUpdate(dt);
+		EngineSmokesUpdate(dt);
+		SpeedLineUpdate(dt);
 		break;
 	}
 
@@ -244,14 +243,7 @@ void GameScene::Draw() {
 	if (state_ == GameState::Playing && result_ == GameResult::None) {
 
 		// スピードライン
-		speedLine_.Draw();
-
-		// エンジンスモーク
-		if (smokeModel_) {
-			for (auto& s : engineSmokes_) {
-				s->Draw(cam);
-			}
-		}
+		speedLine_.Draw();		
 
 		// ダメージパーティクル
 		if (damageParticleModel_) {
@@ -263,6 +255,13 @@ void GameScene::Draw() {
 		// 敵・弾
 		enemyManager_.Draw(cam);
 		bulletManager_.Draw(cam);
+
+		// エンジンスモークは通常時とクリア演出中に描画
+		const bool canDrawSmoke = (state_ == GameState::Playing) &&
+			((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
+		if (canDrawSmoke && engineSmokeEmitter_) {
+			engineSmokeEmitter_->Draw(cam);
+		}
 	}
 
 	Model::PostDraw();
@@ -420,17 +419,15 @@ void GameScene::EngineSmokesUpdate(float dt) {
 		for (int i = 0; i < params.burstCount; ++i) {
 			Vector3 vel{xyDist(rng), xyDist(rng), params.baseZSpeed + zDist(rng)};
 
-			auto smoke = std::make_unique<Smoke>();
-			smoke->Initialize(smokeModel_, spawnPos, vel, params.lifeTime, params.startScale, 0.0f);
-			engineSmokes_.push_back(std::move(smoke));
+			if (engineSmokeEmitter_) {
+				engineSmokeEmitter_->Emit(spawnPos, vel, params.lifeTime, params.startScale, 0.0f);
+			}
 		}
 	}
 
-	for (auto& s : engineSmokes_) {
-		s->Update(dt);
+	if (engineSmokeEmitter_) {
+		engineSmokeEmitter_->Update(dt);
 	}
-
-	engineSmokes_.erase(std::remove_if(engineSmokes_.begin(), engineSmokes_.end(), [](const std::unique_ptr<Smoke>& p) { return p->IsFinished(); }), engineSmokes_.end());
 }
 
 void GameScene::CameraUpdate() {

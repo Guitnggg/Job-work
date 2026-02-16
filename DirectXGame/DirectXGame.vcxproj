@@ -157,6 +157,7 @@
     <ClCompile Include="Application\Cameras\RailCamera\CameraShake.cpp" />
     <ClCompile Include="Application\Characters\Enemy\TurretEnemy.cpp" />
     <ClCompile Include="Application\Characters\Player\Laser.cpp" />
+    <ClCompile Include="Application\Effects\Smoke\GpuSmokeEmitter.cpp" />
     <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp" />
     <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp" />
     <ClCompile Include="Application\Effects\Smoke\Smoke.cpp" />
@@ -188,6 +189,22 @@
     <ClCompile Include="Managers\UIManager\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Resources\shaders\GpuSmokePS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Resources\shaders\GpuSmokeVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="Resources\shaders\TerrainPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
@@ -288,6 +305,7 @@
     <ClInclude Include="Application\Cameras\RailCamera\CameraShake.h" />
     <ClInclude Include="Application\Characters\Enemy\TurretEnemy.h" />
     <ClInclude Include="Application\Characters\Player\Laser.h" />
+    <ClInclude Include="Application\Effects\Smoke\GpuSmokeEmitter.h" />
     <ClInclude Include="Application\Objects\Asteroid\Asteroid.h" />
     <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h" />
     <ClInclude Include="Application\Effects\Smoke\Smoke.h" />

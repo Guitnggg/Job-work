@@ -11,7 +11,7 @@
 #include "Application/Cameras/RailCamera/RailCamera.h"
 #include "Application/Characters/Player/Player.h"
 #include "Application/Effects/SpeedLine/SpeedLine.h"
-#include "Application/Effects/Smoke/Smoke.h"
+#include "Application/Effects/Smoke/GpuSmokeEmitter.h"
 #include "Application/Effects/Damage/DamageParticle.h"
 #include "Application/Objects/Asteroid/Asteroid.h"
 
@@ -216,8 +216,7 @@ private:
     float kDamageParticleEndScale_ = 0.0f;
 
     // ========== エンジンスモーク ==========
-    KamataEngine::Model* smokeModel_ = nullptr;
-    std::vector<std::unique_ptr<Smoke>> engineSmokes_;
+    std::unique_ptr<GpuSmokeEmitter> engineSmokeEmitter_;
     float smokeEmitTimer_ = 0.0f;
 
     // スモークのパラメータ
@@ -233,7 +232,7 @@ private:
 
     float kSmokeOffsetY_ = -0.3f;
     float kSmokeOffsetZ_ = -1.5f;
-    float kSmokeRandXY_ = 0.05f;
+    float kSmokeRandXY_ = 0.5f;
     float kSmokeRandZ_ = 0.10f;
 
     // ========== UI（HPバー／スコアなど） ==========
@@ -241,7 +240,7 @@ private:
     int clearScore_ = 0;
 
     int kScorePerEnemy_ = 100;
-    int kClearScore_ = 5000;
+    int kClearScore_ = 1000;
 
     // ========== Pauseメニュー ==========
     bool isPaused_ = false;
