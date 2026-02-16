@@ -255,13 +255,13 @@ void GameScene::Draw() {
 		// 敵・弾
 		enemyManager_.Draw(cam);
 		bulletManager_.Draw(cam);
+	}
 
-		// エンジンスモークは通常時とクリア演出中に描画
-		const bool canDrawSmoke = (state_ == GameState::Playing) &&
-			((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
-		if (canDrawSmoke && engineSmokeEmitter_) {
-			engineSmokeEmitter_->Draw(cam);
-		}
+	// エンジンスモークは通常時とクリア演出中に描画
+	const bool canDrawSmoke = (state_ == GameState::Playing) &&
+		((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
+	if (canDrawSmoke && engineSmokeEmitter_) {
+		engineSmokeEmitter_->Draw(cam);
 	}
 
 	Model::PostDraw();
