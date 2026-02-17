@@ -6,17 +6,9 @@
 
 using namespace KamataEngine;
 
-GameScene::GameScene() {}
+GameScene::GameScene() = default;
 
-GameScene::~GameScene() {
-	delete railCamera_;
-	delete skydome_;
-	delete player_;
-
-	delete worldTransform_;
-	delete model_;
-
-}
+GameScene::~GameScene() = default;
 
 void GameScene::Initialize() {
 	// ===== 基本 =====
@@ -24,32 +16,32 @@ void GameScene::Initialize() {
 	input_ = Input::GetInstance();
 	audio_ = Audio::GetInstance();
 
-	worldTransform_ = new WorldTransform();
+	worldTransform_ = std::make_unique<WorldTransform>();
 	worldTransform_->Initialize();
 	camera_.Initialize();
 
-	model_ = Model::Create();
+	model_.reset(Model::Create());
 
 	// =====レールカメラ =====
-	railCamera_ = new RailCamera();
+	railCamera_ = std::make_unique<RailCamera>();
 	railCamera_->Initialize();
 
 	// ===== 天球 =====
-	skydome_ = new Skydome();
+	skydome_ = std::make_unique<Skydome>();
 	skydome_->Initialize(&camera_);
 
 	// ===== プレイヤー =====
-	player_ = new Player();
+	player_ = std::make_unique<Player>();
 	player_->Initialize(&camera_);
 	player_->SetParent(&railCamera_->GetWorldTransform());
 
 	previousPlayerPos_ = player_->GetWorldTranslation();  // プレイヤー位置情報
 
 	// ===== スピードライン初期化 =====
-	speedLine_.Initialize(&camera_, 10);
+	speedLine_.Initialize(&camera_, kSpeedLineCount_);
 
 	// ===== ダメージ演出 =====
-	damageParticleModel_ = Model::Create();
+	damageParticleModel_.reset(Model::Create());
 	damageParticles_.clear();
 
 	// ===== エンジンスモーク初期化 =====
@@ -77,9 +69,9 @@ void GameScene::Initialize() {
 
 	// ===== カウントダウン =====
 	countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/GO.png");
-	countDown_.SetTimings(0.1f, 0.5f, 0.4f);
-	countDown_.SetScaleRange(1.2f, 1.0f);
-	countDown_.SetBackOvershoot(1.7f);
+	countDown_.SetTimings(kCountDownStartDelay_, kCountDownNumberDuration_, kCountDownGoDuration_);
+	countDown_.SetScaleRange(kCountDownScaleStart_, kCountDownScaleEnd_);
+	countDown_.SetBackOvershoot(kCountDownBackOvershoot_);
 
 	countDown_.SetAudio(
 		audio_->LoadWave("./Resources/SE/CountBeep.wav"),
@@ -87,7 +79,7 @@ void GameScene::Initialize() {
 	);
 
 	// ===== UI（HPバー／スコア） =====
-	uiManager_.Initialize(player_);
+	uiManager_.Initialize(player_.get());
 
 	// ===== 弾・敵 =====
 	bulletManager_.Initialize();
@@ -118,7 +110,7 @@ void GameScene::Initialize() {
 	pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, { kPauseTitlePosX_, kPauseTitlePosY_ }));
 	pauseTitleSprite_->SetAnchorPoint({ 0.0f, 0.0f });
 	const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
-	pauseTitleSprite_->SetSize({ pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f });
+	pauseTitleSprite_->SetSize({ pauseTitleSize.x * kPauseTitleScale_, pauseTitleSize.y * kPauseTitleScale_ });
 
 	// ===== その他 =====
 	isEnd_ = false;
@@ -316,9 +308,11 @@ void GameScene::SpawnDamageParticles() {
 	}
 
 	// カメラシェイク追加
-	float sx = (rand() % 200 - 100) / 100.0f;
-	float sy = (rand() % 200 - 100) / 100.0f;
-	railCamera_->AddShake({ sx, sy, 0.0f }, 1.0f);
+	static std::mt19937 shakeRng{ std::random_device{}() };
+	std::uniform_real_distribution<float> shakeDist(kCameraShakeMin_, kCameraShakeMax_);
+	const float sx = shakeDist(shakeRng);
+	const float sy = shakeDist(shakeRng);
+	railCamera_->AddShake({ sx, sy, 0.0f }, kCameraShakeDuration_);
 
 	Vector3 pos = player_->GetWorldTranslation();
 	static std::mt19937 rng{(std::random_device{}())};
@@ -329,7 +323,7 @@ void GameScene::SpawnDamageParticles() {
 		Vector3 vel = {dist(rng) * kDamageParticleSpeedXY_, dist(rng) * kDamageParticleSpeedXY_, dist(rng) * kDamageParticleSpeedZ_};
 		auto p = std::make_unique<DamageParticle>();
 
-		p->Initialize(damageParticleModel_, pos, vel, kDamageParticleLife_, kDamageParticleStartScale_, kDamageParticleEndScale_);
+		p->Initialize(damageParticleModel_.get(), pos, vel, kDamageParticleLife_, kDamageParticleStartScale_, kDamageParticleEndScale_);
 		damageParticles_.push_back(std::move(p));
 	}
 }
@@ -337,7 +331,7 @@ void GameScene::SpawnDamageParticles() {
 void GameScene::BattleUpdate(float dt) {
 	// 弾（戦闘中のみ）
 	if (result_ == GameResult::None) {
-		bulletManager_.Update(input_, player_, countDown_);
+		bulletManager_.Update(input_, player_.get(), countDown_);
 	}
 
 	// 敵・衝突・スコア（入力ロック解除＆戦闘中のみ）
@@ -347,7 +341,7 @@ void GameScene::BattleUpdate(float dt) {
 
 		// 弾→敵 を先に処理（＝スコア対象）
 		CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
-		// チャージレーザー（Razer）
+		// チャージレーザー（Laser）
 		CollisionManager::ResolveLaserEnemyCollisions(bulletManager_.GetLasers(), enemyManager_.GetEnemies(), countDown_);
 
 		// 弾で倒された敵の数をカウントしてスコアを加算
@@ -367,7 +361,7 @@ void GameScene::BattleUpdate(float dt) {
 		enemyManager_.RemoveDeadEnemies();
 
 		// プレイヤー→敵（体当たりなど）は後で処理（＝スコア対象外）
-		CollisionManager::ResolvePlayerEnemyCollisions(player_, enemyManager_.GetEnemies(), countDown_);
+		CollisionManager::ResolvePlayerEnemyCollisions(player_.get(), enemyManager_.GetEnemies(), countDown_);
 
 		// 体当たり等で死亡した敵があれば削除（※スコアは加算しない）
 		enemyManager_.RemoveDeadEnemies();
@@ -437,7 +431,7 @@ void GameScene::CameraUpdate() {
 		Vector3 now = player_->GetWorldTranslation();
 		float deltaX = now.x - previousPlayerPos_.x;
 
-		float inputX = MyMath::Clamp(deltaX * 40.0f, -1.0f, 1.0f);
+		float inputX = MyMath::Clamp(deltaX * kCameraInputScale_, -1.0f, 1.0f);
 
 		// 先に入力を渡す
 		railCamera_->SetMoveInput(inputX);

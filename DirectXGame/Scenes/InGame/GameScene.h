@@ -167,12 +167,12 @@ private:
     KamataEngine::Input* input_ = nullptr;
     KamataEngine::Audio* audio_ = nullptr;
 
-    KamataEngine::WorldTransform* worldTransform_ = nullptr;
+    std::unique_ptr<KamataEngine::WorldTransform> worldTransform_;
+    std::unique_ptr<KamataEngine::Model> model_;
     KamataEngine::Camera camera_;
-    KamataEngine::Model* model_ = nullptr;
 
     // ========== フレーム ==========
-    float kFixedDeltaTime_ = 1.0f / 60.0f;
+    static constexpr float kFixedDeltaTime_ = 1.0f / 60.0f;
 
     // ========== ステート ==========
 	GameState state_ = GameState::Instruction;
@@ -188,13 +188,13 @@ private:
 
     // ========== レールカメラ ==========
     bool isRailCameraActive_ = true;
-    RailCamera* railCamera_ = nullptr;
+    std::unique_ptr<RailCamera> railCamera_;
 
     // ========== 天球 ==========
-    Skydome* skydome_ = nullptr;
+    std::unique_ptr<Skydome> skydome_;
 
     // ========== プレイヤー ==========
-    Player* player_ = nullptr;
+    std::unique_ptr<Player> player_;
 	KamataEngine::Vector3 previousPlayerPos_{};
 
     // ========== 弾・敵管理 ==========
@@ -205,15 +205,15 @@ private:
     SpeedLine speedLine_;
 
     // ========== ダメージ演出 ==========
-    std::vector<std::unique_ptr<DamageParticle>>damageParticles_;
-    KamataEngine::Model* damageParticleModel_ = nullptr;
+    std::vector<std::unique_ptr<DamageParticle>> damageParticles_;
+    std::unique_ptr<KamataEngine::Model> damageParticleModel_;
 
-    int kDamageParticleCount_ = 10;
-    float kDamageParticleSpeedXY_ = 2.5f;
-    float kDamageParticleSpeedZ_ = -2.0f;
-    float kDamageParticleLife_ = 0.7f;
-    float kDamageParticleStartScale_ = 0.22f;
-    float kDamageParticleEndScale_ = 0.0f;
+    static constexpr int kDamageParticleCount_ = 10;
+    static constexpr float kDamageParticleSpeedXY_ = 2.5f;
+    static constexpr float kDamageParticleSpeedZ_ = -2.0f;
+    static constexpr float kDamageParticleLife_ = 0.7f;
+    static constexpr float kDamageParticleStartScale_ = 0.22f;
+    static constexpr float kDamageParticleEndScale_ = 0.0f;
 
     // ========== エンジンスモーク ==========
     std::unique_ptr<GpuSmokeEmitter> engineSmokeEmitter_;
@@ -230,27 +230,26 @@ private:
     SmokeParams normalSmokeParams_;  // 通常時
     SmokeParams boostSmokeParams_;   // クリア演出時
 
-    float kSmokeOffsetY_ = -0.3f;
-    float kSmokeOffsetZ_ = -1.5f;
-    float kSmokeRandXY_ = 0.5f;
-    float kSmokeRandZ_ = 0.10f;
+    static constexpr float kSmokeOffsetY_ = -0.3f;
+    static constexpr float kSmokeOffsetZ_ = -1.5f;
+    static constexpr float kSmokeRandXY_ = 0.5f;
+    static constexpr float kSmokeRandZ_ = 0.10f;
 
     // ========== UI（HPバー／スコアなど） ==========
     UIManager uiManager_;
     int clearScore_ = 0;
 
-    int kScorePerEnemy_ = 100;
-    int kClearScore_ = 1000;
+    static constexpr int kScorePerEnemy_ = 100;
+    static constexpr int kClearScore_ = 1000;
 
     // ========== Pauseメニュー ==========
     bool isPaused_ = false;
-    bool wasPaused_ = false;
     std::unique_ptr<PauseMenu> pauseMenu_;
     std::unique_ptr<KamataEngine::Sprite> pauseTitleSprite_;
     uint32_t pauseTitleTexHandle_ = 0;
-    static constexpr float kScreenWidth_ = 1280.0f;
     static constexpr float kPauseTitlePosX_ = 20.0f;
     static constexpr float kPauseTitlePosY_ = 16.0f;
+    static constexpr float kPauseTitleScale_ = 0.7f;
 
     // ポーズからの遷移要求
 	bool requestRetry_ = false;
@@ -260,13 +259,25 @@ private:
     bool  isClearAnimating_ = false;
     float clearAnimTimer_ = 0.0f;
 
-    float kClearBoostSpeedZ_ = 1.0f;
-    float kClearBoostSpeedY_ = 5.0f;
-    float kClearRotateSpeedX_ = 0.5f;
+    static constexpr float kClearBoostSpeedZ_ = 1.0f;
+    static constexpr float kClearBoostSpeedY_ = 5.0f;
+    static constexpr float kClearRotateSpeedX_ = 0.5f;
 
-    float kClearShrinkStart_ = 0.5f;
-    float kClearShrinkSpeed_ = 1.0f;
-    float kClearAnimEndTime_ = 2.0f;
+    static constexpr float kClearShrinkStart_ = 0.5f;
+    static constexpr float kClearShrinkSpeed_ = 1.0f;
+    static constexpr float kClearAnimEndTime_ = 2.0f;
+
+    static constexpr int kSpeedLineCount_ = 10;
+    static constexpr float kCountDownStartDelay_ = 0.1f;
+    static constexpr float kCountDownNumberDuration_ = 0.5f;
+    static constexpr float kCountDownGoDuration_ = 0.4f;
+    static constexpr float kCountDownScaleStart_ = 1.2f;
+    static constexpr float kCountDownScaleEnd_ = 1.0f;
+    static constexpr float kCountDownBackOvershoot_ = 1.7f;
+    static constexpr float kCameraShakeMin_ = -1.0f;
+    static constexpr float kCameraShakeMax_ = 1.0f;
+    static constexpr float kCameraShakeDuration_ = 1.0f;
+    static constexpr float kCameraInputScale_ = 40.0f;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;

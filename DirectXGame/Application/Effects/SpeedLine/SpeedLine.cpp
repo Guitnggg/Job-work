@@ -1,25 +1,18 @@
 #include "SpeedLine.h"
 
+#include <cmath>
+
 using namespace KamataEngine;
 
 SpeedLine::SpeedLine() = default;
 
-SpeedLine::~SpeedLine() {
-	// WorldTransform を解放
-	for (auto& line : lines_) {
-		delete line.worldTransform;
-		line.worldTransform = nullptr;
-	}
-
-	delete model_;
-	model_ = nullptr;
-}
+SpeedLine::~SpeedLine() = default;
 
 void SpeedLine::Initialize(Camera* camera, int32_t lineCount) {
 	camera_ = camera;
 
 	// モデル読み込み（仮：専用モデルがあれば差し替え）
-	model_ = Model::CreateFromOBJ("Asteroid", true);
+	model_.reset(Model::CreateFromOBJ("Asteroid", true));
 
 	// 乱数初期化
 	std::random_device rd;
@@ -30,8 +23,7 @@ void SpeedLine::Initialize(Camera* camera, int32_t lineCount) {
 
 	const Vector3 dummyPlayerPos{0.0f, 0.0f, 0.0f};
 	for (auto& line : lines_) {
-		line.worldTransform = new WorldTransform();
-		line.worldTransform->Initialize();
+		line.worldTransform = std::make_unique<WorldTransform>();
 
 		Respawn_(line, dummyPlayerPos, true);
 	}
@@ -71,10 +63,6 @@ void SpeedLine::Respawn_(LineParticle& p, const Vector3& basePos, bool randomDep
 
 	std::uniform_real_distribution<float> distSpeed(kSpeedMin, kSpeedMax);
 	p.speed = distSpeed(random_);
-
-	// 透明度（未使用だが将来拡張用）
-	const float edgeFactor = (r - innerRadius) / (outerRadius - innerRadius);
-	p.alpha = kAlphaBase + edgeFactor * kAlphaRange;
 
 	wt.UpdateMatrix();
 }

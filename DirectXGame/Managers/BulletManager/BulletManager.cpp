@@ -7,8 +7,6 @@ namespace {
     // 弾の基本前方（+Z）
     constexpr Vector3 kForward{ 0.0f, 0.0f, 1.0f };
 
-    // 固定Δt（Bullet/Razer と同じ想定）
-    constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 } // namespace
 
 void BulletManager::Initialize() {
