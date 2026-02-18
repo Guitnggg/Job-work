@@ -61,9 +61,9 @@ void GameScene::Initialize() {
 	normalSmokeParams_ = {
 	    0.08f, // emitInterval
 	    1.0f, // lifeTime
-	    0.14f, // startScale
-	    3,     // burstCount
-	    -0.8f  // baseZSpeed
+	    0.3f, // startScale
+	    10,     // burstCount
+	    -3.0f  // baseZSpeed
 	};
 
 	// ===== クリア演出（ブースト） =====
