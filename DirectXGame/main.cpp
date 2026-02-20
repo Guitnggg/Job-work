@@ -13,12 +13,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
     // KamataEngineの初期化
     KamataEngine::Initialize(L"LE3C_10_タカキ_ケンゴ_AstroWing");
 
+    // ゲームプレイ中はOSカーソルを非表示にする
+    while (ShowCursor(FALSE) >= 0) {}
+
     // DirectXCommonのインスタンスの取得
     DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
     // 各シーンの初期化処理 ===============
     SceneManager sceneManager;
-	sceneManager.SetInitialScene(std::make_unique<TitleScene>());
+    sceneManager.SetInitialScene(std::make_unique<TitleScene>());
 
     //===============
     // Mainループ
@@ -35,7 +38,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
         //=============
 
         sceneManager.Update();
-        
+
         //=============
         /// 描画処理 
         //=============
@@ -44,13 +47,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
         dxCommon->PreDraw();
 
         sceneManager.Draw();
-                
+
         //描画処理終了
         dxCommon->PostDraw();
     }
 
     // KamataEngineの終了 
     KamataEngine::Finalize();
+
+    // アプリ終了時にOSカーソルを元に戻す
+    while (ShowCursor(TRUE) < 0) {}
 
     return 0;
 }
