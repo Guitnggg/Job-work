@@ -31,6 +31,7 @@ void Player::Initialize(Camera* camera) {
 	isExploding_ = false;
 	isExplosionFinished_ = false;
 	explosionFrame_ = 0;
+	aimYaw_ = 0.0f;
 }
 
 void Player::Update() {
@@ -151,6 +152,7 @@ void Player::UpdateMoveAndBank_(float dt) {
 	currentTiltX_ += (targetTiltX_ - currentTiltX_) * kTiltLerp;
 
 	worldTransform_.rotation_.x = currentTiltX_;
+	worldTransform_.rotation_.y = aimYaw_;
 	worldTransform_.rotation_.z = currentTiltZ_;
 }
 
@@ -166,6 +168,14 @@ void Player::OnCollision(CharacterBase*) {
 	if (IsInvincible())
 		return;
 	Damage(kCollisionDamage);
+}
+
+void Player::SetAimDirection(const KamataEngine::Vector3& dir){
+	const float lenSq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+	if (lenSq <= 0.000001f) {
+		return;
+	}
+	aimYaw_ = std::atan2(dir.x, dir.z);
 }
 
 void Player::Damage(int32_t amount) {

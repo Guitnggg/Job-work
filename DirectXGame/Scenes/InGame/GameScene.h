@@ -107,6 +107,11 @@ private:
     void BattleUpdate(float dt);
 
     /// <summary>
+    /// マウス照準更新（レティクル位置、射撃方向、機体向き）
+    /// </summary>
+    void UpdateAimAndReticle();
+
+    /// <summary>
     /// UI更新
     /// </summary>
     void UIUpdate();
@@ -197,6 +202,12 @@ private:
     Player* player_ = nullptr;
 	KamataEngine::Vector3 previousPlayerPos_{};
 
+    // ========== 照準 ==========
+    uint32_t reticleTexHandle_ = 0;
+    std::unique_ptr<KamataEngine::Sprite>reticleSprite_;
+    KamataEngine::Vector2 reticlePos_{ 640.0f,360.0f };
+    KamataEngine::Vector3 shootDirection_{ 0.0f,0.0f,1.0f };
+
     // ========== 弾・敵管理 ==========
     EnemyManager enemyManager_;
     BulletManager bulletManager_;
@@ -249,6 +260,7 @@ private:
     std::unique_ptr<KamataEngine::Sprite> pauseTitleSprite_;
     uint32_t pauseTitleTexHandle_ = 0;
     static constexpr float kScreenWidth_ = 1280.0f;
+    static constexpr float kScreenHeight_ = 720.0f;
     static constexpr float kPauseTitlePosX_ = 20.0f;
     static constexpr float kPauseTitlePosY_ = 16.0f;
 

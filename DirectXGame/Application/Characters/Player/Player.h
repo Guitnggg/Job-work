@@ -43,24 +43,41 @@ public:
 	void OnCollision(CharacterBase* enemy) override;
 
 public:
-	/// <summary>ダメージを受ける</summary>
+	/// <summary>
+	/// 昇順方向を設定
+	/// </summary>
+	void SetAimDirection(const KamataEngine::Vector3& dir);
+
+	/// <summary>
+	/// ダメージを受ける
+	/// </summary>
 	void Damage(int32_t amount);
 
-	/// <summary>死亡処理（爆発開始）</summary>
+	/// <summary>
+	/// 死亡処理（爆発開始）
+	/// </summary>
 	void Kill();
 
 public:
-	/// <summary>死亡状態か</summary>
+	/// <summary>
+	/// 死亡状態か
+	/// </summary>
 	bool IsDead() const override { return isDead_; }
 
-	/// <summary>爆発中か</summary>
+	/// <summary>
+	/// 爆発中か
+	/// </summary>
 	bool IsExploding() const { return isExploding_; }
 
-	/// <summary>爆発演出終了済みか</summary>
+	/// <summary>
+	/// 爆発演出終了済みか
+	/// </summary>
 	bool IsExplosionFinished() const { return isExplosionFinished_; }
 
 public:
-	/// <summary>入力を受け付けるか</summary>
+	/// <summary>
+	/// 入力を受け付けるか
+	/// </summary>
 	void SetInputEnabled(bool enabled) { inputEnabled_ = enabled; }
 
 	/// <summary>
@@ -148,6 +165,7 @@ private:
 	float targetTiltX_ = 0.0f;
 	float currentTiltZ_ = 0.0f;
 	float currentTiltX_ = 0.0f;
+	float aimYaw_ = 0.0f;
 
 	// ===== ロール回避 =====
 	bool isRolling_ = false;

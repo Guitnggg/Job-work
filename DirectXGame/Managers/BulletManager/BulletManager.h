@@ -33,7 +33,7 @@ public:
 	/// <param name="input">入力処理を参照する為のポインタ</param>
 	/// <param name="player">弾の発射位置取得に使うプレイヤー</param>
 	/// <param name="countDown">カウントダウン中は発射操作を無効にする為の参照</param>
-	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown);
+	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir);
 
 	/// <summary>
 	/// 描画処理
@@ -62,7 +62,7 @@ private:
 	/// <param name="input">入力処理</param>
 	/// <param name="player">弾の発射位置参照元</param>
 	/// <param name="countDown">カウントダウン中は射撃抑制に使用</param>
-	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown);
+	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir);
 
 	/// <summary>
 	/// 全飛行弾の更新処理を行う。
@@ -78,17 +78,8 @@ private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
 	std::vector<std::unique_ptr<Laser>> lasers_;
 
-	// ===== チャージショット用 =====
-	bool isCharging_ = false;
-	int32_t chargeFrames_ = 0;
-	bool prevShootDown_ = false;
-
 	// クールダウン
 	int32_t fireCooldownFrames_ = 0;
 	static constexpr int32_t kFireCooldownMax = 9;   // 通常弾：約0.15秒@60fps
-	static constexpr int32_t kLaserCooldownMax = 24; // レーザー後：少し長め
-
-	// チャージ閾値
-	static constexpr int32_t kChargeLaserMinFrames = 36; // 0.6秒@60fps 以上でレーザー
-	static constexpr int32_t kChargeLaserMaxFrames = 72; // 1.2秒@60fps（上限）
+	
 };

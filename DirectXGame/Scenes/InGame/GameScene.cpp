@@ -1,5 +1,7 @@
 #include "GameScene.h"
 
+#include <cmath>
+
 #include "Scenes/Clear/ClearScene.h"
 #include "Scenes/Finish/FinishScene.h"
 #include "Scenes/Title/TitleScene.h"
@@ -107,6 +109,14 @@ void GameScene::Initialize() {
 		instructionSprites_[i] = Sprite::Create(instructionTexHandles_[i], instructionPos_);
 	}
 
+	// ===== 照準 =====
+	reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
+	reticleSprite_.reset(Sprite::Create(reticleTexHandle_, reticlePos_));
+	if (reticleSprite_) {
+		reticleSprite_->SetAnchorPoint({ 0.5f, 0.5f });
+		reticleSprite_->SetSize({ 48.0f, 48.0f });
+	}
+
 	// 開始：まずは操作説明から
 	state_ = GameState::Instruction;
 	instructionPage_ = InstructionPage::Move;
@@ -188,6 +198,7 @@ void GameScene::Update() {
 		break;
 
 	case GameState::Playing:
+		UpdateAimAndReticle();
 		PlayerUpdate();
 		SpawnDamageParticles();
 		BattleUpdate(dt);
@@ -278,6 +289,10 @@ void GameScene::Draw() {
 	// UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
 	if (state_ == GameState::Playing) {
 		uiManager_.Draw();
+
+		if (reticleSprite_ && result_ == GameResult::None) {
+			reticleSprite_->Draw();
+		}
 	}
 
 	// Pauseメニュー
@@ -337,7 +352,7 @@ void GameScene::SpawnDamageParticles() {
 void GameScene::BattleUpdate(float dt) {
 	// 弾（戦闘中のみ）
 	if (result_ == GameResult::None) {
-		bulletManager_.Update(input_, player_, countDown_);
+		bulletManager_.Update(input_, player_, countDown_,shootDirection_);
 	}
 
 	// 敵・衝突・スコア（入力ロック解除＆戦闘中のみ）
@@ -372,6 +387,51 @@ void GameScene::BattleUpdate(float dt) {
 		// 体当たり等で死亡した敵があれば削除（※スコアは加算しない）
 		enemyManager_.RemoveDeadEnemies();
 	}
+}
+
+void GameScene::UpdateAimAndReticle(){
+	if (!input_ || !player_) {
+		return;
+	}
+
+	const Vector2 mouse = input_->GetMousePosition();
+	reticlePos_.x = std::clamp(mouse.x, 0.0f, kScreenWidth_);
+	reticlePos_.y = std::clamp(mouse.y, 0.0f, kScreenHeight_);
+	if (reticleSprite_) {
+		reticleSprite_->SetPosition(reticlePos_);
+	}
+
+	const Camera* cam = railCamera_ ? railCamera_->GetCamera() : &camera_;
+	if (!cam) {
+		return;
+	}
+
+	const float ndcX = (reticlePos_.x / kScreenWidth_) * 2.0f - 1.0f;
+	const float ndcY = 1.0f - (reticlePos_.y / kScreenHeight_) * 2.0f;
+
+	const Matrix4x4 viewProj = MyMath::Multiply(cam->matView, cam->matProjection);
+	const Matrix4x4 invViewProj = MyMath::Inverse(viewProj);
+
+	const Vector3 nearPoint = MyMath::Transform({ ndcX, ndcY, 0.0f }, invViewProj);
+	const Vector3 farPoint = MyMath::Transform({ ndcX, ndcY, 1.0f }, invViewProj);
+
+	Vector3 rayDir = MyMath::Normalize(MyMath::Subtract(farPoint, nearPoint));
+	if (std::fabs(rayDir.z) <= 0.0001f) {
+		rayDir = { 0.0f, 0.0f, 1.0f };
+	}
+
+	const Vector3 playerPos = player_->GetWorldTranslation();
+	const float targetZ = playerPos.z + 120.0f;
+	const float t = (targetZ - nearPoint.z) / rayDir.z;
+	const Vector3 hit = MyMath::Add(nearPoint, MyMath::Multiply(rayDir, t));
+
+	shootDirection_ = MyMath::Normalize(MyMath::Subtract(hit, playerPos));
+	if (shootDirection_.z < 0.05f) {
+		shootDirection_.z = 0.05f;
+		shootDirection_ = MyMath::Normalize(shootDirection_);
+	}
+
+	player_->SetAimDirection(shootDirection_);
 }
 
 void GameScene::UIUpdate() { uiManager_.Update(); }
