@@ -99,15 +99,8 @@ void GameScene::Initialize() {
 	// ===== 開始 =====
 	countDown_.Start();
 
-	// ===== ステート =====
-	instructionTexHandles_[0] = TextureManager::Load("./Resources/InGame/Move.png");
-	instructionTexHandles_[1] = TextureManager::Load("./Resources/InGame/Roll.png");
-	instructionTexHandles_[2] = TextureManager::Load("./Resources/InGame/Attack.png");
-	instructionTexHandles_[3] = TextureManager::Load("./Resources/InGame/Rules.png");
-
-	for (size_t i = 0; i < kInstructionPageCount_; ++i) {
-		instructionSprites_[i] = Sprite::Create(instructionTexHandles_[i], instructionPos_);
-	}
+	// 開始　３カウントから
+	state_ = GameState::CountDown;
 
 	// ===== 照準 =====
 	reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
@@ -116,10 +109,6 @@ void GameScene::Initialize() {
 		reticleSprite_->SetAnchorPoint({ 0.5f, 0.5f });
 		reticleSprite_->SetSize({ 32.0f, 32.0f });
 	}
-
-	// 開始：まずは操作説明から
-	state_ = GameState::Instruction;
-	instructionPage_ = InstructionPage::Move;
 
 	// ===== Pause =====
 	pauseMenu_ = std::make_unique<PauseMenu>();
@@ -186,10 +175,6 @@ void GameScene::Update() {
 	BackgroundUpdate();	
 
 	switch (state_) {
-	case GameState::Instruction:
-		InstructionUpdate();
-		break;
-
 	case GameState::CountDown:
 		CountDownUpdate(dt);
 		if (!countDown_.IsInputLocked()) {
@@ -231,19 +216,6 @@ void GameScene::Draw() {
 
 	// 空/スカイドームは常に描く（雰囲気）
 	skydome_->Draw();
-
-	// --- 操作説明中はここでゲーム描画を止める ---
-	if (state_ == GameState::Instruction) {
-		Model::PostDraw();
-
-		// ===== 前景UI（操作説明スライド）=====
-		Sprite::PreDraw(commandList);
-		DrawInstruction(); // ← ここでスライドを1枚描画
-		Sprite::PostDraw();
-		return;
-	}
-
-	// ===== ここから下は「説明中以外」だけ描く =====
 
 	// （任意）CountDown中もプレイヤーだけ見せたいなら描く
 	if (state_ == GameState::Playing) {
@@ -571,90 +543,6 @@ void GameScene::ClearAnimationUpdate(float dt) {
 			isEnd_ = true;
 			isClearAnimating_ = false;
 		}
-	}
-}
-
-void GameScene::InstructionUpdate() {
-	const bool next = input_->TriggerKey(DIK_SPACE) || input_->TriggerKey(DIK_RETURN);
-	const bool prev = input_->TriggerKey(DIK_BACK);
-
-	if (prev) {
-		PrevInstructionPage();
-		return;
-	}
-	if (!next) {
-		return;
-	}
-
-	if (instructionPage_ == InstructionPage::Rules) {
-		state_ = GameState::CountDown;
-		countDown_.Start();
-		return;
-	}
-
-	NextInstructionPage();
-}
-
-void GameScene::NextInstructionPage() {
-	switch (instructionPage_) {
-	case InstructionPage::Move:
-		instructionPage_ = InstructionPage::Roll;
-		break;
-
-	case InstructionPage::Roll:
-		instructionPage_ = InstructionPage::Attack;
-		break;
-
-	case InstructionPage::Attack:
-		instructionPage_ = InstructionPage::Rules;
-		break;
-
-	case InstructionPage::Rules:
-		// ここには来ない想定（RulesはInstructionUpdate側で処理）
-		break;
-	}
-}
-
-void GameScene::PrevInstructionPage() {
-	switch (instructionPage_) {
-	case InstructionPage::Move:
-		// 最初なので何もしない
-		break;
-
-	case InstructionPage::Roll:
-		instructionPage_ = InstructionPage::Move;
-		break;
-
-	case InstructionPage::Attack:
-		instructionPage_ = InstructionPage::Roll;
-		break;
-
-	case InstructionPage::Rules:
-		instructionPage_ = InstructionPage::Attack;
-		break;
-	}
-}
-
-void GameScene::DrawInstruction() {
-	size_t index = 0;
-
-	switch (instructionPage_) {
-	case InstructionPage::Move:
-		index = 0;
-		break;
-	case InstructionPage::Roll:
-		index = 1;
-		break;
-	case InstructionPage::Attack:
-		index = 2;
-		break;
-	case InstructionPage::Rules:
-		index = 3;
-		break;
-	}
-
-	if (instructionSprites_[index]) {
-		instructionSprites_[index]->Draw();
 	}
 }
 

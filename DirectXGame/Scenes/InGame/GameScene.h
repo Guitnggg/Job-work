@@ -31,16 +31,8 @@ class ClearScene;
 class TitleScene;
 
 enum class GameState {
-	Instruction, // 操作説明（複数ページ）
 	CountDown,   // 3カウント
 	Playing,     // ゲーム本編
-};
-
-enum class InstructionPage {
-	Move,    // 移動
-	Roll,    // ロール
-	Attack,  // 攻撃
-	Rules,   // ルール説明
 };
 
 enum class GameResult {
@@ -150,16 +142,6 @@ private:
     /// <param name="dt"></param>
     void ClearAnimationUpdate(float dt);
 
-private:
-
-    void InstructionUpdate();
-
-    void NextInstructionPage();
-
-    void PrevInstructionPage();
-
-    void DrawInstruction();
-
 public:
     bool IsEnd() const override { return isEnd_; }
 	std::unique_ptr<IScene> NextScene() const override;
@@ -180,13 +162,7 @@ private:
     float kFixedDeltaTime_ = 1.0f / 60.0f;
 
     // ========== ステート ==========
-	GameState state_ = GameState::Instruction;
-	InstructionPage instructionPage_ = InstructionPage::Move;
-
-	static constexpr size_t kInstructionPageCount_ = 4;
-	std::array<uint32_t, kInstructionPageCount_> instructionTexHandles_{};
-	std::array<KamataEngine::Sprite*, kInstructionPageCount_> instructionSprites_{};
-	KamataEngine::Vector2 instructionPos_{0.0f, 0.0f};
+    GameState state_ = GameState::CountDown;
 
     // ========== ３カウントUI ==========
     CountDown countDown_;
