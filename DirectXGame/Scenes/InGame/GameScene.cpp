@@ -114,7 +114,7 @@ void GameScene::Initialize() {
 	reticleSprite_.reset(Sprite::Create(reticleTexHandle_, reticlePos_));
 	if (reticleSprite_) {
 		reticleSprite_->SetAnchorPoint({ 0.5f, 0.5f });
-		reticleSprite_->SetSize({ 48.0f, 48.0f });
+		reticleSprite_->SetSize({ 32.0f, 32.0f });
 	}
 
 	// 開始：まずは操作説明から
@@ -473,11 +473,17 @@ void GameScene::EngineSmokesUpdate(float dt) {
 		smokeEmitTimer_ -= params.emitInterval;
 
 		const Vector3 playerPos = player_->GetWorldTranslation();
-		const Vector3 spawnPos = {playerPos.x, playerPos.y + kSmokeOffsetY_, playerPos.z + kSmokeOffsetZ_};
+		const auto& playerWt = player_->GetWorldTransform();
+		const Matrix4x4 playerRotateMatrix = MyMath::MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, playerWt.rotation_, { 0.0f, 0.0f, 0.0f });
+
+		const Vector3 localOffset = { 0.0f, kSmokeOffsetY_, kSmokeOffsetZ_ };
+		const Vector3 offset = MyMath::TransformNormal(localOffset, playerRotateMatrix);
+		const Vector3 spawnPos = MyMath::Add(playerPos, offset);
 
 		//
 		for (int i = 0; i < params.burstCount; ++i) {
-			Vector3 vel{xyDist(rng), xyDist(rng), params.baseZSpeed + zDist(rng)};
+			const Vector3 localVel = { xyDist(rng), xyDist(rng), params.baseZSpeed + zDist(rng) };
+			const Vector3 vel = MyMath::TransformNormal(localVel, playerRotateMatrix);
 
 			if (engineSmokeEmitter_) {
 				engineSmokeEmitter_->Emit(spawnPos, vel, params.lifeTime, params.startScale, 0.0f);
