@@ -1,5 +1,7 @@
 #include "EnemyManager.h"
 
+#include <cmath>
+
 #include <fstream>
 #include <random>
 
@@ -170,6 +172,37 @@ void EnemyManager::Draw(const Camera* camera) {
 	for (auto& p : explosionParticles_) {
 		p->Draw(camera);
 	}
+}
+
+std::vector<CharacterBase*> EnemyManager::GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const {
+	std::vector<std::pair<float, CharacterBase*>> distances;
+	distances.reserve(enemies_.size());
+
+	for (const auto& enemy : enemies_) {
+		if (!enemy || enemy->IsDead()) {
+			continue;
+		}
+		const KamataEngine::Vector3 pos = enemy->GetWorldTranslation();
+		const float dx = pos.x - from.x;
+		const float dy = pos.y - from.y;
+		const float dz = pos.z - from.z;
+		const float distSq = dx * dx + dy * dy + dz * dz;
+		distances.emplace_back(distSq, enemy.get());
+	}
+
+	std::sort(distances.begin(), distances.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+
+	if (maxCount <= 0) {
+		return {};
+	}
+
+	const size_t count = (std::min)(distances.size(), static_cast<size_t>(maxCount));
+	std::vector<CharacterBase*> result;
+	result.reserve(count);
+	for (size_t i = 0; i < count; ++i) {
+		result.push_back(distances[i].second);
+	}
+	return result;
 }
 
 void EnemyManager::RemoveDeadEnemies() {

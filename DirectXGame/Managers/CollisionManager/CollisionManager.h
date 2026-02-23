@@ -8,6 +8,7 @@
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/Player.h"
 #include "Application/Characters/Player/Laser.h"
+#include "Application/Characters/Player/HomingMissile.h"
 
 #include "UI/CountDown/CountDown.h"
 
@@ -47,4 +48,12 @@ public:
 	/// <param name="enemies">衝突対象の敵のリスト</param>
 	/// <param name="countDown">カウントダウン中は衝突を無効にするため使用</param>
 	static void ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="missiles"></param>
+	/// <param name="enemies"></param>
+	/// <param name="countDown"></param>
+	static void ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 };

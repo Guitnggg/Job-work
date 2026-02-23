@@ -78,6 +78,11 @@ public:
 	std::vector<std::unique_ptr<CharacterBase>>& GetEnemies() { return enemies_; }
 
 	/// <summary>
+	/// プレイヤーから近い順の敵ポインタを最大数まで取得する
+	/// </summary>
+	std::vector<CharacterBase*> GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const;
+
+	/// <summary>
 	/// 死亡した敵を削除する
 	/// </summary>
 	void RemoveDeadEnemies();

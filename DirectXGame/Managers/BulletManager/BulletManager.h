@@ -7,7 +7,10 @@
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/Player.h"
 #include "Application/Characters/Player/Laser.h"
+#include "Application/Characters/Player/HomingMissile.h"
 #include "UI/CountDown/CountDown.h"
+
+class EnemyManager;
 
 /// <summary>
 /// 弾の生成・更新・破棄を管理するクラス。
@@ -33,7 +36,7 @@ public:
 	/// <param name="input">入力処理を参照する為のポインタ</param>
 	/// <param name="player">弾の発射位置取得に使うプレイヤー</param>
 	/// <param name="countDown">カウントダウン中は発射操作を無効にする為の参照</param>
-	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir);
+	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
 
 	/// <summary>
 	/// 描画処理
@@ -54,15 +57,29 @@ public:
 	/// </summary>
 	std::vector<std::unique_ptr<Laser>>& GetLasers() { return lasers_; }
 
+	/// <summary>
+	/// 
+	/// </summary>
+	std::vector<std::unique_ptr<HomingMissile>>& GetHomingMissiles() { return homingMissiles_; }
+
+
+	float GetHomingCooldownRate() const;
+	int32_t GetCurrentLockCount() const { return static_cast<int32_t>(lockedTargets_.size()); }
+	int32_t GetMaxLockCount() const { return kHomingMaxLockCount; }
+	bool IsHomingLocking() const { return isHomingLocking_; }
+	const std::vector<CharacterBase*>& GetLockedTargets() const { return lockedTargets_; }
+
 private:
 	/// <summary>
 	/// プレイヤー入力に応じて弾発射処理を行う。
 	/// クールダウン制御もここで行う。
 	/// </summary>
-	/// <param name="input">入力処理</param>
-	/// <param name="player">弾の発射位置参照元</param>
-	/// <param name="countDown">カウントダウン中は射撃抑制に使用</param>
-	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir);
+	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void HandleHomingMissile_(KamataEngine::Input* input, Player* player, const CountDown& countDown, EnemyManager* enemyManager);
 
 	/// <summary>
 	/// 全飛行弾の更新処理を行う。
@@ -77,9 +94,21 @@ private:
 private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
 	std::vector<std::unique_ptr<Laser>> lasers_;
+	std::vector<std::unique_ptr<HomingMissile>> homingMissiles_;
 
 	// クールダウン
 	int32_t fireCooldownFrames_ = 0;
 	static constexpr int32_t kFireCooldownMax = 9;   // 通常弾：約0.15秒@60fps
+
+	bool isHomingLocking_ = false;
+	int32_t homingLockFrame_ = 0;
+	int32_t homingCooldownFrames_ = 0;
+	std::vector<CharacterBase*> lockedTargets_;
+	bool wasHomingPressing_ = false;
+
+	static constexpr int32_t kHomingLockStartFrame = 30; // 0.5s
+	static constexpr int32_t kHomingLockMaxFrame = 60;   // 1.0s
+	static constexpr int32_t kHomingMaxLockCount = 5;
+	static constexpr int32_t kHomingCooldownMaxFrame = 600; // 10s
 	
 };

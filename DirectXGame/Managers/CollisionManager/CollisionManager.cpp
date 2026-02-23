@@ -154,3 +154,49 @@ void CollisionManager::ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<L
 		}
 	}
 }
+
+void CollisionManager::ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	if (countDown.IsInputLocked()) {
+		return;
+	}
+
+	for (auto& m : missiles) {
+		if (!m || m->IsDead()) {
+			continue;
+		}
+
+		Collider* missileCollider = m->GetCollider();
+		if (!missileCollider) {
+			continue;
+		}
+
+		const auto mp = missileCollider->GetTranslate();
+		const float mr = missileCollider->GetRadius();
+
+		for (auto& e : enemies) {
+			if (!e || e->IsDead()) {
+				continue;
+			}
+
+			Collider* enemyCollider = e->GetCollider();
+			if (!enemyCollider) {
+				continue;
+			}
+
+			const auto ep = enemyCollider->GetTranslate();
+			const float er = enemyCollider->GetRadius();
+
+			const float dx = mp.x - ep.x;
+			const float dy = mp.y - ep.y;
+			const float dz = mp.z - ep.z;
+			const float dist2 = dx * dx + dy * dy + dz * dz;
+			const float rr = mr + er;
+
+			if (dist2 <= rr * rr) {
+				e->OnCollision(m.get());
+				m->OnCollision(e.get());
+				break;
+			}
+		}
+	}
+}

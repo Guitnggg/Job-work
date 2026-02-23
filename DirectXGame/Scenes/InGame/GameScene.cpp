@@ -324,7 +324,7 @@ void GameScene::SpawnDamageParticles() {
 void GameScene::BattleUpdate(float dt) {
 	// 弾（戦闘中のみ）
 	if (result_ == GameResult::None) {
-		bulletManager_.Update(input_, player_, countDown_,shootDirection_);
+		bulletManager_.Update(input_, player_, countDown_,shootDirection_,&enemyManager_);
 	}
 
 	// 敵・衝突・スコア（入力ロック解除＆戦闘中のみ）
@@ -334,8 +334,10 @@ void GameScene::BattleUpdate(float dt) {
 
 		// 弾→敵 を先に処理（＝スコア対象）
 		CollisionManager::ResolveBulletEnemyCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
-		// チャージレーザー（Razer）
+		// チャージレーザー（Laser）
 		CollisionManager::ResolveLaserEnemyCollisions(bulletManager_.GetLasers(), enemyManager_.GetEnemies(), countDown_);
+		// ホーミングミサイル
+		CollisionManager::ResolveHomingMissileEnemyCollisions(bulletManager_.GetHomingMissiles(), enemyManager_.GetEnemies(), countDown_);
 
 		// 弾で倒された敵の数をカウントしてスコアを加算
 		int deadCount = 0;
@@ -406,7 +408,11 @@ void GameScene::UpdateAimAndReticle(){
 	player_->SetAimDirection(shootDirection_);
 }
 
-void GameScene::UIUpdate() { uiManager_.Update(); }
+void GameScene::UIUpdate() {
+	uiManager_.SetHomingCooldownRate(bulletManager_.GetHomingCooldownRate());
+	uiManager_.SetHomingLockInfo(bulletManager_.GetCurrentLockCount(), bulletManager_.GetMaxLockCount(), bulletManager_.IsHomingLocking());
+	uiManager_.Update();
+}
 
 void GameScene::DamageParticleUpdate(float dt) {
 	//
