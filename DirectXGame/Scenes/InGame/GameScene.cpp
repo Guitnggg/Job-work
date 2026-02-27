@@ -173,7 +173,15 @@ void GameScene::Update() {
             break;
         }
 
+        DrawImGui();
         return;
+    }
+
+    if (state_ == GameState::Playing) {
+        DrawImGui();
+        if (isDebugUpdatePaused_) {
+            return;
+        }
     }
 
     // ===== 通常更新 =====
@@ -306,48 +314,63 @@ void GameScene::DrawImGui(){
 #ifdef USE_IMGUI
     ImGui::Begin("GameScene InGame");
 
-    ImGui::Text("State");
-    ImGui::Text("GameState: %s", state_ == GameState::Playing ? "Playing" : "CountDown");
-    ImGui::Text("Result: %s", result_ == GameResult::Clear ? "Clear" : result_ == GameResult::Fail ? "Fail" : "None");
-
+    ImGui::Checkbox("Pause Game Progress", &isDebugUpdatePaused_);
     ImGui::Separator();
-    ImGui::Text("Game Tuning");
-    ImGui::DragInt("Score Per Enemy", &kScorePerEnemy_, 1.0f, 0, 10000);
-    ImGui::DragInt("Clear Score", &kClearScore_, 10.0f, 0, 999999);
 
-    ImGui::Separator();
-    ImGui::Text("Damage Particle");
-    ImGui::DragInt("Particle Count", &kDamageParticleCount_, 1.0f, 1, 200);
-    ImGui::DragFloat("Particle Speed XY", &kDamageParticleSpeedXY_, 0.01f, 0.0f, 20.0f);
-    ImGui::DragFloat("Particle Speed Z", &kDamageParticleSpeedZ_, 0.01f, -20.0f, 20.0f);
-    ImGui::DragFloat("Particle Life", &kDamageParticleLife_, 0.01f, 0.01f, 10.0f);
-    ImGui::DragFloat("Particle Start Scale", &kDamageParticleStartScale_, 0.01f, 0.0f, 5.0f);
-    ImGui::DragFloat("Particle End Scale", &kDamageParticleEndScale_, 0.01f, 0.0f, 5.0f);
+    if (ImGui::BeginTabBar("GameSceneTabs")) {
+        if (ImGui::BeginTabItem("State")) {
+            ImGui::Text("GameState: %s", state_ == GameState::Playing ? "Playing" : "CountDown");
+            ImGui::Text("Result: %s", result_ == GameResult::Clear ? "Clear" : result_ == GameResult::Fail ? "Fail" : "None");
+            ImGui::Text("PauseMenu: %s", isPaused_ ? "Open" : "Closed");
+            ImGui::EndTabItem();
+        }
 
-    ImGui::Separator();
-    ImGui::Text("Smoke (Normal)");
-    ImGui::DragFloat("Normal Emit Interval", &normalSmokeParams_.emitInterval, 0.001f, 0.001f, 1.0f);
-    ImGui::DragFloat("Normal Life", &normalSmokeParams_.lifeTime, 0.01f, 0.01f, 10.0f);
-    ImGui::DragFloat("Normal Start Scale", &normalSmokeParams_.startScale, 0.01f, 0.0f, 5.0f);
-    ImGui::DragInt("Normal Burst", &normalSmokeParams_.burstCount, 1.0f, 1, 100);
-    ImGui::DragFloat("Normal Base Z Speed", &normalSmokeParams_.baseZSpeed, 0.01f, -20.0f, 20.0f);
+        if (ImGui::BeginTabItem("Score")) {
+            ImGui::DragInt("Score Per Enemy", &kScorePerEnemy_, 1.0f, 0, 10000);
+            ImGui::DragInt("Clear Score", &kClearScore_, 10.0f, 0, 999999);
+            ImGui::EndTabItem();
+        }
 
-    ImGui::Separator();
-    ImGui::Text("Smoke (Boost)");
-    ImGui::DragFloat("Boost Emit Interval", &boostSmokeParams_.emitInterval, 0.001f, 0.001f, 1.0f);
-    ImGui::DragFloat("Boost Life", &boostSmokeParams_.lifeTime, 0.01f, 0.01f, 10.0f);
-    ImGui::DragFloat("Boost Start Scale", &boostSmokeParams_.startScale, 0.01f, 0.0f, 5.0f);
-    ImGui::DragInt("Boost Burst", &boostSmokeParams_.burstCount, 1.0f, 1, 100);
-    ImGui::DragFloat("Boost Base Z Speed", &boostSmokeParams_.baseZSpeed, 0.01f, -20.0f, 20.0f);
+        if (ImGui::BeginTabItem("Damage")) {
+            ImGui::DragInt("Particle Count", &kDamageParticleCount_, 1.0f, 1, 200);
+            ImGui::DragFloat("Particle Speed XY", &kDamageParticleSpeedXY_, 0.01f, 0.0f, 20.0f);
+            ImGui::DragFloat("Particle Speed Z", &kDamageParticleSpeedZ_, 0.01f, -20.0f, 20.0f);
+            ImGui::DragFloat("Particle Life", &kDamageParticleLife_, 0.01f, 0.01f, 10.0f);
+            ImGui::DragFloat("Particle Start Scale", &kDamageParticleStartScale_, 0.01f, 0.0f, 5.0f);
+            ImGui::DragFloat("Particle End Scale", &kDamageParticleEndScale_, 0.01f, 0.0f, 5.0f);
+            ImGui::EndTabItem();
+        }
 
-    ImGui::Separator();
-    ImGui::Text("Clear Animation");
-    ImGui::DragFloat("Clear Boost Z", &kClearBoostSpeedZ_, 0.01f, -20.0f, 20.0f);
-    ImGui::DragFloat("Clear Boost Y", &kClearBoostSpeedY_, 0.01f, -20.0f, 20.0f);
-    ImGui::DragFloat("Clear Rotate Speed X", &kClearRotateSpeedX_, 0.01f, -20.0f, 20.0f);
-    ImGui::DragFloat("Clear Shrink Start", &kClearShrinkStart_, 0.01f, 0.0f, 10.0f);
-    ImGui::DragFloat("Clear Shrink Speed", &kClearShrinkSpeed_, 0.01f, 0.0f, 20.0f);
-    ImGui::DragFloat("Clear End Time", &kClearAnimEndTime_, 0.01f, 0.1f, 20.0f);
+        if (ImGui::BeginTabItem("Smoke")) {
+            ImGui::Text("Normal");
+            ImGui::DragFloat("Normal Emit Interval", &normalSmokeParams_.emitInterval, 0.001f, 0.001f, 1.0f);
+            ImGui::DragFloat("Normal Life", &normalSmokeParams_.lifeTime, 0.01f, 0.01f, 10.0f);
+            ImGui::DragFloat("Normal Start Scale", &normalSmokeParams_.startScale, 0.01f, 0.0f, 5.0f);
+            ImGui::DragInt("Normal Burst", &normalSmokeParams_.burstCount, 1.0f, 1, 100);
+            ImGui::DragFloat("Normal Base Z Speed", &normalSmokeParams_.baseZSpeed, 0.01f, -20.0f, 20.0f);
+
+            ImGui::Separator();
+            ImGui::Text("Boost");
+            ImGui::DragFloat("Boost Emit Interval", &boostSmokeParams_.emitInterval, 0.001f, 0.001f, 1.0f);
+            ImGui::DragFloat("Boost Life", &boostSmokeParams_.lifeTime, 0.01f, 0.01f, 10.0f);
+            ImGui::DragFloat("Boost Start Scale", &boostSmokeParams_.startScale, 0.01f, 0.0f, 5.0f);
+            ImGui::DragInt("Boost Burst", &boostSmokeParams_.burstCount, 1.0f, 1, 100);
+            ImGui::DragFloat("Boost Base Z Speed", &boostSmokeParams_.baseZSpeed, 0.01f, -20.0f, 20.0f);
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Clear")) {
+            ImGui::DragFloat("Clear Boost Z", &kClearBoostSpeedZ_, 0.01f, -20.0f, 20.0f);
+            ImGui::DragFloat("Clear Boost Y", &kClearBoostSpeedY_, 0.01f, -20.0f, 20.0f);
+            ImGui::DragFloat("Clear Rotate Speed X", &kClearRotateSpeedX_, 0.01f, -20.0f, 20.0f);
+            ImGui::DragFloat("Clear Shrink Start", &kClearShrinkStart_, 0.01f, 0.0f, 10.0f);
+            ImGui::DragFloat("Clear Shrink Speed", &kClearShrinkSpeed_, 0.01f, 0.0f, 20.0f);
+            ImGui::DragFloat("Clear End Time", &kClearAnimEndTime_, 0.01f, 0.1f, 20.0f);
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
 
     ImGui::End();
 #endif
