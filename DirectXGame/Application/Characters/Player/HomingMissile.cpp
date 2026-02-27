@@ -10,9 +10,17 @@ using namespace KamataEngine;
 
 void HomingMissile::Initialize() {
     CharacterBase::Initialize();
-    model_.reset(Model::CreateFromOBJ("Missile AGM-65", true));
-    assert(model_);
-    textureHandle_ = TextureManager::Load("Resources/Missile AGM-65/Texture.png");
+
+    if (!model_) {
+        // 旧リソース名（スペースあり）でのフォールバック
+        model_.reset(Model::CreateFromOBJ("Missile AGM-65", true));
+    }
+
+    if (!model_) {
+        model_.reset(Model::CreateSphere());
+    }
+
+    textureHandle_ = TextureManager::Load("./Resources/Missile AGM-65/Texture.png");
     worldTransform_.scale_ = kMissileScale;
     worldTransform_.UpdateMatrix();
 
