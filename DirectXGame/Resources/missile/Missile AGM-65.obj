@@ -1,6 +1,6 @@
 # Blender v2.66 (sub 1) OBJ File: 'untitled.blend'
 # www.blender.org
-mtllib missile.mtl
+mtllib untitled.mtl
 o Cylinder.003
 v 1.762674 6.254330 0.761258
 v 1.762674 6.205617 1.255850
