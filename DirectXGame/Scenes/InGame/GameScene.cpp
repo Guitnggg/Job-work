@@ -347,16 +347,19 @@ void GameScene::BattleUpdate(float dt) {
         CollisionManager::ResolveLaserEnemyCollisions(bulletManager_.GetLasers(), enemyManager_.GetEnemies(), countDown_);
         // ホーミングミサイル
         CollisionManager::ResolveHomingMissileEnemyCollisions(bulletManager_.GetHomingMissiles(), enemyManager_.GetEnemies(), countDown_);
+        // プレイヤー弾 ↔ ターレット弾
+        CollisionManager::ResolvePlayerBulletTurretBulletCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
+        // プレイヤー ↔ ターレット弾
+        CollisionManager::ResolvePlayerTurretBulletCollisions(player_, enemyManager_.GetEnemies(), countDown_);
 
         // 弾で倒された敵の数をカウントしてスコアを加算
         int deadCount = 0;
         for (auto& e : enemyManager_.GetEnemies()) {
-            if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
-                if (s->IsDead()) {
-                    deadCount++;
-                }
+            if (e && e->IsDead()) {
+                deadCount++;
             }
         }
+
         if (deadCount > 0) {
             uiManager_.GetScore()->Add(deadCount * kScorePerEnemy_);
         }

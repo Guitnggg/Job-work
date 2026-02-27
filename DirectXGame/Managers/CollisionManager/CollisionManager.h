@@ -5,6 +5,7 @@
 
 #include "Application/Characters/Collider.h"
 #include "Application/Characters/Enemy/SeekerEnemy.h"
+#include "Application/Characters/Enemy/TurretEnemy.h"
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/Player.h"
 #include "Application/Characters/Player/Laser.h"
@@ -56,4 +57,20 @@ public:
 	/// <param name="enemies"></param>
 	/// <param name="countDown"></param>
 	static void ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+
+	/// <summary>
+	/// プレイヤーとターレットの弾の衝突判定を行う
+	/// </summary>
+	/// <param name="player"></param>
+	/// <param name="enemies"></param>
+	/// <param name="countDown"></param>
+	static void ResolvePlayerTurretBulletCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+
+	/// <summary>
+	/// プレイヤー弾とターレット弾の衝突判定を行う
+	/// </summary>
+	/// <param name="playerBullets"></param>
+	/// <param name="enemies"></param>
+	/// <param name="countDown"></param>
+	static void ResolvePlayerBulletTurretBulletCollisions(std::vector<std::unique_ptr<Bullet>>& playerBullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 };

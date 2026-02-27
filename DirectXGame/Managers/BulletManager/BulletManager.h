@@ -84,7 +84,12 @@ private:
 	/// <summary>
 	/// 全飛行弾の更新処理を行う。
 	/// </summary>
-	void UpdateBullets_();
+	void UpdateBullets_(EnemyManager* enemyManager);
+
+	/// <summary>
+	/// ホーミング対象が既に削除済みのミサイルからターゲット参照を外す
+	/// </summary>
+	void ValidateHomingTargets_(EnemyManager* enemyManager);
 
 	/// <summary>
 	/// 死亡状態（寿命切れ／衝突／距離制限）の弾をコンテナから削除する。

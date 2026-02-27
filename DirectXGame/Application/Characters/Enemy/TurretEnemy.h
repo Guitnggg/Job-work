@@ -37,6 +37,14 @@ public:
 	/// </summary>
 	bool IsDead() const override { return isDead_ || hp_ <= 0; }
 
+	/// <summary>
+	/// 砲台が保持している弾コンテナを取得
+	/// （CollisionManager で当たり判定を行う用途）
+	/// </summary>
+	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
+	const std::vector<std::unique_ptr<Bullet>>& GetBullets() const { return bullets_; }
+
+
 public: // ---- 外部設定 ----
 	/// <summary>砲台が狙うターゲット位置</summary>
 	void SetTarget(const KamataEngine::Vector3& worldTarget) {
