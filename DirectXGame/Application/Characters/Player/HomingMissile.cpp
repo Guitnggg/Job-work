@@ -4,13 +4,15 @@
 #include "base/TextureManager.h"
 
 #include <cmath>
+#include <cassert>
 
 using namespace KamataEngine;
 
 void HomingMissile::Initialize() {
     CharacterBase::Initialize();
     model_.reset(Model::CreateFromOBJ("Missile AGM-65", true));
-    textureHandle_ = TextureManager::Load("Resources/missile/Texture.png");
+    assert(model_);
+    textureHandle_ = TextureManager::Load("Resources/Missile AGM-65/Texture.png");
     worldTransform_.scale_ = kMissileScale;
     worldTransform_.UpdateMatrix();
 
