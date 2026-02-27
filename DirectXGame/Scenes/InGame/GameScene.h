@@ -109,6 +109,11 @@ private:
     void UIUpdate();
 
     /// <summary>
+    /// ミサイルのロックオン演出の更新
+    /// </summary>
+    void UpdateLoacOnMakers();
+
+    /// <summary>
     /// ダメージパーティクル更新
     /// </summary>
     /// <param name="dt"></param>
@@ -183,6 +188,16 @@ private:
     std::unique_ptr<KamataEngine::Sprite>reticleSprite_;
     KamataEngine::Vector2 reticlePos_{ 640.0f,360.0f };
     KamataEngine::Vector3 shootDirection_{ 0.0f,0.0f,1.0f };
+
+    // ========== ミサイルロックオン演出 ==========
+    struct LockOnMarker {
+        std::unique_ptr<KamataEngine::Sprite> sprite;
+        CharacterBase* target = nullptr;
+        float pulseT = 0.0f;
+    };
+
+    uint32_t lockOnTexHandle_ = 0;
+    std::vector<LockOnMarker> lockOnMarkers_;
 
     // ========== 弾・敵管理 ==========
     EnemyManager enemyManager_;

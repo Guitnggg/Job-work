@@ -7,10 +7,16 @@
 
 #include "Application/Characters/CharacterBase.h"
 
+/// <summary>
+/// ホーミングミサイルクラス
+/// マウス右クリック長押しでロックオン
+/// 離すと発射
+/// インターバル有
+/// </summary>
 class HomingMissile : public CharacterBase {
 public:
 	/// <summary>
-	/// 
+	/// 初期化処理
 	/// </summary>
 	void Initialize() override;
 
@@ -20,29 +26,29 @@ public:
 	void FireFrom(const KamataEngine::Vector3& worldPos, CharacterBase* target);
 
 	/// <summary>
-	/// 
+	/// 更新処理
 	/// </summary>
 	void Update() override;
 
 	/// <summary>
-	/// 
+	/// 描画処理
 	/// </summary>
 	void Draw(const KamataEngine::Camera* camera) override;
 
 	/// <summary>
-	/// 
+	/// 当たり判定
 	/// </summary>
 	void OnCollision(CharacterBase* other) override;
 
 	/// <summary>
-	/// 
+	/// 死亡判定
 	/// </summary>
 	bool IsDead() const override { return isDead_; }
 
 private:
 	// ===== 定数 =====
 	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-	static constexpr KamataEngine::Vector3 kMissileScale{0.5f, 0.5f, 1.0f};
+	static constexpr KamataEngine::Vector3 kMissileScale{ 0.16f,0.16f,0.28f };
 	static constexpr float kColliderRadius = 0.65f;
 	static constexpr float kSpeed = 1.4f;
 	static constexpr float kTurnRate = 0.14f;
