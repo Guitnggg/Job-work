@@ -13,14 +13,14 @@ void HomingMissile::Initialize() {
 
     if (!model_) {
         // 旧リソース名（スペースあり）でのフォールバック
-        model_.reset(Model::CreateFromOBJ("Missile AGM-65", true));
+        model_.reset(Model::CreateFromOBJ("missile", true));
     }
 
     if (!model_) {
         model_.reset(Model::CreateSphere());
     }
 
-    textureHandle_ = TextureManager::Load("./Resources/Missile AGM-65/Texture.png");
+    textureHandle_ = TextureManager::Load("./Resources/missile/Texture.png");
     worldTransform_.scale_ = kMissileScale;
     worldTransform_.UpdateMatrix();
 
