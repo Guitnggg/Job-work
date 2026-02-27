@@ -72,6 +72,12 @@ public:
 
 private:
     /// <summary>
+    /// デバッグ調整用 ImGui
+    /// </summary>
+    void DrawImGui();
+
+private:
+    /// <summary>
     /// 3カウント更新
     /// </summary>
     /// <param name="dt"></param>

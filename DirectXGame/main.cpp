@@ -33,6 +33,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
             break;
         }
 
+#ifdef USE_IMGUI
+        ImGuiManager::GetInstance()->Begin();
+#endif
+
         //=============
         // 更新処理
         //=============
@@ -47,6 +51,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
         dxCommon->PreDraw();
 
         sceneManager.Draw();
+
+#ifdef USE_IMGUI
+        ImGuiManager::GetInstance()->End();
+        ImGuiManager::GetInstance()->Draw();
+#endif
 
         //描画処理終了
         dxCommon->PostDraw();
