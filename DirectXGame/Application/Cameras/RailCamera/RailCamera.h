@@ -33,6 +33,11 @@ public:
 	/// </summary>
 	void Update();
 
+	/// <summary>
+	/// 演出用のカメラズーム
+	/// </summary>
+	void SetCinematicZoom(float zoomZ);
+
 public:
 	/// <summary>
 	/// カメラシェイクを追加する
@@ -84,4 +89,8 @@ private:
 	// ===== ロール補間 =====
 	float rollAngle_ = 0.0f;       // 現在のロール角
 	float targetRollAngle_ = 0.0f; // 目標ロール角
+
+	// ===== 演出用ズーム =====
+	float cinematicZoomZ_ = 0.0f; // 演出用ズームのZオフセット
+	float targetCinematicZoomZ_ = 0.0f; // 演出用ズームの目標Zオフセット
 };

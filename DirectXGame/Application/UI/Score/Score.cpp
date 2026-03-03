@@ -1,5 +1,7 @@
 #include "Score.h"
 
+#include <algorithm>
+
 using namespace KamataEngine;
 
 Score::~Score() {
@@ -22,10 +24,26 @@ void Score::Initialize() {
     }
 
     score_ = 0;
+	displayedScore_ = 0.0f;
+	scorePopTimer_ = 0.0f;
 }
 
 void Score::Update() {
-    int32_t number = score_;  // 表示対象のスコア値
+	const float follow = 0.22f;
+	displayedScore_ += (static_cast<float>(score_) - displayedScore_) * follow;
+	if (scorePopTimer_ > 0.0f) {
+		scorePopTimer_ = (std::max)(0.0f, scorePopTimer_ - (1.0f / 60.0f));
+		const float pulse = 1.0f + (scorePopTimer_ / 0.18f) * 0.35f;
+		for (int i = 0; i < kDigitCount; ++i) {
+			digitSprites_[i]->SetSize({size_.x * pulse, size_.y * pulse});
+		}
+	} else {
+		for (int i = 0; i < kDigitCount; ++i) {
+			digitSprites_[i]->SetSize(size_);
+		}
+	}
+
+	int32_t number = static_cast<int32_t>(displayedScore_ + 0.5f); // 表示対象のスコア値
     int32_t digit = 10000;    // 一番上の桁からスタートする
 
     for (int i = 0; i < kDigitCount; ++i) {
@@ -42,6 +60,11 @@ void Score::Draw() {
     for (int i = 0; i < kDigitCount; ++i) {
         digitSprites_[i]->Draw();
     }
+}
+
+void Score::Add(int value) {
+	score_ += value;
+	scorePopTimer_ = 0.18f;
 }
 
 void Score::SetPosition(float x, float y){

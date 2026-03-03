@@ -40,12 +40,18 @@ void RailCamera::Update() {
 	Vector3 finalCameraPos = MyMath::Add(lagCameraPos_, cameraShake_.GetOffset());
 	finalCameraPos.x += rollAngle_ * kRollPosOffsetX;
 	finalCameraPos.y += rollAngle_ * kRollPosOffsetY;
+	finalCameraPos.z += cinematicZoomZ_;
+
+	const float zoomDiff = targetCinematicZoomZ_ - cinematicZoomZ_;
+	cinematicZoomZ_ += zoomDiff * kFollowRate;
 
 	// --- Camera へ反映 ---
 	camera_->translation_ = finalCameraPos;
 	camera_->rotation_.z = rollAngle_;
 	camera_->UpdateMatrix();
 }
+
+void RailCamera::SetCinematicZoom(float zoomZ) { targetCinematicZoomZ_ = zoomZ; }
 
 void RailCamera::AddShake(const Vector3& dir, float power) {
 	cameraShake_.AddShake(dir, power);

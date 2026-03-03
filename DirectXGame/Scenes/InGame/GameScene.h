@@ -41,6 +41,13 @@ enum class GameResult {
     None,   // 判定前
 };
 
+enum class SceneTransitionPhase {
+	None,        
+	IntroCinematic, // ゲーム開始前の演出
+	ClearCinematic, // クリア後の演出
+	FailCinematic,  // 失敗後の演出
+};
+
 /// <summary>
 /// ゲーム本編シーン。  
 /// カウントダウン → 戦闘 → 判定（クリア／失敗） → 演出 → シーン遷移  
@@ -74,7 +81,6 @@ private:
     /// <summary>
     /// 3カウント更新
     /// </summary>
-    /// <param name="dt"></param>
     void CountDownUpdate(float dt);
 
     /// <summary>
@@ -95,7 +101,6 @@ private:
     /// <summary>
     /// 戦闘処理
     /// </summary>
-    /// <param name="dt"></param>
     void BattleUpdate(float dt);
 
     /// <summary>
@@ -116,13 +121,11 @@ private:
     /// <summary>
     /// ダメージパーティクル更新
     /// </summary>
-    /// <param name="dt"></param>
     void DamageParticleUpdate(float dt);
 
     /// <summary>
     /// エンジンスモーク更新
     /// </summary>
-    /// <param name="dt"></param>
     void EngineSmokesUpdate(float dt);
 
     /// <summary>
@@ -133,7 +136,6 @@ private:
     /// <summary>
     /// スピードライン更新
     /// </summary>
-    /// <param name="dt"></param>
     void SpeedLineUpdate(float dt);
 
     /// <summary>
@@ -144,8 +146,22 @@ private:
     /// <summary>
     /// クリア後演出更新
     /// </summary>
-    /// <param name="dt"></param>
     void ClearAnimationUpdate(float dt);
+
+    /// <summary>
+	/// 遷移演出の方向更新
+    /// </summary>
+    void UpdateTransitionDirection(float dt);
+
+	/// <summary>
+	/// プレイヤー位置で爆発エフェクトを発生させる
+	/// </summary>
+	void StartExplosionAtPlayer(float scale);
+
+	/// <summary>
+	/// BGMのフェードアウト更新
+	/// </summary>
+	void UpdateBgmFade(float dt);
 
 public:
     bool IsEnd() const override { return isEnd_; }
@@ -270,6 +286,20 @@ private:
     float kClearShrinkStart_ = 0.5f;
     float kClearShrinkSpeed_ = 1.0f;
     float kClearAnimEndTime_ = 2.0f;
+
+     // ========== 遷移演出 ==========
+	SceneTransitionPhase transitionPhase_ = SceneTransitionPhase::None;
+	float transitionTimer_ = 0.0f;
+	float timeScale_ = 1.0f;
+
+	int transitionScoreBonus_ = 0;
+	bool failSecondExplosionDone_ = false;
+
+	uint32_t seExplosionHandle_ = 0;
+	uint32_t bgmHandle_ = 0;
+	uint32_t bgmVoiceHandle_ = 0;
+	float bgmVolume_ = 0.0f;
+	float bgmTargetVolume_ = 0.0f;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;
