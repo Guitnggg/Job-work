@@ -17,6 +17,15 @@ namespace {
 	constexpr float kAsteroidSpeedMax = -0.1f;
 	constexpr float kAsteroidRotMin = 0.01f;
 	constexpr float kAsteroidRotMax = 0.03f;
+	constexpr float kDifficultyBaseX = 700.0f;
+	constexpr float kDifficultyBaseY = 300.0f;
+	constexpr float kDifficultyStepY = 80.0f;
+	constexpr float kDifficultyNormalScale = 1.0f;
+	constexpr float kDifficultySelectedScale = 1.12f;
+	constexpr Vector4 kDifficultyNormalColor = { 0.8f, 0.8f, 0.8f, 1.0f };
+	constexpr Vector4 kDifficultySelectedColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	constexpr Vector4 kDifficultyCursorColor = { 1.0f, 1.0f, 0.5f, 1.0f };
+	constexpr float kDifficultyCursorOffsetX = -54.0f;
 }
 
 IntroductionScene::IntroductionScene() {}
@@ -28,6 +37,8 @@ void IntroductionScene::Initialize() {
 
 	// シーン変遷の初期化
 	nextScene_ = SceneName::None;
+	isEnd_ = false;
+	selectedIndex_ = 0;
 
 	// 各種テクスチャ
 	returnTitleTextureHandle_ = TextureManager::Load("./Resources/introduction/Esc-export.png");
@@ -35,6 +46,19 @@ void IntroductionScene::Initialize() {
 
 	introTextureHandle_ = TextureManager::Load("./Resources/Introduction/setumei.png");
 	introSprite_.reset(Sprite::Create(introTextureHandle_, {0.0f, 0.0f}));
+
+	const std::array<const char*, static_cast<size_t>(Difficulty::Count)> difficultyTexturePaths = {
+		"./Resources/Introduction/DifficultyTutorial.png",
+		"./Resources/Introduction/DifficultyEasy.png",
+		"./Resources/Introduction/DifficultyNormal.png",
+		"./Resources/Introduction/DifficultyHard.png",
+	};
+
+	for (size_t i = 0; i < difficultySprites_.size(); ++i) {
+		difficultyTextureHandles_[i] = TextureManager::Load(difficultyTexturePaths[i]);
+		difficultySprites_[i].reset(Sprite::Create(difficultyTextureHandles_[i], { kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i) }));
+		difficultySprites_[i]->SetColor(kDifficultyNormalColor);
+	}
 
 	// 各種サウンド
 	changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
@@ -77,10 +101,18 @@ void IntroductionScene::Update() {
 		Audio::GetInstance()->PlayWave(changeSEHandle_);
 		nextScene_ = SceneName::Title;
 		isEnd_ = true;
+		return;
 	}
 
-	// 次のシーンへ
-	if (input_->PushKey(DIK_SPACE)) {
+	const int difficultyCount = static_cast<int>(Difficulty::Count);
+	if (input_->TriggerKey(DIK_UP) || input_->TriggerKey(DIK_W)) {
+		selectedIndex_ = (selectedIndex_ - 1 + difficultyCount) % difficultyCount;
+	}
+	if (input_->TriggerKey(DIK_DOWN) || input_->TriggerKey(DIK_S)) {
+		selectedIndex_ = (selectedIndex_ + 1) % difficultyCount;
+	}
+
+	if (input_->TriggerKey(DIK_RETURN) || input_->TriggerKey(DIK_SPACE)) {
 		Audio::GetInstance()->PlayWave(changeSEHandle_);
 		nextScene_ = SceneName::InGame;
 		isEnd_ = true;
@@ -134,7 +166,24 @@ void IntroductionScene::Draw() {
 
 	returnTitleSprite_->Draw();
 
-	introSprite_->Draw();
+	//introSprite_->Draw();
+
+	for (size_t i = 0; i < difficultySprites_.size(); ++i) {
+		auto& sprite = difficultySprites_[i];
+		if (!sprite) {
+			continue;
+		}
+		sprite->SetPosition({ kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i) });
+		if (static_cast<int>(i) == selectedIndex_) {
+			sprite->SetColor(kDifficultySelectedColor);
+			sprite->SetSize({ 512.0f * kDifficultySelectedScale, 128.0f * kDifficultySelectedScale });
+		}
+		else {
+			sprite->SetColor(kDifficultyNormalColor);
+			sprite->SetSize({ 512.0f * kDifficultyNormalScale, 128.0f * kDifficultyNormalScale });
+		}
+		sprite->Draw();
+	}
 
 	// スプライト描画後処理
 	Sprite::PostDraw();

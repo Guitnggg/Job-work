@@ -1,6 +1,7 @@
 #pragma once
 
 #include <KamataEngine.h>
+#include <array>
 #include <memory>
 
 #include "Application/Background/Skydome/Skydome.h"
@@ -17,6 +18,17 @@ class GameScene;
 /// </summary>
 class IntroductionScene : public IScene {
 public:
+	/// <summary>
+	/// 難易度選択
+	/// </summary>
+	enum class Difficulty {
+		Tutorial = 0,
+		Easy,
+		Normal,
+		Hard,
+		Count
+	};
+
 	/// <summary>
 	/// コンストラクタ
 	/// </summary>
@@ -75,6 +87,11 @@ private:
 
 	uint32_t introTextureHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> introSprite_;
+
+	std::array<uint32_t, static_cast<size_t>(Difficulty::Count)> difficultyTextureHandles_{};
+	std::array<std::unique_ptr<KamataEngine::Sprite>, static_cast<size_t>(Difficulty::Count)> difficultySprites_;
+	uint32_t difficultyCursorTextureHandle_ = 0;
+	int selectedIndex_ = 0;
 
 	// 各種サウンド
 	uint32_t changeSEHandle_ = 0; // シーン変遷SE
