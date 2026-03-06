@@ -2,6 +2,10 @@
 
 #include <cmath>
 
+#ifdef USE_IMGUI
+#include <imgui.h>
+#endif
+
 #include "Scenes/Clear/ClearScene.h"
 #include "Scenes/Finish/FinishScene.h"
 #include "Scenes/Title/TitleScene.h"
@@ -184,7 +188,15 @@ void GameScene::Update() {
             break;
         }
 
+        DrawImGui();
         return;
+    }
+
+    if (state_ == GameState::Playing) {
+        DrawImGui();
+        if (isDebugUpdatePaused_) {
+            return;
+        }
     }
 
     // ===== 通常更新 =====
@@ -215,6 +227,12 @@ void GameScene::Update() {
 		UpdateTransitionDirection(dt);
         EngineSmokesUpdate(dt);
         SpeedLineUpdate(dt);
+
+#ifdef USE_IMGUI
+        DrawImGui();
+#endif // DEBUG
+               
+
         break;
     }
 
@@ -312,6 +330,72 @@ void GameScene::Draw() {
 #pragma endregion
 }
 
+void GameScene::DrawImGui(){
+#ifdef USE_IMGUI
+    ImGui::Begin("GameScene InGame");
+
+    ImGui::Checkbox("Pause Game Progress", &isDebugUpdatePaused_);
+    ImGui::Separator();
+
+    if (ImGui::BeginTabBar("GameSceneTabs")) {
+        if (ImGui::BeginTabItem("State")) {
+            ImGui::Text("GameState: %s", state_ == GameState::Playing ? "Playing" : "CountDown");
+            ImGui::Text("Result: %s", result_ == GameResult::Clear ? "Clear" : result_ == GameResult::Fail ? "Fail" : "None");
+            ImGui::Text("PauseMenu: %s", isPaused_ ? "Open" : "Closed");
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Score")) {
+            ImGui::DragInt("Score Per Enemy", &kScorePerEnemy_, 1.0f, 0, 10000);
+            ImGui::DragInt("Clear Score", &kClearScore_, 10.0f, 0, 999999);
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Damage")) {
+            ImGui::DragInt("Particle Count", &kDamageParticleCount_, 1.0f, 1, 200);
+            ImGui::DragFloat("Particle Speed XY", &kDamageParticleSpeedXY_, 0.01f, 0.0f, 20.0f);
+            ImGui::DragFloat("Particle Speed Z", &kDamageParticleSpeedZ_, 0.01f, -20.0f, 20.0f);
+            ImGui::DragFloat("Particle Life", &kDamageParticleLife_, 0.01f, 0.01f, 10.0f);
+            ImGui::DragFloat("Particle Start Scale", &kDamageParticleStartScale_, 0.01f, 0.0f, 5.0f);
+            ImGui::DragFloat("Particle End Scale", &kDamageParticleEndScale_, 0.01f, 0.0f, 5.0f);
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Smoke")) {
+            ImGui::Text("Normal");
+            ImGui::DragFloat("Normal Emit Interval", &normalSmokeParams_.emitInterval, 0.001f, 0.001f, 1.0f);
+            ImGui::DragFloat("Normal Life", &normalSmokeParams_.lifeTime, 0.01f, 0.01f, 10.0f);
+            ImGui::DragFloat("Normal Start Scale", &normalSmokeParams_.startScale, 0.01f, 0.0f, 5.0f);
+            ImGui::DragInt("Normal Burst", &normalSmokeParams_.burstCount, 1.0f, 1, 100);
+            ImGui::DragFloat("Normal Base Z Speed", &normalSmokeParams_.baseZSpeed, 0.01f, -20.0f, 20.0f);
+
+            ImGui::Separator();
+            ImGui::Text("Boost");
+            ImGui::DragFloat("Boost Emit Interval", &boostSmokeParams_.emitInterval, 0.001f, 0.001f, 1.0f);
+            ImGui::DragFloat("Boost Life", &boostSmokeParams_.lifeTime, 0.01f, 0.01f, 10.0f);
+            ImGui::DragFloat("Boost Start Scale", &boostSmokeParams_.startScale, 0.01f, 0.0f, 5.0f);
+            ImGui::DragInt("Boost Burst", &boostSmokeParams_.burstCount, 1.0f, 1, 100);
+            ImGui::DragFloat("Boost Base Z Speed", &boostSmokeParams_.baseZSpeed, 0.01f, -20.0f, 20.0f);
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Clear")) {
+            ImGui::DragFloat("Clear Boost Z", &kClearBoostSpeedZ_, 0.01f, -20.0f, 20.0f);
+            ImGui::DragFloat("Clear Boost Y", &kClearBoostSpeedY_, 0.01f, -20.0f, 20.0f);
+            ImGui::DragFloat("Clear Rotate Speed X", &kClearRotateSpeedX_, 0.01f, -20.0f, 20.0f);
+            ImGui::DragFloat("Clear Shrink Start", &kClearShrinkStart_, 0.01f, 0.0f, 10.0f);
+            ImGui::DragFloat("Clear Shrink Speed", &kClearShrinkSpeed_, 0.01f, 0.0f, 20.0f);
+            ImGui::DragFloat("Clear End Time", &kClearAnimEndTime_, 0.01f, 0.1f, 20.0f);
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+#endif
+}
+
 void GameScene::CountDownUpdate(float dt) { countDown_.Update(dt); }
 
 void GameScene::BackgroundUpdate() { skydome_->Update(); }
@@ -367,16 +451,19 @@ void GameScene::BattleUpdate(float dt) {
         CollisionManager::ResolveLaserEnemyCollisions(bulletManager_.GetLasers(), enemyManager_.GetEnemies(), countDown_);
         // ホーミングミサイル
         CollisionManager::ResolveHomingMissileEnemyCollisions(bulletManager_.GetHomingMissiles(), enemyManager_.GetEnemies(), countDown_);
+        // プレイヤー弾 ↔ ターレット弾
+        CollisionManager::ResolvePlayerBulletTurretBulletCollisions(bulletManager_.GetBullets(), enemyManager_.GetEnemies(), countDown_);
+        // プレイヤー ↔ ターレット弾
+        CollisionManager::ResolvePlayerTurretBulletCollisions(player_, enemyManager_.GetEnemies(), countDown_);
 
         // 弾で倒された敵の数をカウントしてスコアを加算
         int deadCount = 0;
         for (auto& e : enemyManager_.GetEnemies()) {
-            if (auto* s = dynamic_cast<SeekerEnemy*>(e.get())) {
-                if (s->IsDead()) {
-                    deadCount++;
-                }
+            if (e && e->IsDead()) {
+                deadCount++;
             }
         }
+
         if (deadCount > 0) {
             uiManager_.GetScore()->Add(deadCount * kScorePerEnemy_);
         }

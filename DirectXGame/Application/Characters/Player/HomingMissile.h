@@ -45,6 +45,16 @@ public:
 	/// </summary>
 	bool IsDead() const override { return isDead_; }
 
+	/// <summary>
+	/// 現在の追尾対象を取得（非所有）
+	/// </summary>
+	CharacterBase* GetTarget() const { return target_; }
+
+	/// <summary>
+	/// 追尾対象をクリアする
+	/// </summary>
+	void ClearTarget() { target_ = nullptr; }
+
 private:
 	// ===== 定数 =====
 	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;

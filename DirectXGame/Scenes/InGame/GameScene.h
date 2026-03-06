@@ -79,6 +79,12 @@ public:
 
 private:
     /// <summary>
+    /// デバッグ調整用 ImGui
+    /// </summary>
+    void DrawImGui();
+
+private:
+    /// <summary>
     /// 3カウント更新
     /// </summary>
     void CountDownUpdate(float dt);
@@ -258,11 +264,12 @@ private:
     int clearScore_ = 0;
 
     int kScorePerEnemy_ = 100;
-    int kClearScore_ = 1000;
+    int kClearScore_ = 5000;
 
     // ========== Pauseメニュー ==========
     bool isPaused_ = false;
     bool wasPaused_ = false;
+    bool isDebugUpdatePaused_ = false;
     std::unique_ptr<PauseMenu> pauseMenu_;
     std::unique_ptr<KamataEngine::Sprite> pauseTitleSprite_;
     uint32_t pauseTitleTexHandle_ = 0;
