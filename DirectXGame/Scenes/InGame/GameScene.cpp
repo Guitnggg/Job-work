@@ -220,7 +220,7 @@ void GameScene::Update() {
         SpawnDamageParticles();
         BattleUpdate(dt);
         UIUpdate();
-        UpdateLoacOnMakers();
+        UpdateLockOnMakers();
         DamageParticleUpdate(dt);
         JudgeResultAndStartClear();
         ClearAnimationUpdate(dt);
@@ -530,7 +530,7 @@ void GameScene::UIUpdate() {
     uiManager_.Update();
 }
 
-void GameScene::UpdateLoacOnMakers() {
+void GameScene::UpdateLockOnMakers() {
     lockOnMarkers_.clear();
 
     // 

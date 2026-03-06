@@ -122,7 +122,7 @@ private:
     /// <summary>
     /// ミサイルのロックオン演出の更新
     /// </summary>
-    void UpdateLoacOnMakers();
+    void UpdateLockOnMakers();
 
     /// <summary>
     /// ダメージパーティクル更新
