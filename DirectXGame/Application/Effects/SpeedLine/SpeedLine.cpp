@@ -1,25 +1,13 @@
 #include "SpeedLine.h"
 
-using namespace KamataEngine;
-
 SpeedLine::SpeedLine() = default;
+SpeedLine::~SpeedLine() = default;
 
-SpeedLine::~SpeedLine() {
-	// WorldTransform を解放
-	for (auto& line : lines_) {
-		delete line.worldTransform;
-		line.worldTransform = nullptr;
-	}
-
-	delete model_;
-	model_ = nullptr;
-}
-
-void SpeedLine::Initialize(Camera* camera, int32_t lineCount) {
+void SpeedLine::Initialize(KamataEngine::Camera* camera, int32_t lineCount) {
 	camera_ = camera;
 
 	// モデル読み込み（仮：専用モデルがあれば差し替え）
-	model_ = Model::CreateFromOBJ("Asteroid", true);
+	model_.reset(KamataEngine::Model::CreateFromOBJ("Asteroid", true));
 
 	// 乱数初期化
 	std::random_device rd;
@@ -28,16 +16,16 @@ void SpeedLine::Initialize(Camera* camera, int32_t lineCount) {
 	// ライン確保
 	lines_.resize(lineCount);
 
-	const Vector3 dummyPlayerPos{0.0f, 0.0f, 0.0f};
+	const KamataEngine::Vector3 dummyPlayerPos{0.0f, 0.0f, 0.0f};
 	for (auto& line : lines_) {
-		line.worldTransform = new WorldTransform();
+		line.worldTransform = std::make_unique<KamataEngine::WorldTransform>();
 		line.worldTransform->Initialize();
 
 		Respawn_(line, dummyPlayerPos, true);
 	}
 }
 
-void SpeedLine::Respawn_(LineParticle& p, const Vector3& basePos, bool randomDepth) {
+void SpeedLine::Respawn_(LineParticle& p, const KamataEngine::Vector3& basePos, bool randomDepth) {
 	if (!p.worldTransform) {
 		return;
 	}
@@ -79,7 +67,7 @@ void SpeedLine::Respawn_(LineParticle& p, const Vector3& basePos, bool randomDep
 	wt.UpdateMatrix();
 }
 
-void SpeedLine::Update(float dt, const Vector3& playerPos) {
+void SpeedLine::Update(float dt, const KamataEngine::Vector3& playerPos) {
 	if (!camera_ || !model_) {
 		return;
 	}

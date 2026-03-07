@@ -1,6 +1,7 @@
 #pragma once
 
 #include <KamataEngine.h>
+#include <memory>
 #include <random>
 #include <vector>
 
@@ -38,9 +39,9 @@ private:
 	/// スピードライン1本分のデータ
 	/// </summary>
 	struct LineParticle {
-		KamataEngine::WorldTransform* worldTransform = nullptr; // 変換情報（所有）
-		float speed = 0.0f;                                     // 移動速度
-		float alpha = 1.0f;                                     // 透明度（将来拡張用）
+		std::unique_ptr<KamataEngine::WorldTransform> worldTransform = nullptr;  // 変換情報（所有）
+		float speed = 0.0f;                                                      // 移動速度
+		float alpha = 1.0f;                                                      // 透明度（将来拡張用）
 	};
 
 private:
@@ -87,7 +88,7 @@ private:
 	static constexpr float kJitterY = 0.01f;
 
 private:
-	KamataEngine::Model* model_ = nullptr;   // 描画モデル
+	std::unique_ptr<KamataEngine::Model> model_ = nullptr; // 描画モデル
 	KamataEngine::Camera* camera_ = nullptr; // 使用カメラ
 
 	std::vector<LineParticle> lines_; // ライン群
