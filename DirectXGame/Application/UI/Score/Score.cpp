@@ -2,16 +2,8 @@
 
 #include <algorithm>
 
-using namespace KamataEngine;
-
-Score::~Score() {
-    for (int i = 0; i < kDigitCount; i++) {
-        delete digitSprites_[i];
-    }
-}
-
 void Score::Initialize() {
-    textureHandle_ = TextureManager::Load("./Resources/InGame/number.png");
+    textureHandle_ = KamataEngine::TextureManager::Load("./Resources/InGame/number.png");
 
     // 画面右上に表示するためにx座標を計算
     float screenWidth = static_cast<float>(KamataEngine::DirectXCommon::GetInstance()->GetBackBufferWidth());
@@ -19,7 +11,7 @@ void Score::Initialize() {
 
     // 各桁のスプライトを作成
     for (int i = 0; i < kDigitCount; ++i) {
-        digitSprites_[i] = Sprite::Create(textureHandle_, { startX_ + size_.x * i, startY_ });
+        digitSprites_[i].reset(KamataEngine::Sprite::Create(textureHandle_, { startX_ + size_.x * i, startY_ }));
         digitSprites_[i]->SetSize(size_);
     }
 

@@ -1,28 +1,19 @@
 #include "CountDown.h"
 
-using namespace KamataEngine;
-
-CountDown::~CountDown() {
-    delete count1Sprite_;
-    delete count2Sprite_;
-    delete count3Sprite_;
-    delete goSprite_;
-}
-
 void CountDown::InitializeFromPaths(const char* tex3, const char* tex2, const char* tex1, const char* texGo,
-    const Vector2& centerPos, const Vector2& baseSizeCount, const Vector2& baseGoSize) {
+    const KamataEngine::Vector2& centerPos, const  KamataEngine::Vector2& baseSizeCount, const  KamataEngine::Vector2& baseGoSize) {
     // 画像パスからテクスチャを読み込む
     InitializeFromHandles(
-        TextureManager::Load(tex3),
-        TextureManager::Load(tex2),
-        TextureManager::Load(tex1),
-        TextureManager::Load(texGo),
+        KamataEngine::TextureManager::Load(tex3),
+        KamataEngine::TextureManager::Load(tex2),
+        KamataEngine::TextureManager::Load(tex1),
+        KamataEngine::TextureManager::Load(texGo),
         centerPos, baseSizeCount, baseGoSize
     );
 }
 
 void CountDown::InitializeFromHandles(uint32_t tex3, uint32_t tex2, uint32_t tex1, uint32_t texGo,
-    const Vector2& centerPos, const Vector2& baseSizeCount, const Vector2& baseSizeGo) {
+    const  KamataEngine::Vector2& centerPos, const  KamataEngine::Vector2& baseSizeCount, const  KamataEngine::Vector2& baseSizeGo) {
     // 表示パラメータ設定
     center_ = centerPos;
     baseSizeCount_ = baseSizeCount;
@@ -30,12 +21,15 @@ void CountDown::InitializeFromHandles(uint32_t tex3, uint32_t tex2, uint32_t tex
 
     // 中心揃え・透明状態でスプライトを生成するラムダ
     auto makeCentered = [&](uint32_t tex) {
-        return Sprite::Create(tex, center_, { 1,1,1,0 }, { 0.5f,0.5f }, false, false);
+        return  KamataEngine::Sprite::Create(tex, center_, { 1,1,1,0 }, { 0.5f,0.5f }, false, false);
         };
 
     // 既存スプライトを破棄してから再生成
-    delete count3Sprite_; delete count2Sprite_; delete count1Sprite_; delete goSprite_;
-    count3Sprite_ = makeCentered(tex3);
+    count3Sprite_.reset();
+    count2Sprite_.reset();
+    count1Sprite_.reset();
+    goSprite_.reset();
+    count3Sprite_ = makeCentered(tex1);
     count2Sprite_ = makeCentered(tex2);
     count1Sprite_ = makeCentered(tex1);
     goSprite_ = makeCentered(texGo);
@@ -98,14 +92,14 @@ void CountDown::Update(float dt) {
         // 3/2/1開始時のSE
         if (phase_ == Phase::Count3 || phase_ == Phase::Count2 || phase_ == Phase::Count1) {
             if (seBeep_) {
-                Audio::GetInstance()->PlayWave(seBeep_);
+                KamataEngine::Audio::GetInstance()->PlayWave(seBeep_);
             }
         }
 
         // Go開始時のSEと入力解放
         if (phase_ == Phase::Go) {
             if (!goPlayed_ && seGo_) {
-                Audio::GetInstance()->PlayWave(seGo_);
+                KamataEngine::Audio::GetInstance()->PlayWave(seGo_);
                 goPlayed_ = true;
             }
 
@@ -136,7 +130,7 @@ void CountDown::Draw() {
         spr->SetColor({ 1.0f,1.0f,1.0f,alpha });
 
         // フェーズごとにサイズを切り替え
-        Vector2 base = (phase_ == Phase::Go) ? baseSizeGo_ : baseSizeCount_;
+        KamataEngine::Vector2 base = (phase_ == Phase::Go) ? baseSizeGo_ : baseSizeCount_;
         spr->SetSize({ base.x * scale,base.y * scale });
         spr->SetPosition(center_);
         spr->Draw();
@@ -172,20 +166,20 @@ float CountDown::CurrentPhaseDuration() const{
     }
 }
 
-Sprite* CountDown::CurrentPhaseSprite()const {
+KamataEngine::Sprite* CountDown::CurrentPhaseSprite()const {
     // 現在フェーズで表示すべきスプライトを返す
     switch (phase_) {
     case Phase::Count3:
-        return count3Sprite_;
+        return count3Sprite_.get();
 
     case Phase::Count2:
-        return count2Sprite_;
+        return count2Sprite_.get();
 
     case Phase::Count1:
-        return count1Sprite_;
+        return count1Sprite_.get();
 
     case Phase::Go:
-        return goSprite_;
+        return goSprite_.get();
 
     default:
         return nullptr;

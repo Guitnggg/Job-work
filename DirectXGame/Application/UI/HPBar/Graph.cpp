@@ -3,21 +3,14 @@
 #include <algorithm>
 #include <cassert>
 
-using namespace KamataEngine;
-
 Graph::Graph() {}
-
-Graph::~Graph() {
-    delete backBar_;
-    delete frontBar_;
-}
 
 void Graph::Initialize() {
 
-    texHandle_ = TextureManager::Load("./Resources/white1x1.png");
+    texHandle_ = KamataEngine::TextureManager::Load("./Resources/white1x1.png");
 
-    backBar_ = Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, { 1, 0, 0, 1 });
-    frontBar_ = Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, { 0, 1, 0, 1 });
+    backBar_.reset(KamataEngine::Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, { 1, 0, 0, 1 }));
+    frontBar_.reset(KamataEngine::Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, { 0, 1, 0, 1 }));
 
     // 初期値を100%に設定
     value_ = 1.0f;
