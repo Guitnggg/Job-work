@@ -19,20 +19,11 @@ void CountDown::InitializeFromHandles(uint32_t tex3, uint32_t tex2, uint32_t tex
     baseSizeCount_ = baseSizeCount;
     baseSizeGo_ = baseSizeGo;
 
-    // 中心揃え・透明状態でスプライトを生成するラムダ
-    auto makeCentered = [&](uint32_t tex) {
-        return  KamataEngine::Sprite::Create(tex, center_, { 1,1,1,0 }, { 0.5f,0.5f }, false, false);
-        };
-
     // 既存スプライトを破棄してから再生成
-    count3Sprite_.reset();
-    count2Sprite_.reset();
-    count1Sprite_.reset();
-    goSprite_.reset();
-    count3Sprite_ = makeCentered(tex1);
-    count2Sprite_ = makeCentered(tex2);
-    count1Sprite_ = makeCentered(tex1);
-    goSprite_ = makeCentered(texGo);
+    count3Sprite_.reset(KamataEngine::Sprite::Create(tex3, center_, { 1, 1, 1, 0 }, { 0.5f, 0.5f }, false, false));
+    count2Sprite_.reset(KamataEngine::Sprite::Create(tex2, center_, { 1, 1, 1, 0 }, { 0.5f, 0.5f }, false, false));
+    count1Sprite_.reset(KamataEngine::Sprite::Create(tex1, center_, { 1, 1, 1, 0 }, { 0.5f, 0.5f }, false, false));
+    goSprite_.reset(KamataEngine::Sprite::Create(texGo, center_, { 1, 1, 1, 0 }, { 0.5f, 0.5f }, false, false));
 
     // 状態を初期化
     phase_ = Phase::Inactive;
