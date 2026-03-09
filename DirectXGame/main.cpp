@@ -32,7 +32,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
         }
 
 #ifdef USE_IMGUI
-        ImGuiManager::GetInstance()->Begin();
+        KamataEngine::ImGuiManager::GetInstance()->Begin();
 #endif
 
         //=============
@@ -51,8 +51,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
         sceneManager.Draw();
 
 #ifdef USE_IMGUI
-        ImGuiManager::GetInstance()->End();
-        ImGuiManager::GetInstance()->Draw();
+        KamataEngine::ImGuiManager::GetInstance()->End();
+        KamataEngine::ImGuiManager::GetInstance()->Draw();
 #endif
 
         //描画処理終了
