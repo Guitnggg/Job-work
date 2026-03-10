@@ -15,9 +15,6 @@ using namespace KamataEngine;
 GameScene::GameScene() {}
 
 GameScene::~GameScene() {
-	if (audio_ && bgmVoiceHandle_ != 0u) {
-		audio_->StopWave(bgmVoiceHandle_);
-	}
 	delete railCamera_;
 	delete skydome_;
 	delete player_;
@@ -127,11 +124,7 @@ void GameScene::Initialize() {
 	const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
 	pauseTitleSprite_->SetSize({pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f});
 	seExplosionHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
-	bgmHandle_ = audio_->LoadWave("./Resources/mokugyo.wav");
-	bgmVoiceHandle_ = audio_->PlayWave(bgmHandle_, true, 0.0f);
-	bgmVolume_ = 0.0f;
-	bgmTargetVolume_ = 0.6f;
-
+	
 	// ===== その他 =====
 	isEnd_ = false;
 	result_ = GameResult::None;
@@ -149,7 +142,6 @@ void GameScene::Initialize() {
 
 void GameScene::Update() {
 	const float dt = kFixedDeltaTime_ * timeScale_;
-	UpdateBgmFade(kFixedDeltaTime_);
 
 	// ===== Pause 切り替え =====
 	if (input_->TriggerKey(DIK_ESCAPE) && state_ == StartSequencePhase::Playing) {
@@ -479,14 +471,15 @@ void GameScene::EnterStartSequencePhase(StartSequencePhase nextPhase) {
 		player_->SetTranslate(playerEntryStartPos_);
 		player_->GetWorldTransform().UpdateMatrix();
 		player_->SetInputEnabled(false);
+
 	} else if (nextPhase == StartSequencePhase::CountDown) {
 		countDown_.Start();
-		bgmTargetVolume_ = 0.55f;
+
 	} else if (nextPhase == StartSequencePhase::Launch) {
 		transitionPhase_ = SceneTransitionPhase::IntroCinematic;
 		transitionTimer_ = 0.0f;
 		timeScale_ = 0.55f;
-		bgmTargetVolume_ = 0.85f;
+
 	} else if (nextPhase == StartSequencePhase::Playing) {
 		player_->SetInputEnabled(true);
 		timeScale_ = 1.0f;
@@ -773,8 +766,8 @@ void GameScene::JudgeResultAndStartClear() {
 			transitionPhase_ = SceneTransitionPhase::FailCinematic;
 			transitionTimer_ = 0.0f;
 			timeScale_ = 0.35f;
-			bgmTargetVolume_ = 0.0f;
 			StartExplosionAtPlayer(2.3f);
+
 		} else if (uiManager_.GetScore()->GetScore() >= kClearScore_) {
 			result_ = GameResult::Clear;
 			clearScore_ = uiManager_.GetScore()->GetScore();
@@ -783,7 +776,6 @@ void GameScene::JudgeResultAndStartClear() {
 			transitionPhase_ = SceneTransitionPhase::ClearCinematic;
 			transitionTimer_ = 0.0f;
 			timeScale_ = 0.45f;
-			bgmTargetVolume_ = 0.15f;
 			transitionScoreBonus_ = 300;
 			uiManager_.GetScore()->Add(transitionScoreBonus_);
 		}
@@ -815,7 +807,6 @@ void GameScene::ClearAnimationUpdate(float dt) {
 		if (clearAnimTimer_ >= kClearAnimEndTime_) {
 			isEnd_ = true;
 			isClearAnimating_ = false;
-			bgmTargetVolume_ = 0.0f;
 		}
 	}
 }
@@ -848,7 +839,6 @@ void GameScene::UpdateTransitionDirection(float dt) {
 		if (transitionTimer_ >= 1.2f) {
 			isEnd_ = true;
 			timeScale_ = 1.0f;
-			bgmTargetVolume_ = 0.0f;
 		}
 	}
 }
@@ -872,17 +862,6 @@ void GameScene::StartExplosionAtPlayer(float scale) {
 	if (railCamera_) {
 		railCamera_->AddShake({0.5f, 0.3f, 0.0f}, scale * 2.0f);
 	}
-}
-
-void GameScene::UpdateBgmFade(float dt) {
-	if (!audio_ || bgmVoiceHandle_ == 0u) {
-		return;
-	}
-
-	const float fadeSpeed = 1.6f;
-	bgmVolume_ += (bgmTargetVolume_ - bgmVolume_) * (std::min)(1.0f, dt * fadeSpeed * 4.0f);
-	bgmVolume_ = std::clamp(bgmVolume_, 0.0f, 1.0f);
-	audio_->SetVolume(bgmVoiceHandle_, bgmVolume_);
 }
 
 std::unique_ptr<IScene> GameScene::NextScene() const {
