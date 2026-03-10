@@ -411,56 +411,62 @@ void GameScene::CountDownUpdate(float dt) { countDown_.Update(dt); }
 
 void GameScene::StartSequenceUpdate(float dt) {
 	startSequenceTimer_ += dt;
-	
+
 	switch (state_) {
-	case StartSequencePhase::StagePopup:
+	case StartSequencePhase::StagePopup: {
 		player_->SetInputEnabled(false);
 		if (startSequenceTimer_ >= stagePopupDuration_) {
 			EnterStartSequencePhase(StartSequencePhase::PlayerEntry);
 		}
 		break;
+	}
 
-	case StartSequencePhase::PlayerEntry:
-		const float t = std::clamp(startSequenceTimer_ / playerEntryDuration_, 0.0f, 1.0f);
-		const float ease = 1.0f - (1.0f - t) * (1.0f - t);
-		const Vector3 pos = {
-		    playerEntryStartPos_.x + (playerEntryEndPos_.x - playerEntryStartPos_.x) * ease,
-		    playerEntryStartPos_.y + (playerEntryEndPos_.y - playerEntryStartPos_.y) * ease,
-		    playerEntryStartPos_.z + (playerEntryEndPos_.z - playerEntryStartPos_.z) * ease,
+	case StartSequencePhase::PlayerEntry: {
+		const float entryT = std::clamp(startSequenceTimer_ / playerEntryDuration_, 0.0f, 1.0f);
+		const float entryEase = 1.0f - (1.0f - entryT) * (1.0f - entryT);
+		const Vector3 entryPos = {
+		    playerEntryStartPos_.x + (playerEntryEndPos_.x - playerEntryStartPos_.x) * entryEase,
+		    playerEntryStartPos_.y + (playerEntryEndPos_.y - playerEntryStartPos_.y) * entryEase,
+		    playerEntryStartPos_.z + (playerEntryEndPos_.z - playerEntryStartPos_.z) * entryEase,
 		};
-		player_->SetTranslate(pos);
+		player_->SetTranslate(entryPos);
 		player_->GetWorldTransform().UpdateMatrix();
 
 		if (startSequenceTimer_ >= playerEntryDuration_) {
 			EnterStartSequencePhase(StartSequencePhase::CameraMove);
 		}
 		break;
+	}
 
-	case StartSequencePhase::CameraMove:
-		const float t = std::clamp(startSequenceTimer_ / cameraMoveDuration_, 0.0f, 1.0f);
-		railCamera_->SetCinematicZoom(-10.0f * t);
+	case StartSequencePhase::CameraMove: {
+		const float cameraT = std::clamp(startSequenceTimer_ / cameraMoveDuration_, 0.0f, 1.0f);
+		railCamera_->SetCinematicZoom(-10.0f * cameraT);
 		if (startSequenceTimer_ >= cameraMoveDuration_) {
 			railCamera_->SetCinematicZoom(-10.0f);
 			EnterStartSequencePhase(StartSequencePhase::CountDown);
 		}
 		break;
+	}
 
-	case StartSequencePhase::CountDown:
+	case StartSequencePhase::CountDown: {
 		CountDownUpdate(dt);
 		if (!countDown_.IsInputLocked()) {
 			EnterStartSequencePhase(StartSequencePhase::Launch);
 		}
 		break;
+	}
 
-	case StartSequencePhase::Launch:
+	case StartSequencePhase::Launch: {
 		if (startSequenceTimer_ >= launchDuration_) {
 			railCamera_->SetCinematicZoom(0.0f);
 			EnterStartSequencePhase(StartSequencePhase::Playing);
 		}
 		break;
+	}
 
-	case StartSequencePhase::Playing:
+	case StartSequencePhase::Playing: {
 		break;
+	}
 	}
 }
 
