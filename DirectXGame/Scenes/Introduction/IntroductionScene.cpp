@@ -166,8 +166,6 @@ void IntroductionScene::Draw() {
 
 	returnTitleSprite_->Draw();
 
-	//introSprite_->Draw();
-
 	for (size_t i = 0; i < difficultySprites_.size(); ++i) {
 		auto& sprite = difficultySprites_[i];
 		if (!sprite) {
