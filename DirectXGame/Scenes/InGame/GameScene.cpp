@@ -84,12 +84,18 @@ void GameScene::Initialize() {
 	};
 
 	// ===== カウントダウン =====
-	countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/GO.png");
+	countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/Go.png");
 	countDown_.SetTimings(0.1f, 0.5f, 0.4f);
 	countDown_.SetScaleRange(1.2f, 1.0f);
 	countDown_.SetBackOvershoot(1.7f);
 
 	countDown_.SetAudio(audio_->LoadWave("./Resources/SE/CountBeep.wav"), audio_->LoadWave("./Resources/SE/Start.wav"));
+
+	stagePopupTexHandle_ = TextureManager::Load("./Resources/InGame/Rules.png");
+	stagePopupSprite_.reset(Sprite::Create(stagePopupTexHandle_, {kScreenWidth_ * 0.5f, 120.0f}));
+	if (stagePopupSprite_) {
+		stagePopupSprite_->SetAnchorPoint({0.5f, 0.5f});
+	}
 
 	// ===== UI（HPバー／スコア） =====
 	uiManager_.Initialize(player_);
@@ -100,10 +106,8 @@ void GameScene::Initialize() {
 	enemyManager_.LoadEnemyCsv("Resources/levels/stage1_more_enemies_turret_balanced.json");
 
 	// ===== 開始 =====
-	countDown_.Start();
-
-	// 開始　３カウントから
-	state_ = GameState::CountDown;
+	startSequenceTimer_ = 0.0f;
+	EnterStartSequencePhase(StartSequencePhase::StagePopup);
 
 	// ===== 照準 =====
 	reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
@@ -148,7 +152,7 @@ void GameScene::Update() {
 	UpdateBgmFade(kFixedDeltaTime_);
 
 	// ===== Pause 切り替え =====
-	if (input_->TriggerKey(DIK_ESCAPE) && state_ == GameState::Playing) {
+	if (input_->TriggerKey(DIK_ESCAPE) && state_ == StartSequencePhase::Playing) {
 		isPaused_ = !isPaused_;
 
 		if (isPaused_) {
@@ -187,7 +191,7 @@ void GameScene::Update() {
 		return;
 	}
 
-	if (state_ == GameState::Playing) {
+	if (state_ == StartSequencePhase::Playing) {
 		DrawImGui();
 		if (isDebugUpdatePaused_) {
 			return;
@@ -196,20 +200,9 @@ void GameScene::Update() {
 
 	// ===== 通常更新 =====
 	BackgroundUpdate();
+	StartSequenceUpdate(dt);
 
-	switch (state_) {
-	case GameState::CountDown:
-		CountDownUpdate(dt);
-		if (!countDown_.IsInputLocked()) {
-			state_ = GameState::Playing;
-			transitionPhase_ = SceneTransitionPhase::IntroCinematic;
-			transitionTimer_ = 0.0f;
-			timeScale_ = 0.55f;
-			bgmTargetVolume_ = 0.85f;
-		}
-		break;
-
-	case GameState::Playing:
+	if (state_ == StartSequencePhase::Playing) {
 		UpdateAimAndReticle();
 		PlayerUpdate();
 		SpawnDamageParticles();
@@ -226,8 +219,6 @@ void GameScene::Update() {
 #ifdef USE_IMGUI
 		DrawImGui();
 #endif // DEBUG
-
-		break;
 	}
 
 	CameraUpdate();
@@ -252,12 +243,12 @@ void GameScene::Draw() {
 	skydome_->Draw();
 
 	// （任意）CountDown中もプレイヤーだけ見せたいなら描く
-	if (state_ == GameState::Playing) {
+	if (state_ == StartSequencePhase::StagePopup) {
 		player_->Draw(cam);
 	}
 
 	// ゲーム中だけ描きたいものは Playing に寄せる
-	if (state_ == GameState::Playing && (result_ == GameResult::None || transitionPhase_ == SceneTransitionPhase::FailCinematic)) {
+	if (state_ == StartSequencePhase::Playing && (result_ == GameResult::None || transitionPhase_ == SceneTransitionPhase::FailCinematic)) {
 
 		// スピードライン
 		speedLine_.Draw();
@@ -275,7 +266,7 @@ void GameScene::Draw() {
 	}
 
 	// エンジンスモークは通常時とクリア演出中に描画
-	const bool canDrawSmoke = (state_ == GameState::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
+	const bool canDrawSmoke = (state_ == StartSequencePhase::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
 	if (canDrawSmoke && engineSmokeEmitter_) {
 		engineSmokeEmitter_->Draw(cam);
 	}
@@ -286,13 +277,19 @@ void GameScene::Draw() {
 #pragma region 前景スプライト
 	Sprite::PreDraw(commandList);
 
-	// 3カウントは CountDown 中だけ
-	if (state_ == GameState::CountDown) {
+	if (state_ == StartSequencePhase::StagePopup && stagePopupSprite_) {
+		const float t = std::clamp(startSequenceTimer_ / stagePopupDuration_, 0.0f, 1.0f);
+		const float alpha = (t < 0.2f) ? (t / 0.2f) : ((t > 0.8f) ? ((1.0f - t) / 0.2f) : 1.0f);
+		stagePopupSprite_->SetColor({1.0f, 1.0f, 1.0f, std::clamp(alpha, 0.0f, 1.0f)});
+		stagePopupSprite_->Draw();
+	}
+
+	if (state_ == StartSequencePhase::CountDown || state_ == StartSequencePhase::Launch) {
 		countDown_.Draw();
 	}
 
 	// UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
-	if (state_ == GameState::Playing) {
+	if (state_ == StartSequencePhase::Playing) {
 		uiManager_.Draw();
 
 		if (reticleSprite_ && result_ == GameResult::None) {
@@ -313,7 +310,7 @@ void GameScene::Draw() {
 	}
 
 	// Pauseガイド
-	if (!isPaused_ && state_ == GameState::Playing) {
+	if (!isPaused_ && state_ == StartSequencePhase::Playing) {
 		if (pauseTitleSprite_) {
 			pauseTitleSprite_->Draw();
 		}
@@ -332,7 +329,28 @@ void GameScene::DrawImGui() {
 
 	if (ImGui::BeginTabBar("GameSceneTabs")) {
 		if (ImGui::BeginTabItem("State")) {
-			ImGui::Text("GameState: %s", state_ == GameState::Playing ? "Playing" : "CountDown");
+			const char* phaseText = "Playing";
+			switch (state_) {
+			case StartSequencePhase::StagePopup:
+				phaseText = "StagePopup";
+				break;
+			case StartSequencePhase::PlayerEntry:
+				phaseText = "PlayerEntry";
+				break;
+			case StartSequencePhase::CameraMove:
+				phaseText = "CameraMove";
+				break;
+			case StartSequencePhase::CountDown:
+				phaseText = "CountDown";
+				break;
+			case StartSequencePhase::Launch:
+				phaseText = "Launch";
+				break;
+			case StartSequencePhase::Playing:
+				phaseText = "Playing";
+				break;
+			}
+			ImGui::Text("StartSequence: %s", phaseText);
 			ImGui::Text("Result: %s", result_ == GameResult::Clear ? "Clear" : result_ == GameResult::Fail ? "Fail" : "None");
 			ImGui::Text("PauseMenu: %s", isPaused_ ? "Open" : "Closed");
 			ImGui::EndTabItem();
@@ -390,6 +408,84 @@ void GameScene::DrawImGui() {
 }
 
 void GameScene::CountDownUpdate(float dt) { countDown_.Update(dt); }
+
+void GameScene::StartSequenceUpdate(float dt) {
+	startSequenceTimer_ += dt;
+	
+	switch (state_) {
+	case StartSequencePhase::StagePopup:
+		player_->SetInputEnabled(false);
+		if (startSequenceTimer_ >= stagePopupDuration_) {
+			EnterStartSequencePhase(StartSequencePhase::PlayerEntry);
+		}
+		break;
+
+	case StartSequencePhase::PlayerEntry:
+		const float t = std::clamp(startSequenceTimer_ / playerEntryDuration_, 0.0f, 1.0f);
+		const float ease = 1.0f - (1.0f - t) * (1.0f - t);
+		const Vector3 pos = {
+		    playerEntryStartPos_.x + (playerEntryEndPos_.x - playerEntryStartPos_.x) * ease,
+		    playerEntryStartPos_.y + (playerEntryEndPos_.y - playerEntryStartPos_.y) * ease,
+		    playerEntryStartPos_.z + (playerEntryEndPos_.z - playerEntryStartPos_.z) * ease,
+		};
+		player_->SetTranslate(pos);
+		player_->GetWorldTransform().UpdateMatrix();
+
+		if (startSequenceTimer_ >= playerEntryDuration_) {
+			EnterStartSequencePhase(StartSequencePhase::CameraMove);
+		}
+		break;
+
+	case StartSequencePhase::CameraMove:
+		const float t = std::clamp(startSequenceTimer_ / cameraMoveDuration_, 0.0f, 1.0f);
+		railCamera_->SetCinematicZoom(-10.0f * t);
+		if (startSequenceTimer_ >= cameraMoveDuration_) {
+			railCamera_->SetCinematicZoom(-10.0f);
+			EnterStartSequencePhase(StartSequencePhase::CountDown);
+		}
+		break;
+
+	case StartSequencePhase::CountDown:
+		CountDownUpdate(dt);
+		if (!countDown_.IsInputLocked()) {
+			EnterStartSequencePhase(StartSequencePhase::Launch);
+		}
+		break;
+
+	case StartSequencePhase::Launch:
+		if (startSequenceTimer_ >= launchDuration_) {
+			railCamera_->SetCinematicZoom(0.0f);
+			EnterStartSequencePhase(StartSequencePhase::Playing);
+		}
+		break;
+
+	case StartSequencePhase::Playing:
+		break;
+	}
+}
+
+
+void GameScene::EnterStartSequencePhase(StartSequencePhase nextPhase) {
+	state_ = nextPhase;
+	startSequenceTimer_ = 0.0f;
+
+	if (nextPhase == StartSequencePhase::PlayerEntry) {
+		player_->SetTranslate(playerEntryStartPos_);
+		player_->GetWorldTransform().UpdateMatrix();
+		player_->SetInputEnabled(false);
+	} else if (nextPhase == StartSequencePhase::CountDown) {
+		countDown_.Start();
+		bgmTargetVolume_ = 0.55f;
+	} else if (nextPhase == StartSequencePhase::Launch) {
+		transitionPhase_ = SceneTransitionPhase::IntroCinematic;
+		transitionTimer_ = 0.0f;
+		timeScale_ = 0.55f;
+		bgmTargetVolume_ = 0.85f;
+	} else if (nextPhase == StartSequencePhase::Playing) {
+		player_->SetInputEnabled(true);
+		timeScale_ = 1.0f;
+	}
+}
 
 void GameScene::BackgroundUpdate() { skydome_->Update(); }
 
@@ -528,7 +624,7 @@ void GameScene::UpdateLockOnMakers() {
 	lockOnMarkers_.clear();
 
 	//
-	if (result_ != GameResult::None || state_ != GameState::Playing) {
+	if (result_ != GameResult::None || state_ != StartSequencePhase::Playing) {
 		return;
 	}
 

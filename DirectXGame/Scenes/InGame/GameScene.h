@@ -30,9 +30,13 @@ class FinishScene;
 class ClearScene;
 class TitleScene;
 
-enum class GameState {
-	CountDown,   // 3カウント
-	Playing,     // ゲーム本編
+enum class StartSequencePhase {
+	StagePopup,
+	PlayerEntry,
+    CameraMove,
+    CountDown,
+    Launch,
+	Playing
 };
 
 enum class GameResult {
@@ -88,6 +92,16 @@ private:
     /// 3カウント更新
     /// </summary>
     void CountDownUpdate(float dt);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    void StartSequenceUpdate(float dt);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void EnterStartSequencePhase(StartSequencePhase nextPhase);
 
     /// <summary>
     /// 背景（天球）更新
@@ -189,7 +203,20 @@ private:
     float kFixedDeltaTime_ = 1.0f / 60.0f;
 
     // ========== ステート ==========
-    GameState state_ = GameState::CountDown;
+	StartSequencePhase state_ = StartSequencePhase::StagePopup;
+
+	float startSequenceTimer_ = 0.0f;
+
+	float stagePopupDuration_ = 1.4f;
+	float playerEntryDuration_ = 1.1f;
+	float cameraMoveDuration_ = 0.9f;
+	float launchDuration_ = 0.5f;
+
+    KamataEngine::Vector3 playerEntryStartPos_{0.0f, -2.0f, -45.0f};
+	KamataEngine::Vector3 playerEntryEndPos_{0.0f, -2.0f, 20.0f};
+
+    uint32_t stagePopupTexHandle_ = 0;
+	std::unique_ptr<KamataEngine::Sprite> stagePopupSprite_;
 
     // ========== ３カウントUI ==========
     CountDown countDown_;
