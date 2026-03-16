@@ -1,6 +1,7 @@
 #include "GameScene.h"
 
 #include <cmath>
+#include <utility>
 
 #ifdef USE_IMGUI
 #include <imgui.h>
@@ -12,7 +13,7 @@
 
 using namespace KamataEngine;
 
-GameScene::GameScene() {}
+GameScene::GameScene(std::string levelJsonPath) : levelJsonPath_(std::move(levelJsonPath)) {}
 
 GameScene::~GameScene() {
 	if (audio_ && bgmVoiceHandle_ != 0u) {
@@ -97,7 +98,7 @@ void GameScene::Initialize() {
 	// ===== 弾・敵 =====
 	bulletManager_.Initialize();
 	enemyManager_.Initialize();
-	enemyManager_.LoadEnemyCsv("Resources/levels/stage1_more_enemies_turret_balanced.json");
+	enemyManager_.LoadEnemyCsv(levelJsonPath_);
 
 	// ===== 開始 =====
 	countDown_.Start();

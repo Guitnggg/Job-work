@@ -195,8 +195,21 @@ std::unique_ptr<IScene> IntroductionScene::NextScene() const {
 	case SceneName::Title:
 		return std::make_unique<TitleScene>();
 
-	case SceneName::InGame:
-		return std::make_unique<GameScene>();
+	case SceneName::InGame: {
+		constexpr std::array<const char*, static_cast<size_t>(Difficulty::Count)> kLevelJsonPaths = {
+			"./Resources/Levels/Tutorial.json",
+			"./Resources/Levels/Easy.json",
+			"./Resources/Levels/Normal.json",
+			"./Resources/Levels/Hard.json",
+		};
+
+		size_t index = static_cast<size_t>(selectedIndex_);
+		if (index >= kLevelJsonPaths.size()) {
+			index = 0;
+		}
+
+		return std::make_unique<GameScene>(kLevelJsonPaths[index]);
+	}
 
 	default:
 		return nullptr;
