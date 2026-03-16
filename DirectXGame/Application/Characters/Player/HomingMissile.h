@@ -58,7 +58,7 @@ public:
 private:
 	// ===== 定数 =====
 	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-	static constexpr KamataEngine::Vector3 kMissileScale{ 0.16f,0.16f,0.28f };
+	static constexpr KamataEngine::Vector3 kMissileScale{ 0.3f,0.3f,0.7f };
 	static constexpr float kColliderRadius = 0.65f;
 	static constexpr float kSpeed = 1.4f;
 	static constexpr float kTurnRate = 0.14f;
