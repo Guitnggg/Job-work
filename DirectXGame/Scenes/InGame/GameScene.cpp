@@ -787,7 +787,7 @@ void GameScene::UpdateBgmFade(float dt) {
 std::unique_ptr<IScene> GameScene::NextScene() const {
 	// Pause 由来の遷移を最優先
 	if (requestRetry_) {
-		return std::make_unique<GameScene>();
+		return std::make_unique<GameScene>(levelJsonPath_);
 	}
 
 	if (requestToTitle_) {
