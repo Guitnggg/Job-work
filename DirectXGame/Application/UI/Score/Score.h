@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+#include <memory>
+
 #include <2d/Sprite.h>
 #include <base/TextureManager.h>
 #include <base/DirectXCommon.h>
@@ -14,7 +17,7 @@ public:
     /// <summary>
     /// デストラクタ
     /// </summary>
-    ~Score();
+    ~Score() = default;
 
     /// <summary>
     /// 初期化処理
@@ -58,7 +61,7 @@ private:
 
     float scorePopTimer_ = 0.0f;
 
-    static const int kDigitCount = 5;                  // 最大桁数（99999まで）
-    KamataEngine::Sprite* digitSprites_[kDigitCount];  // 各桁ごとのスプライト
+    static const int kDigitCount = 5;  // 最大桁数（99999まで）
+    std::array<std::unique_ptr<KamataEngine::Sprite>, kDigitCount> digitSprites_{};  // 各桁ごとのスプライト
 };
 

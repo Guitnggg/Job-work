@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <2d/Sprite.h>
 #include "base/TextureManager.h"
 
@@ -17,7 +19,7 @@ public:
     /// <summary>
     /// デストラクタ
     /// </summary>
-    ~Graph();
+    ~Graph() = default;
 
     /// <summary>
     /// 初期化処理
@@ -46,8 +48,8 @@ public:
     void Draw();
 
 private:
-    KamataEngine::Sprite* backBar_ = nullptr;   // 裏のグラフ（赤）
-    KamataEngine::Sprite* frontBar_ = nullptr;  // 表のグラフ（緑）
+    std::unique_ptr<KamataEngine::Sprite> backBar_ = nullptr;   // 裏のグラフ（赤）
+    std::unique_ptr<KamataEngine::Sprite> frontBar_ = nullptr;  // 表のグラフ（緑）
 
     uint32_t texHandle_;
 

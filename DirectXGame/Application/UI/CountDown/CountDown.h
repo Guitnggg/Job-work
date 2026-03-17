@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 
 #include "3d/WorldTransform.h"
 #include "3d/Model.h"
@@ -26,7 +27,7 @@ public:
     };
 
     CountDown() = default;
-    ~CountDown();
+    ~CountDown() = default;
 
     /// <summary>
     /// 画像パスからテクスチャを読み込み、カウント用スプライトを生成して初期化する
@@ -169,10 +170,10 @@ private:
 private:
 
     // スプライト
-    KamataEngine::Sprite* count3Sprite_ = nullptr;
-    KamataEngine::Sprite* count2Sprite_ = nullptr;
-    KamataEngine::Sprite* count1Sprite_ = nullptr;
-    KamataEngine::Sprite* goSprite_ = nullptr;
+    std::unique_ptr<KamataEngine::Sprite> count3Sprite_ = nullptr;
+    std::unique_ptr<KamataEngine::Sprite> count2Sprite_ = nullptr;
+    std::unique_ptr<KamataEngine::Sprite> count1Sprite_ = nullptr;
+    std::unique_ptr<KamataEngine::Sprite> goSprite_ = nullptr;
 
     // 表示パラメータ
     KamataEngine::Vector2 center_ = { 640.0f, 360.0f };

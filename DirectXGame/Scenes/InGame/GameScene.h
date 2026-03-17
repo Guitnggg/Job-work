@@ -6,6 +6,7 @@
 #include <memory>
 #include <algorithm>
 #include <array>
+#include <string>
 
 #include "Application/Background/Skydome/Skydome.h"
 #include "Application/Cameras/RailCamera/RailCamera.h"
@@ -56,7 +57,7 @@ enum class SceneTransitionPhase {
 /// </summary>
 class GameScene : public IScene {
 public:
-    GameScene();
+    explicit GameScene(std::string levelJsonPath = "./Resources/Levels/Tutorial.json");
     ~GameScene();
 
     /// <summary>
@@ -220,6 +221,9 @@ private:
 
     uint32_t lockOnTexHandle_ = 0;
     std::vector<LockOnMarker> lockOnMarkers_;
+
+    // ========== ステージデータ ==========
+    std::string levelJsonPath_;
 
     // ========== 弾・敵管理 ==========
     EnemyManager enemyManager_;

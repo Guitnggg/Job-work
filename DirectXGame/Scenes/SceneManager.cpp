@@ -1,10 +1,8 @@
 #include "SceneManager.h"
 
-using namespace KamataEngine;
-
 SceneManager::SceneManager() {
 	// 黒フェード
-	fadeSprite_.reset(Sprite::Create(
+	fadeSprite_.reset(KamataEngine::Sprite::Create(
 	    0,                        // テクスチャハンドル（不要なら0でOK）
 	    {0.0f, 0.0f},             // 位置
 	    {0.0f, 0.0f, 0.0f, 0.0f}, // 色（透明）
@@ -15,7 +13,7 @@ SceneManager::SceneManager() {
 	fadeSprite_->SetSize({1280, 720});
 
 	// 白フラッシュ
-	 flashSprite_.reset(Sprite::Create(
+	 flashSprite_.reset(KamataEngine::Sprite::Create(
         0,
         { 0.0f, 0.0f },
         { 1.0f, 1.0f, 1.0f, 0.0f },
@@ -171,8 +169,8 @@ void SceneManager::Draw() {
 
 	// 演出があるときだけ描画
 	if (transitionState_ != SceneTransitionState::None) {
-		auto commandList = DirectXCommon::GetInstance()->GetCommandList();
-		Sprite::PreDraw(commandList);
+		auto commandList = KamataEngine::DirectXCommon::GetInstance()->GetCommandList();
+		KamataEngine::Sprite::PreDraw(commandList);
 
 		// 白フラッシュ
 		if (transitionState_ == SceneTransitionState::FlashOut) {
@@ -184,7 +182,7 @@ void SceneManager::Draw() {
 			fadeSprite_->Draw();
 		}
 
-		Sprite::PostDraw();
+		KamataEngine::Sprite::PostDraw();
 	}
 }
 
