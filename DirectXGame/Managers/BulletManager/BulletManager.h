@@ -116,4 +116,7 @@ private:
 	static constexpr int32_t kHomingMaxLockCount = 5;
 	static constexpr int32_t kHomingCooldownMaxFrame = 600; // 10s
 	
+	KamataEngine::Audio* audio_ = nullptr;
+	uint32_t shotSeHandle_ = 0;
+	uint32_t missileSeHandle_ = 0;
 };

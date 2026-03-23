@@ -165,11 +165,6 @@ private:
 	/// </summary>
 	void StartExplosionAtPlayer(float scale);
 
-	/// <summary>
-	/// BGMのフェードアウト更新
-	/// </summary>
-	void UpdateBgmFade(float dt);
-
 public:
     bool IsEnd() const override { return isEnd_; }
 	std::unique_ptr<IScene> NextScene() const override;
@@ -307,10 +302,6 @@ private:
 	bool failSecondExplosionDone_ = false;
 
 	uint32_t seExplosionHandle_ = 0;
-	uint32_t bgmHandle_ = 0;
-	uint32_t bgmVoiceHandle_ = 0;
-	float bgmVolume_ = 0.0f;
-	float bgmTargetVolume_ = 0.0f;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;

@@ -2,6 +2,7 @@
 
 #include <2d/Sprite.h>
 #include <base/DirectXCommon.h>
+#include <audio/Audio.h>
 #include <algorithm>
 
 #include "IScene.h"
@@ -77,6 +78,17 @@ public:
 
 private:
     /// <summary>
+    /// 
+    /// </summary>
+    void UpdateSceneBgm_();
+
+    /// <summary>
+    /// 
+    /// </summary>
+    uint32_t GetBgmHandleForScene_(SceneName sceneName);
+
+private:
+    /// <summary>
     /// 自動演出判定用
     /// Title → Introduction : 黒フェード
     /// Introduction → InGame : 白フラッシュ
@@ -106,4 +118,10 @@ private:
 
     std::unique_ptr<KamataEngine::Sprite> fadeSprite_;
     std::unique_ptr<KamataEngine::Sprite> flashSprite_;
+
+    KamataEngine::Audio* audio_ = nullptr;
+    uint32_t opBgmHandle_ = 0;
+    uint32_t gameBgmHandle_ = 0;
+    uint32_t bgmVoiceHandle_ = 0;
+    SceneName currentBgmScene_ = SceneName::None;
 };

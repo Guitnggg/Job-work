@@ -1,6 +1,13 @@
 #include "SceneManager.h"
 
 SceneManager::SceneManager() {
+	// BGM
+	audio_ = KamataEngine::Audio::GetInstance();
+	if (audio_) {
+		opBgmHandle_ = audio_->LoadWave("./Resources/SE/OPBGM.wav");
+		gameBgmHandle_ = audio_->LoadWave("./Resources/SE/Cold_Data.wav");
+	}
+	
 	// 黒フェード
 	fadeSprite_.reset(KamataEngine::Sprite::Create(
 	    0,                        // テクスチャハンドル（不要なら0でOK）
@@ -24,7 +31,12 @@ SceneManager::SceneManager() {
 	flashSprite_->SetSize({1280, 720});
 }
 
-SceneManager::~SceneManager() {}
+SceneManager::~SceneManager() {
+	if (audio_ && bgmVoiceHandle_ != 0u) {
+		audio_->StopWave(bgmVoiceHandle_);
+		bgmVoiceHandle_ = 0u;
+	}
+}
 
 bool SceneManager::ShouldUseWhiteFlash(SceneName from, SceneName to) const {
 	// Title→Introduction は使わない（現状維持）
@@ -66,6 +78,7 @@ void SceneManager::ChangeScene(std::unique_ptr<IScene> newScene) {
 		if (currentScene_) {
 			currentScene_->Initialize();
 		}
+		UpdateSceneBgm_();
 		transitionState_ = SceneTransitionState::None;
 		break;
 
@@ -138,6 +151,7 @@ void SceneManager::Update() {
 			if (currentScene_) {
 				currentScene_->Initialize();
 			}
+			UpdateSceneBgm_();
 			transitionState_ = SceneTransitionState::FadeIn;
 		}
 	} break;
@@ -195,6 +209,7 @@ void SceneManager::SetInitialScene(std::unique_ptr<IScene> scene) {
 	if (currentScene_) {
 		currentScene_->Initialize();
 	}
+	UpdateSceneBgm_();
 	transitionState_ = SceneTransitionState::None;
 	transitionAlpha_ = 0.0f;
 
@@ -203,4 +218,36 @@ void SceneManager::SetInitialScene(std::unique_ptr<IScene> scene) {
 	flashTime_ = baseFlashTime_;
 
 	fadeSprite_->SetColor({0, 0, 0, 0});
+}
+
+void SceneManager::UpdateSceneBgm_() {
+	const SceneName sceneName = currentScene_ ? currentScene_->GetSceneName() : SceneName::None;
+	if (sceneName == currentBgmScene_ && bgmVoiceHandle_ != 0u) {
+		return;
+	}
+
+	if (audio_ && bgmVoiceHandle_ != 0u) {
+		audio_->StopWave(bgmVoiceHandle_);
+		bgmVoiceHandle_ = 0u;
+	}
+
+	currentBgmScene_ = sceneName;
+	const uint32_t bgmHandle = GetBgmHandleForScene_(sceneName);
+	if (audio_ && bgmHandle != 0u) {
+		bgmVoiceHandle_ = audio_->PlayWave(bgmHandle, true, 0.1f);
+	}
+}
+
+uint32_t SceneManager::GetBgmHandleForScene_(SceneName sceneName) {
+	switch (sceneName) {
+	case SceneName::InGame:
+		return gameBgmHandle_;
+	case SceneName::Title:
+	case SceneName::Introduction:
+	case SceneName::Finish:
+	case SceneName::Clear:
+		return opBgmHandle_;
+	default:
+		return 0u;
+	}
 }

@@ -11,6 +11,10 @@ constexpr Vector3 kForward{0.0f, 0.0f, 1.0f};
 } // namespace
 
 void BulletManager::Initialize() {
+	audio_ = Audio::GetInstance();
+	shotSeHandle_ = audio_ ? audio_->LoadWave("./Resources/SE/shot.wav") : 0;
+	missileSeHandle_ = audio_ ? audio_->LoadWave("./Resources/SE/missile.wav") : 0;
+
 	bullets_.clear();
 	lasers_.clear();
 	homingMissiles_.clear();
@@ -56,6 +60,10 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 
 	fireCooldownFrames_ = kFireCooldownMax;
 
+	if (audio_ && shotSeHandle_ != 0) {
+		audio_->PlayWave(shotSeHandle_);
+	}
+
 	HandleHomingMissile_(input, player, countDown, enemyManager);
 }
 
@@ -96,6 +104,7 @@ void BulletManager::HandleHomingMissile_(KamataEngine::Input* input, Player* pla
 		return;
 	}
 
+	bool firedMissile = false;
 	for (CharacterBase* target : lockedTargets_) {
 		if (!target || target->IsDead()) {
 			continue;
@@ -105,6 +114,11 @@ void BulletManager::HandleHomingMissile_(KamataEngine::Input* input, Player* pla
 		missile->Initialize();
 		missile->FireFrom(player->GetWorldTranslation(), target);
 		homingMissiles_.push_back(std::move(missile));
+		firedMissile = true;
+	}
+
+	if (firedMissile && audio_ && missileSeHandle_ != 0) {
+		audio_->PlayWave(missileSeHandle_);
 	}
 
 	homingCooldownFrames_ = kHomingCooldownMaxFrame;
