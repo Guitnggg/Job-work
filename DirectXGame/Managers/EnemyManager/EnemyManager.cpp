@@ -13,12 +13,11 @@ using namespace KamataEngine;
 void EnemyManager::Initialize() {
 	enemies_.clear();
 	enemySpawnList_.clear();
-	explosionParticles_.clear();
+	explosionEmitter_ = std::make_unique<GpuDamageEmitter>();
+	explosionEmitter_->Initialize(512);
 
 	enemySpawnTimer_ = 0.0f;
 
-	// 爆発用モデル生成（KamataEngine 管理）
-	explosionModel_ = Model::Create();
 }
 
 void EnemyManager::LoadEnemyCsv(const std::string& path) {
@@ -156,12 +155,9 @@ void EnemyManager::Update(float dt, const Vector3& playerPos) {
 	}
 
 	// 爆発エフェクト更新
-	for (auto& p : explosionParticles_) {
-		p->Update(dt);
+	if (explosionEmitter_) {
+		explosionEmitter_->Update(dt);
 	}
-
-	explosionParticles_.erase(
-	    std::remove_if(explosionParticles_.begin(), explosionParticles_.end(), [](const std::unique_ptr<DamageParticle>& p) { return p->IsFinished(); }), explosionParticles_.end());
 }
 
 void EnemyManager::Draw(const Camera* camera) {
@@ -169,8 +165,8 @@ void EnemyManager::Draw(const Camera* camera) {
 		enemy->Draw(camera);
 	}
 
-	for (auto& p : explosionParticles_) {
-		p->Draw(camera);
+	if (explosionEmitter_) {
+		explosionEmitter_->Draw(camera);
 	}
 }
 
@@ -210,7 +206,7 @@ void EnemyManager::RemoveDeadEnemies() {
 }
 
 void EnemyManager::SpawnExplosionAt(const Vector3& pos) {
-	if (!explosionModel_) {
+	if (!explosionEmitter_) {
 		return;
 	}
 
@@ -220,9 +216,6 @@ void EnemyManager::SpawnExplosionAt(const Vector3& pos) {
 	for (int32_t i = 0; i < kExplosionParticleCount; ++i) {
 		Vector3 vel{dist(rng) * kExplosionSpeed, dist(rng) * kExplosionSpeed, dist(rng) * kExplosionSpeed};
 
-		auto p = std::make_unique<DamageParticle>();
-		p->Initialize(explosionModel_, pos, vel, kExplosionLifeTime, kExplosionStartScale, kExplosionEndScale);
-
-		explosionParticles_.push_back(std::move(p));
+		explosionEmitter_->Emit(pos, vel, kExplosionLifeTime, kExplosionStartScale, kExplosionEndScale);
 	}
 }

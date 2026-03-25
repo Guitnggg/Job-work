@@ -2,10 +2,10 @@
 
 #include "Application/Effects/GpuParticleEmitter.h"
 
-class GpuSmokeEmitter :public GpuParticleEmitter {
+class GpuDamageEmitter : public GpuParticleEmitter {
 public:
 	void Initialize(uint32_t maxParticles) {
 		GpuParticleEmitter::Initialize(maxParticles);
-		SetColor(0.65f, 0.65f, 0.65f, 0.7f);
+		SetColor(1.0f, 0.55f, 0.20f, 0.95f);
 	}
 };

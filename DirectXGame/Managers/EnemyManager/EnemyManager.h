@@ -9,7 +9,7 @@
 
 #include "Application/Characters/Enemy/SeekerEnemy.h"
 #include "Application/Characters/Enemy/TurretEnemy.h"
-#include "Application/Effects/Damage/DamageParticle.h"
+#include "Application/Effects/Damage/GpuDamageEmitter.h"
 
 /// <summary>
 /// 敵キャラクター全体を管理するクラス。
@@ -128,6 +128,5 @@ private:
 	float enemySpawnTimer_ = 0.0f;
 
 	// 爆発エフェクト
-	KamataEngine::Model* explosionModel_ = nullptr; // KamataEngine 側管理（非所有）
-	std::vector<std::unique_ptr<DamageParticle>> explosionParticles_;
+	std::unique_ptr<GpuDamageEmitter> explosionEmitter_;
 };

@@ -13,7 +13,7 @@
 #include "Application/Characters/Player/Player.h"
 #include "Application/Effects/SpeedLine/SpeedLine.h"
 #include "Application/Effects/Smoke/GpuSmokeEmitter.h"
-#include "Application/Effects/Damage/DamageParticle.h"
+#include "Application/Effects/Damage/GpuDamageEmitter.h"
 #include "Application/Objects/Asteroid/Asteroid.h"
 
 #include "Application/UI/PauseMenu/PauseMenu.h"
@@ -228,8 +228,7 @@ private:
     SpeedLine speedLine_;
 
     // ========== ダメージ演出 ==========
-    std::vector<std::unique_ptr<DamageParticle>>damageParticles_;
-    KamataEngine::Model* damageParticleModel_ = nullptr;
+    std::unique_ptr<GpuDamageEmitter> damageEmitter_;
 
     int kDamageParticleCount_ = 10;
     float kDamageParticleSpeedXY_ = 2.5f;
