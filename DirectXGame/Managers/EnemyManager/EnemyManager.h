@@ -9,7 +9,6 @@
 
 #include "Application/Characters/Enemy/SeekerEnemy.h"
 #include "Application/Characters/Enemy/TurretEnemy.h"
-#include "Application/Effects/Damage/DamageParticle.h"
 
 /// <summary>
 /// 敵キャラクター全体を管理するクラス。
@@ -93,11 +92,6 @@ private:
 	/// </summary>
 	void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
 
-	/// <summary>
-	/// 指定位置に爆発エフェクトを生成する
-	/// </summary>
-	void SpawnExplosionAt(const KamataEngine::Vector3& pos);
-
 private:
 	// ===== 定数（デフォルト値）=====
 	static constexpr float kDefaultSeekerSpeed = 0.2f;
@@ -110,13 +104,6 @@ private:
 	static constexpr float kDefaultBulletSpeed = 2.8f;
 	static constexpr float kDefaultBulletLifeTime = 3.0f;
 
-	// ===== 爆発エフェクト =====
-	static constexpr int32_t kExplosionParticleCount = 16;
-	static constexpr float kExplosionSpeed = 3.0f;
-	static constexpr float kExplosionLifeTime = 0.6f;
-	static constexpr float kExplosionStartScale = 0.25f;
-	static constexpr float kExplosionEndScale = 0.0f;
-
 private:
 	// 生存中の敵
 	std::vector<std::unique_ptr<CharacterBase>> enemies_;
@@ -126,8 +113,4 @@ private:
 
 	// 経過時間
 	float enemySpawnTimer_ = 0.0f;
-
-	// 爆発エフェクト
-	KamataEngine::Model* explosionModel_ = nullptr; // KamataEngine 側管理（非所有）
-	std::vector<std::unique_ptr<DamageParticle>> explosionParticles_;
 };

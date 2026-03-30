@@ -13,12 +13,8 @@ using namespace KamataEngine;
 void EnemyManager::Initialize() {
 	enemies_.clear();
 	enemySpawnList_.clear();
-	explosionParticles_.clear();
 
 	enemySpawnTimer_ = 0.0f;
-
-	// 爆発用モデル生成（KamataEngine 管理）
-	explosionModel_ = Model::Create();
 }
 
 void EnemyManager::LoadEnemyCsv(const std::string& path) {
@@ -154,23 +150,11 @@ void EnemyManager::Update(float dt, const Vector3& playerPos) {
 
 		enemy->Update();
 	}
-
-	// 爆発エフェクト更新
-	for (auto& p : explosionParticles_) {
-		p->Update(dt);
-	}
-
-	explosionParticles_.erase(
-	    std::remove_if(explosionParticles_.begin(), explosionParticles_.end(), [](const std::unique_ptr<DamageParticle>& p) { return p->IsFinished(); }), explosionParticles_.end());
 }
 
 void EnemyManager::Draw(const Camera* camera) {
 	for (auto& enemy : enemies_) {
 		enemy->Draw(camera);
-	}
-
-	for (auto& p : explosionParticles_) {
-		p->Draw(camera);
 	}
 }
 
@@ -207,22 +191,4 @@ std::vector<CharacterBase*> EnemyManager::GetNearestEnemies(const KamataEngine::
 
 void EnemyManager::RemoveDeadEnemies() {
 	enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
-}
-
-void EnemyManager::SpawnExplosionAt(const Vector3& pos) {
-	if (!explosionModel_) {
-		return;
-	}
-
-	static std::mt19937 rng{std::random_device{}()};
-	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-
-	for (int32_t i = 0; i < kExplosionParticleCount; ++i) {
-		Vector3 vel{dist(rng) * kExplosionSpeed, dist(rng) * kExplosionSpeed, dist(rng) * kExplosionSpeed};
-
-		auto p = std::make_unique<DamageParticle>();
-		p->Initialize(explosionModel_, pos, vel, kExplosionLifeTime, kExplosionStartScale, kExplosionEndScale);
-
-		explosionParticles_.push_back(std::move(p));
-	}
 }
