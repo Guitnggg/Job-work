@@ -54,14 +54,16 @@ void GameScene::Initialize() {
 	// ===== スピードライン初期化 =====
 	speedLine_.Initialize(&camera_, 10);
 
-	// ===== ダメージ演出 =====
-	damageParticleModel_ = Model::Create();
-	damageParticles_.clear();
-
 	// ===== エンジンスモーク初期化 =====
 	engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
 	engineSmokeEmitter_->Initialize(256);
+	damageSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
+	damageSmokeEmitter_->Initialize(768);
+	missileAfterburnerEmitter_ = std::make_unique<GpuSmokeEmitter>();
+	missileAfterburnerEmitter_->Initialize(512);
 	smokeEmitTimer_ = 0.0f;
+	prevEnemyHpMap_.clear();
+	prevPlayerHp_ = player_->GetHP();
 
 	// ===== 通常時スモーク =====
 	normalSmokeParams_ = {
@@ -208,11 +210,12 @@ void GameScene::Update() {
 		BattleUpdate(dt);
 		UIUpdate();
 		UpdateLockOnMakers();
-		DamageParticleUpdate(dt);
+		DamageGpuParticlesUpdate(dt);
 		JudgeResultAndStartClear();
 		ClearAnimationUpdate(dt);
 		UpdateTransitionDirection(dt);
 		EngineSmokesUpdate(dt);
+		MissileAfterburnerUpdate(dt);
 		SpeedLineUpdate(dt);
 
 #ifdef USE_IMGUI
@@ -253,14 +256,7 @@ void GameScene::Draw() {
 
 		// スピードライン
 		speedLine_.Draw();
-
-		// ダメージパーティクル
-		if (damageParticleModel_) {
-			for (auto& p : damageParticles_) {
-				p->Draw(cam);
-			}
-		}
-
+		
 		// 敵・弾
 		enemyManager_.Draw(cam);
 		bulletManager_.Draw(cam);
@@ -270,6 +266,16 @@ void GameScene::Draw() {
 	const bool canDrawSmoke = (state_ == GameState::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
 	if (canDrawSmoke && engineSmokeEmitter_) {
 		engineSmokeEmitter_->Draw(cam);
+	}
+
+	// GPU煙エフェクトは最後に描画（Model描画状態を壊さないため）
+	if (state_ == GameState::Playing && result_ == GameResult::None) {
+		if (damageSmokeEmitter_) {
+			damageSmokeEmitter_->Draw(cam);
+		}
+		if (missileAfterburnerEmitter_) {
+			missileAfterburnerEmitter_->Draw(cam);
+		}
 	}
 
 	Model::PostDraw();
@@ -337,12 +343,11 @@ void GameScene::DrawImGui() {
 		}
 
 		if (ImGui::BeginTabItem("Damage")) {
-			ImGui::DragInt("Particle Count", &kDamageParticleCount_, 1.0f, 1, 200);
-			ImGui::DragFloat("Particle Speed XY", &kDamageParticleSpeedXY_, 0.01f, 0.0f, 20.0f);
-			ImGui::DragFloat("Particle Speed Z", &kDamageParticleSpeedZ_, 0.01f, -20.0f, 20.0f);
-			ImGui::DragFloat("Particle Life", &kDamageParticleLife_, 0.01f, 0.01f, 10.0f);
-			ImGui::DragFloat("Particle Start Scale", &kDamageParticleStartScale_, 0.01f, 0.0f, 5.0f);
-			ImGui::DragFloat("Particle End Scale", &kDamageParticleEndScale_, 0.01f, 0.0f, 5.0f);
+			ImGui::DragInt("GPU Burst", &kDamageGpuBurst_, 1.0f, 1, 200);
+			ImGui::DragFloat("GPU Speed", &kDamageGpuSpeed_, 0.01f, 0.0f, 40.0f);
+			ImGui::DragFloat("GPU Life", &kDamageGpuLife_, 0.01f, 0.01f, 10.0f);
+			ImGui::DragFloat("GPU Start Scale", &kDamageGpuStartScale_, 0.01f, 0.0f, 5.0f);
+			ImGui::DragFloat("GPU End Scale", &kDamageGpuEndScale_, 0.01f, 0.0f, 5.0f);
 			ImGui::EndTabItem();
 		}
 
@@ -407,15 +412,14 @@ void GameScene::SpawnDamageParticles() {
 
 	Vector3 pos = player_->GetWorldTranslation();
 	static std::mt19937 rng{(std::random_device{}())};
-	std::uniform_real_distribution<float> dist(-1, 1);
+	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
-	// 被弾時に複数のダメージパーティクルを一気に生成
-	for (int i = 0; i < kDamageParticleCount_; i++) {
-		Vector3 vel = {dist(rng) * kDamageParticleSpeedXY_, dist(rng) * kDamageParticleSpeedXY_, dist(rng) * kDamageParticleSpeedZ_};
-		auto p = std::make_unique<DamageParticle>();
-
-		p->Initialize(damageParticleModel_, pos, vel, kDamageParticleLife_, kDamageParticleStartScale_, kDamageParticleEndScale_);
-		damageParticles_.push_back(std::move(p));
+	// GPUパーティクル（被弾ヒット）
+	if (damageSmokeEmitter_) {
+		for (int i = 0; i < kDamageGpuBurst_; ++i) {
+			Vector3 v = { dist(rng) * kDamageGpuSpeed_,dist(rng) * kDamageGpuSpeed_,dist(rng) * kDamageGpuSpeed_ * 0.6f };
+			damageSmokeEmitter_->Emit(pos, v, kDamageGpuLife_, kDamageGpuStartScale_, kDamageGpuEndScale_);
+		}
 	}
 }
 
@@ -446,6 +450,30 @@ void GameScene::BattleUpdate(float dt) {
 		for (auto& e : enemyManager_.GetEnemies()) {
 			if (e && e->IsDead()) {
 				deadCount++;
+			}
+		}
+
+		// 敵の被弾（HP減少）を検知してGPU被弾演出を発生
+		if (damageSmokeEmitter_) {
+			static std::mt19937 enemyHitRng{ (std::random_device{}()) };
+			std::uniform_real_distribution<float> randDist(-1.0f, 1.0f);
+			auto& enemies = enemyManager_.GetEnemies();
+			for (auto& e : enemies) {
+				if (!e) {
+					continue;
+				}
+				CharacterBase* key = e.get();
+				const int32_t nowHp = e->GetHP();
+				auto it = prevEnemyHpMap_.find(key);
+				const int32_t prevHp = (it != prevEnemyHpMap_.end()) ? it->second : nowHp;
+				if (nowHp < prevHp && !e->IsDead()) {
+					const Vector3 hitPos = e->GetWorldTranslation();
+					for (int i = 0; i < kDamageGpuBurst_; ++i) {
+						Vector3 v = { randDist(enemyHitRng) * (kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (kDamageGpuSpeed_ * 0.45f) };
+						damageSmokeEmitter_->Emit(hitPos, v, kDamageGpuLife_, kDamageGpuStartScale_, kDamageGpuEndScale_);
+					}
+				}
+				prevEnemyHpMap_[key] = nowHp;
 			}
 		}
 
@@ -562,14 +590,25 @@ void GameScene::UpdateLockOnMakers() {
 	}
 }
 
-void GameScene::DamageParticleUpdate(float dt) {
-	//
-	for (auto& p : damageParticles_) {
-		p->Update(dt);
+void GameScene::DamageGpuParticlesUpdate(float dt) {
+	if (damageSmokeEmitter_) {
+		damageSmokeEmitter_->Update(dt);
 	}
 
-	//
-	damageParticles_.erase(std::remove_if(damageParticles_.begin(), damageParticles_.end(), [](const std::unique_ptr<DamageParticle>& p) { return p->IsFinished(); }), damageParticles_.end());
+	const int32_t currentHp = player_ ? player_->GetHP() : prevPlayerHp_;
+	prevPlayerHp_ = currentHp;
+
+	// 既に消滅した敵の参照をマップから除去
+	auto& enemies = enemyManager_.GetEnemies();
+	for (auto it = prevEnemyHpMap_.begin(); it != prevEnemyHpMap_.end();) {
+		const bool exists = std::any_of(enemies.begin(), enemies.end(), [it](const std::unique_ptr<CharacterBase>& e) { return e && e.get() == it->first; });
+		if (!exists) {
+			it = prevEnemyHpMap_.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
 }
 
 void GameScene::EngineSmokesUpdate(float dt) {
@@ -620,6 +659,40 @@ void GameScene::EngineSmokesUpdate(float dt) {
 	if (engineSmokeEmitter_) {
 		engineSmokeEmitter_->Update(dt);
 	}
+}
+
+void GameScene::MissileAfterburnerUpdate(float dt) {
+	if (!missileAfterburnerEmitter_) {
+		return;
+	}
+
+	static std::mt19937 rng{ std::random_device{}() };
+	std::uniform_real_distribution<float> randDist(-kMissileAfterburnerRand_, kMissileAfterburnerRand_);
+
+	for (const auto& missile : bulletManager_.GetHomingMissiles()) {
+		if (!missile || missile->IsDead()) {
+			continue;
+		}
+
+		Vector3 vel = missile->GetVelocity();
+		const float lenSq = vel.x * vel.x + vel.y * vel.y + vel.z * vel.z;
+		if (lenSq < 0.000001f) {
+			vel = { 0.0f, 0.0f, 1.0f };
+		}
+		else {
+			vel = MyMath::Normalize(vel);
+		}
+
+		const Vector3 pos = missile->GetWorldTranslation();
+		const Vector3 spawnPos = MyMath::Add(pos, MyMath::Multiply(vel, kMissileAfterburnerOffsetZ_));
+		Vector3 emitVel = MyMath::Multiply(vel, kMissileAfterburnerSpeed_);
+		emitVel.x += randDist(rng);
+		emitVel.y += randDist(rng);
+		emitVel.z += randDist(rng);
+		missileAfterburnerEmitter_->Emit(spawnPos, emitVel, kMissileAfterburnerLife_, kMissileAfterburnerStartScale_, kMissileAfterburnerEndScale_);
+	}
+
+	missileAfterburnerEmitter_->Update(dt);
 }
 
 void GameScene::CameraUpdate() {
@@ -749,12 +822,12 @@ void GameScene::StartExplosionAtPlayer(float scale) {
 	static std::mt19937 rng{(std::random_device{}())};
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
-	const int count = static_cast<int>(kDamageParticleCount_ * scale);
+	const int count = static_cast<int>(kDamageGpuBurst_ * scale);
 	for (int i = 0; i < count; i++) {
-		Vector3 vel = {dist(rng) * (kDamageParticleSpeedXY_ * scale), dist(rng) * (kDamageParticleSpeedXY_ * scale), dist(rng) * (kDamageParticleSpeedZ_ * scale)};
-		auto p = std::make_unique<DamageParticle>();
-		p->Initialize(damageParticleModel_, pos, vel, kDamageParticleLife_ * 1.5f, kDamageParticleStartScale_ * scale, 0.0f);
-		damageParticles_.push_back(std::move(p));
+		if (damageSmokeEmitter_) {
+			Vector3 vel = { dist(rng) * (kDamageGpuSpeed_ * scale), dist(rng) * (kDamageGpuSpeed_ * scale), dist(rng) * (kDamageGpuSpeed_ * scale) };
+			damageSmokeEmitter_->Emit(pos, vel, kDamageGpuLife_ * 1.8f, kDamageGpuStartScale_ * scale, 0.0f);
+		}
 	}
 	if (railCamera_) {
 		railCamera_->AddShake({0.5f, 0.3f, 0.0f}, scale * 2.0f);

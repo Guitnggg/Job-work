@@ -55,6 +55,11 @@ public:
 	/// </summary>
 	void ClearTarget() { target_ = nullptr; }
 
+	/// <summary>
+	/// 現在の進行方向ベクトルを取得
+	/// </summary>
+	const KamataEngine::Vector3& GetVelocity()const { return velocity_; }
+
 private:
 	// ===== 定数 =====
 	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;

@@ -7,13 +7,13 @@
 #include <algorithm>
 #include <array>
 #include <string>
+#include <unordered_map>
 
 #include "Application/Background/Skydome/Skydome.h"
 #include "Application/Cameras/RailCamera/RailCamera.h"
 #include "Application/Characters/Player/Player.h"
 #include "Application/Effects/SpeedLine/SpeedLine.h"
 #include "Application/Effects/Smoke/GpuSmokeEmitter.h"
-#include "Application/Effects/Damage/DamageParticle.h"
 #include "Application/Objects/Asteroid/Asteroid.h"
 
 #include "Application/UI/PauseMenu/PauseMenu.h"
@@ -126,14 +126,19 @@ private:
     void UpdateLockOnMakers();
 
     /// <summary>
-    /// ダメージパーティクル更新
-    /// </summary>
-    void DamageParticleUpdate(float dt);
-
-    /// <summary>
     /// エンジンスモーク更新
     /// </summary>
     void EngineSmokesUpdate(float dt);
+
+    /// <summary>
+    /// 被弾時GPUパーティクル更新（プレイヤー/敵）
+    /// </summary>
+    void DamageGpuParticlesUpdate(float dt);
+
+    /// <summary>
+    /// ホーミングミサイルのアフターバーナー演出更新
+    /// </summary>
+    void MissileAfterburnerUpdate(float dt);
 
     /// <summary>
     /// カメラ更新
@@ -227,19 +232,10 @@ private:
     // ========== スピード演出 ==========
     SpeedLine speedLine_;
 
-    // ========== ダメージ演出 ==========
-    std::vector<std::unique_ptr<DamageParticle>>damageParticles_;
-    KamataEngine::Model* damageParticleModel_ = nullptr;
-
-    int kDamageParticleCount_ = 10;
-    float kDamageParticleSpeedXY_ = 2.5f;
-    float kDamageParticleSpeedZ_ = -2.0f;
-    float kDamageParticleLife_ = 0.7f;
-    float kDamageParticleStartScale_ = 0.22f;
-    float kDamageParticleEndScale_ = 0.0f;
-
     // ========== エンジンスモーク ==========
     std::unique_ptr<GpuSmokeEmitter> engineSmokeEmitter_;
+    std::unique_ptr<GpuSmokeEmitter> damageSmokeEmitter_;
+    std::unique_ptr<GpuSmokeEmitter> missileAfterburnerEmitter_;
     float smokeEmitTimer_ = 0.0f;
 
     // スモークのパラメータ
@@ -257,6 +253,23 @@ private:
     float kSmokeOffsetZ_ = -1.5f;
     float kSmokeRandXY_ = 0.5f;
     float kSmokeRandZ_ = 0.10f;
+
+    // ========== GPU被弾演出 ==========
+    std::unordered_map<CharacterBase*, int32_t> prevEnemyHpMap_;
+    int32_t prevPlayerHp_ = 0;
+    float kDamageGpuLife_ = 0.35f;
+    float kDamageGpuStartScale_ = 0.20f;
+    float kDamageGpuEndScale_ = 0.0f;
+    int kDamageGpuBurst_ = 16;
+    float kDamageGpuSpeed_ = 6.0f;
+
+    // ========== ミサイルアフターバーナー ==========
+    float kMissileAfterburnerLife_ = 0.28f;
+    float kMissileAfterburnerStartScale_ = 0.13f;
+    float kMissileAfterburnerEndScale_ = 0.0f;
+    float kMissileAfterburnerSpeed_ = -3.8f;
+    float kMissileAfterburnerOffsetZ_ = -0.55f;
+    float kMissileAfterburnerRand_ = 0.2f;
 
     // ========== UI（HPバー／スコアなど） ==========
     UIManager uiManager_;
