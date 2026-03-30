@@ -259,8 +259,8 @@ private:
     int32_t prevPlayerHp_ = 0;
     float kDamageGpuLife_ = 0.35f;
     float kDamageGpuStartScale_ = 0.20f;
-    float kDamageGpuEndScale_ = 0.0f;
-    int kDamageGpuBurst_ = 16;
+    float kDamageGpuEndScale_ = 0.8f;
+    int kDamageGpuBurst_ = 32;
     float kDamageGpuSpeed_ = 6.0f;
 
     // ========== ミサイルアフターバーナー ==========
