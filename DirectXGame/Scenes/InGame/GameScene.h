@@ -197,7 +197,6 @@ private:
 
     // ========== Pauseメニュー ==========
     bool isPaused_ = false;
-    bool wasPaused_ = false;
     bool isDebugUpdatePaused_ = false;
     std::unique_ptr<PauseMenu> pauseMenu_;
     std::unique_ptr<KamataEngine::Sprite> pauseTitleSprite_;

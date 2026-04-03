@@ -1,7 +1,9 @@
 #include "GameSceneUpdateExecutor.h"
 #include "GameScene.h"
 
+#include <algorithm>
 #include <cmath>
+#include <random>
 
 using namespace KamataEngine;
 
@@ -74,7 +76,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		SpawnDamageParticles(gameScene);
 		BattleUpdate(gameScene, dt);
 		UIUpdate(gameScene);
-		UpdateLockOnMakers(gameScene);
+		UpdateLockOnMarkers(gameScene);
 		DamageGpuParticlesUpdate(gameScene, dt);
 		JudgeResultAndStartClear(gameScene);
 		ClearAnimationUpdate(gameScene, dt);
@@ -82,9 +84,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		EngineSmokesUpdate(gameScene, dt);
 		MissileAfterburnerUpdate(gameScene, dt);
 		SpeedLineUpdate(gameScene, dt);
-#ifdef USE_IMGUI
-		gameScene.DrawImGui();
-#endif
+
 		break;
 	}
 
@@ -229,7 +229,7 @@ void GameSceneUpdateExecutor::UIUpdate(GameScene& gameScene) {
 	gameScene.uiManager_.Update();
 }
 
-void GameSceneUpdateExecutor::UpdateLockOnMakers(GameScene& gameScene) {
+void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 	gameScene.lockOnMarkers_.clear();
 
 	if (gameScene.result_ != GameResult::None || gameScene.state_ != GameState::Playing) {
