@@ -30,6 +30,7 @@
 class FinishScene;
 class ClearScene;
 class TitleScene;
+class GameSceneUpdateExecutor;
 
 enum class GameState {
 	CountDown,   // 3カウント
@@ -79,96 +80,12 @@ public:
     void Draw() override;
 
 private:
+    friend class GameSceneUpdateExecutor;
+
     /// <summary>
     /// デバッグ調整用 ImGui
     /// </summary>
     void DrawImGui();
-
-private:
-    /// <summary>
-    /// 3カウント更新
-    /// </summary>
-    void CountDownUpdate(float dt);
-
-    /// <summary>
-    /// 背景（天球）更新
-    /// </summary>
-    void BackgroundUpdate();
-
-    /// <summary>
-    /// プレイヤー更新
-    /// </summary>
-    void PlayerUpdate();
-
-    /// <summary>
-    /// ダメージパーティクル生成
-    /// </summary>
-    void SpawnDamageParticles();
-
-    /// <summary>
-    /// 戦闘処理
-    /// </summary>
-    void BattleUpdate(float dt);
-
-    /// <summary>
-    /// マウス照準更新（レティクル位置、射撃方向、機体向き）
-    /// </summary>
-    void UpdateAimAndReticle();
-
-    /// <summary>
-    /// UI更新
-    /// </summary>
-    void UIUpdate();
-
-    /// <summary>
-    /// ミサイルのロックオン演出の更新
-    /// </summary>
-    void UpdateLockOnMakers();
-
-    /// <summary>
-    /// エンジンスモーク更新
-    /// </summary>
-    void EngineSmokesUpdate(float dt);
-
-    /// <summary>
-    /// 被弾時GPUパーティクル更新（プレイヤー/敵）
-    /// </summary>
-    void DamageGpuParticlesUpdate(float dt);
-
-    /// <summary>
-    /// ホーミングミサイルのアフターバーナー演出更新
-    /// </summary>
-    void MissileAfterburnerUpdate(float dt);
-
-    /// <summary>
-    /// カメラ更新
-    /// </summary>
-    void CameraUpdate();
-
-    /// <summary>
-    /// スピードライン更新
-    /// </summary>
-    void SpeedLineUpdate(float dt);
-
-    /// <summary>
-    /// クリア/失敗判定
-    /// </summary>
-    void JudgeResultAndStartClear();
-
-    /// <summary>
-    /// クリア後演出更新
-    /// </summary>
-    void ClearAnimationUpdate(float dt);
-
-    /// <summary>
-	/// 遷移演出の方向更新
-    /// </summary>
-    void UpdateTransitionDirection(float dt);
-
-	/// <summary>
-	/// プレイヤー位置で爆発エフェクトを発生させる
-	/// </summary>
-	void StartExplosionAtPlayer(float scale);
 
 public:
     bool IsEnd() const override { return isEnd_; }
