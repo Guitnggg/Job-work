@@ -60,10 +60,6 @@ void SpeedLine::Respawn_(LineParticle& p, const KamataEngine::Vector3& basePos, 
 	std::uniform_real_distribution<float> distSpeed(kSpeedMin, kSpeedMax);
 	p.speed = distSpeed(random_);
 
-	// 透明度（未使用だが将来拡張用）
-	const float edgeFactor = (r - innerRadius) / (outerRadius - innerRadius);
-	p.alpha = kAlphaBase + edgeFactor * kAlphaRange;
-
 	wt.UpdateMatrix();
 }
 

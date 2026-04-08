@@ -16,10 +16,7 @@ using namespace KamataEngine;
 
 GameScene::GameScene(std::string levelJsonPath) : levelJsonPath_(std::move(levelJsonPath)) {}
 
-GameScene::~GameScene() {
-	delete railCamera_;
-	delete skydome_;
-	delete player_;
+GameScene::~GameScene() = default;
 
 	delete worldTransform_;
 	delete model_;
@@ -31,29 +28,29 @@ void GameScene::Initialize() {
 	input_ = Input::GetInstance();
 	audio_ = Audio::GetInstance();
 
-	worldTransform_ = new WorldTransform();
+	worldTransform_ = std::make_unique<WorldTransform>();
 	worldTransform_->Initialize();
 	camera_.Initialize();
 
-	model_ = Model::Create();
+	model_.reset(Model::Create());
 
 	// =====レールカメラ =====
-	railCamera_ = new RailCamera();
+	railCamera_ = std::make_unique<RailCamera>();
 	railCamera_->Initialize();
 
 	// ===== 天球 =====
-	skydome_ = new Skydome();
+	skydome_ = std::make_unique<Skydome>();
 	skydome_->Initialize(&camera_);
 
 	// ===== プレイヤー =====
-	player_ = new Player();
+	player_ = std::make_unique<Player>();
 	player_->Initialize(&camera_);
 	player_->SetParent(&railCamera_->GetWorldTransform());
 
 	previousPlayerPos_ = player_->GetWorldTranslation(); // プレイヤー位置情報
 
 	// ===== スピードライン初期化 =====
-	speedLine_.Initialize(&camera_, 10);
+	speedLine_.Initialize(&camera_, kSpeedLineCount_);
 
 	// ===== エンジンスモーク初期化 =====
 	engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
@@ -86,14 +83,14 @@ void GameScene::Initialize() {
 
 	// ===== カウントダウン =====
 	countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/GO.png");
-	countDown_.SetTimings(0.1f, 0.5f, 0.4f);
-	countDown_.SetScaleRange(1.2f, 1.0f);
-	countDown_.SetBackOvershoot(1.7f);
+	countDown_.SetTimings(kCountDownStartDelay_, kCountDownNumberDuration_, kCountDownGoDuration_);
+	countDown_.SetScaleRange(kCountDownScaleStart_, kCountDownScaleEnd_);
+	countDown_.SetBackOvershoot(kCountDownBackOvershoot_);
 
 	countDown_.SetAudio(audio_->LoadWave("./Resources/SE/CountBeep.wav"), audio_->LoadWave("./Resources/SE/Start.wav"));
 
 	// ===== UI（HPバー／スコア） =====
-	uiManager_.Initialize(player_);
+	uiManager_.Initialize(player_.get());
 
 	// ===== 弾・敵 =====
 	bulletManager_.Initialize();

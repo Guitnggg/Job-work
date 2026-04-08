@@ -99,12 +99,12 @@ private:
     KamataEngine::Input* input_ = nullptr;
     KamataEngine::Audio* audio_ = nullptr;
 
-    KamataEngine::WorldTransform* worldTransform_ = nullptr;
+    std::unique_ptr<KamataEngine::WorldTransform> worldTransform_;
+    std::unique_ptr<KamataEngine::Model> model_;
     KamataEngine::Camera camera_;
-    KamataEngine::Model* model_ = nullptr;
 
     // ========== フレーム ==========
-    float kFixedDeltaTime_ = 1.0f / 60.0f;
+    static constexpr float kFixedDeltaTime_ = 1.0f / 60.0f;
 
     // ========== ステート ==========
     GameState state_ = GameState::CountDown;
@@ -114,13 +114,13 @@ private:
 
     // ========== レールカメラ ==========
     bool isRailCameraActive_ = true;
-    RailCamera* railCamera_ = nullptr;
+    std::unique_ptr<RailCamera> railCamera_;
 
     // ========== 天球 ==========
-    Skydome* skydome_ = nullptr;
+    std::unique_ptr<Skydome> skydome_;
 
     // ========== プレイヤー ==========
-    Player* player_ = nullptr;
+    std::unique_ptr<Player> player_;
 	KamataEngine::Vector3 previousPlayerPos_{};
 
     // ========== 照準 ==========
@@ -166,10 +166,10 @@ private:
     SmokeParams normalSmokeParams_;  // 通常時
     SmokeParams boostSmokeParams_;   // クリア演出時
 
-    float kSmokeOffsetY_ = -0.3f;
-    float kSmokeOffsetZ_ = -1.5f;
-    float kSmokeRandXY_ = 0.5f;
-    float kSmokeRandZ_ = 0.10f;
+    static constexpr float kSmokeOffsetY_ = -0.3f;
+    static constexpr float kSmokeOffsetZ_ = -1.5f;
+    static constexpr float kSmokeRandXY_ = 0.5f;
+    static constexpr float kSmokeRandZ_ = 0.10f;
 
     // ========== GPU被弾演出 ==========
     std::unordered_map<CharacterBase*, int32_t> prevEnemyHpMap_;
@@ -205,6 +205,7 @@ private:
     static constexpr float kScreenHeight_ = 720.0f;
     static constexpr float kPauseTitlePosX_ = 20.0f;
     static constexpr float kPauseTitlePosY_ = 16.0f;
+    static constexpr float kPauseTitleScale_ = 0.7f;
 
     // ポーズからの遷移要求
 	bool requestRetry_ = false;
@@ -214,13 +215,25 @@ private:
     bool  isClearAnimating_ = false;
     float clearAnimTimer_ = 0.0f;
 
-    float kClearBoostSpeedZ_ = 1.0f;
-    float kClearBoostSpeedY_ = 5.0f;
-    float kClearRotateSpeedX_ = 0.5f;
+    static constexpr float kClearBoostSpeedZ_ = 1.0f;
+    static constexpr float kClearBoostSpeedY_ = 5.0f;
+    static constexpr float kClearRotateSpeedX_ = 0.5f;
 
-    float kClearShrinkStart_ = 0.5f;
-    float kClearShrinkSpeed_ = 1.0f;
-    float kClearAnimEndTime_ = 2.0f;
+    static constexpr float kClearShrinkStart_ = 0.5f;
+    static constexpr float kClearShrinkSpeed_ = 1.0f;
+    static constexpr float kClearAnimEndTime_ = 2.0f;
+
+    static constexpr int kSpeedLineCount_ = 10;
+    static constexpr float kCountDownStartDelay_ = 0.1f;
+    static constexpr float kCountDownNumberDuration_ = 0.5f;
+    static constexpr float kCountDownGoDuration_ = 0.4f;
+    static constexpr float kCountDownScaleStart_ = 1.2f;
+    static constexpr float kCountDownScaleEnd_ = 1.0f;
+    static constexpr float kCountDownBackOvershoot_ = 1.7f;
+    static constexpr float kCameraShakeMin_ = -1.0f;
+    static constexpr float kCameraShakeMax_ = 1.0f;
+    static constexpr float kCameraShakeDuration_ = 1.0f;
+    static constexpr float kCameraInputScale_ = 40.0f;
 
      // ========== 遷移演出 ==========
 	SceneTransitionPhase transitionPhase_ = SceneTransitionPhase::None;

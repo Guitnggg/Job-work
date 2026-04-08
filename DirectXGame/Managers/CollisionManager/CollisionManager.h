@@ -42,10 +42,10 @@ public:
 	static void ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
 	/// <summary>
-	/// レーザー(Razer)と複数の敵との衝突判定を行う。
+	/// レーザー(Laser)と複数の敵との衝突判定を行う。
 	/// 衝突が発生した場合、敵に OnCollision、レーザーに OnCollision を通知する。
 	/// </summary>
-	/// <param name="razers">衝突対象のレーザーのリスト</param>
+	/// <param name="lasers">衝突対象のレーザーのリスト</param>
 	/// <param name="enemies">衝突対象の敵のリスト</param>
 	/// <param name="countDown">カウントダウン中は衝突を無効にするため使用</param>
 	static void ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
