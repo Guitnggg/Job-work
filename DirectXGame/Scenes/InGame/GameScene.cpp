@@ -18,10 +18,6 @@ GameScene::GameScene(std::string levelJsonPath) : levelJsonPath_(std::move(level
 
 GameScene::~GameScene() = default;
 
-	delete worldTransform_;
-	delete model_;
-}
-
 void GameScene::Initialize() {
 	// ===== 基本 =====
 	dxCommon_ = DirectXCommon::GetInstance();

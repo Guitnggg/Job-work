@@ -126,7 +126,7 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
 
 void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 	if (gameScene.result_ == GameResult::None) {
-		gameScene.bulletManager_.Update(gameScene.input_, gameScene.player_, gameScene.countDown_, gameScene.shootDirection_, &gameScene.enemyManager_);
+		gameScene.bulletManager_.Update(gameScene.input_, gameScene.player_.get(), gameScene.countDown_, gameScene.shootDirection_, &gameScene.enemyManager_);
 	}
 
 	if (!gameScene.countDown_.IsInputLocked() && gameScene.result_ == GameResult::None) {
@@ -136,7 +136,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 		CollisionManager::ResolveLaserEnemyCollisions(gameScene.bulletManager_.GetLasers(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		CollisionManager::ResolveHomingMissileEnemyCollisions(gameScene.bulletManager_.GetHomingMissiles(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		CollisionManager::ResolvePlayerBulletTurretBulletCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
-		CollisionManager::ResolvePlayerTurretBulletCollisions(gameScene.player_, gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
+		CollisionManager::ResolvePlayerTurretBulletCollisions(gameScene.player_.get(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 
 		int deadCount = 0;
 		for (auto& e : gameScene.enemyManager_.GetEnemies()) {
@@ -173,7 +173,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 		}
 
 		gameScene.enemyManager_.RemoveDeadEnemies();
-		CollisionManager::ResolvePlayerEnemyCollisions(gameScene.player_, gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
+		CollisionManager::ResolvePlayerEnemyCollisions(gameScene.player_.get(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		gameScene.enemyManager_.RemoveDeadEnemies();
 	}
 }
