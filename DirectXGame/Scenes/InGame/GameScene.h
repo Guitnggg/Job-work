@@ -215,13 +215,13 @@ private:
     bool  isClearAnimating_ = false;
     float clearAnimTimer_ = 0.0f;
 
-    static constexpr float kClearBoostSpeedZ_ = 1.0f;
-    static constexpr float kClearBoostSpeedY_ = 5.0f;
-    static constexpr float kClearRotateSpeedX_ = 0.5f;
+    float kClearBoostSpeedZ_ = 1.0f;
+    float kClearBoostSpeedY_ = 5.0f;
+    float kClearRotateSpeedX_ = 0.5f;
 
-    static constexpr float kClearShrinkStart_ = 0.5f;
-    static constexpr float kClearShrinkSpeed_ = 1.0f;
-    static constexpr float kClearAnimEndTime_ = 2.0f;
+    float kClearShrinkStart_ = 0.5f;
+    float kClearShrinkSpeed_ = 1.0f;
+    float kClearAnimEndTime_ = 2.0f;
 
     static constexpr int kSpeedLineCount_ = 10;
     static constexpr float kCountDownStartDelay_ = 0.1f;
