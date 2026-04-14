@@ -14,6 +14,30 @@
 
 using namespace KamataEngine;
 
+namespace {
+    void DrawPopupNumber(Sprite* digitSprite, int value, const Vector2& center, float scale, float alpha) {
+        if (!digitSprite) {
+            return;
+        }
+
+        const int absValue = (std::max)(0, value);
+        const std::string text = std::to_string(absValue);
+        const Vector2 digitSize = { 24.0f * scale, 40.0f * scale };
+        const float totalWidth = digitSize.x * static_cast<float>(text.size());
+        float x = center.x - totalWidth * 0.5f;
+
+        for (char c : text) {
+            const int digit = static_cast<int>(c - '0');
+            digitSprite->SetPosition({ x, center.y });
+            digitSprite->SetSize(digitSize);
+            digitSprite->SetTextureRect({ 32.0f * static_cast<float>(digit), 0.0f }, { 32.0f, 64.0f });
+            digitSprite->SetColor({ 1.0f, 0.95f, 0.35f, alpha });
+            digitSprite->Draw();
+            x += digitSize.x;
+        }
+    }
+} // namespace
+
 GameScene::GameScene(std::string levelJsonPath) : levelJsonPath_(std::move(levelJsonPath)) {}
 
 GameScene::~GameScene() {
@@ -136,6 +160,10 @@ void GameScene::Initialize() {
     const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
     pauseTitleSprite_->SetSize({ pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f });
     seExplosionHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
+    seEnemyHitHandle_ = audio_->LoadWave("./Resources/SE/shot.wav");
+    seEnemyKillHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
+    scorePopupTexHandle_ = TextureManager::Load("./Resources/InGame/number.png");
+    scorePopupDigitSprite_.reset(Sprite::Create(scorePopupTexHandle_, { 0.0f, 0.0f }));
 
     // ===== その他 =====
     isEnd_ = false;
@@ -150,6 +178,9 @@ void GameScene::Initialize() {
     timeScale_ = 1.0f;
     transitionScoreBonus_ = 0;
     failSecondExplosionDone_ = false;
+    hitStopFrames_ = 0;
+    hitStopRequestFrames_ = 0;
+    scorePopups_.clear();
 }
 
 void GameScene::Update() {
@@ -230,6 +261,22 @@ void GameScene::Draw() {
         for (auto& marker : lockOnMarkers_) {
             if (marker.sprite) {
                 marker.sprite->Draw();
+            }
+        }
+
+        const Camera* drawCam = railCamera_ ? railCamera_->GetCamera() : &camera_;
+        if (drawCam) {
+            const Matrix4x4 viewProj = MyMath::Multiply(drawCam->matView, drawCam->matProjection);
+            for (const auto& popup : scorePopups_) {
+                const Vector3 clip = MyMath::Transform(popup.worldPos, viewProj);
+                if (clip.z < 0.0f || clip.z > 1.0f) {
+                    continue;
+                }
+                const Vector2 screenPos = { (clip.x * 0.5f + 0.5f) * kScreenWidth_, (-clip.y * 0.5f + 0.5f) * kScreenHeight_ };
+                const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
+                const float scale = 0.85f + 0.35f * (1.0f - t);
+                const float alpha = (std::max)(0.0f, 1.0f - t);
+                DrawPopupNumber(scorePopupDigitSprite_.get(), popup.value, screenPos, scale, alpha);
             }
         }
     }

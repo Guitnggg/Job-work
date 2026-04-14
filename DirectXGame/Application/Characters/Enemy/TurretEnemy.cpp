@@ -2,161 +2,189 @@
 
 #include <algorithm>
 #include <cmath>
+#include "base/TextureManager.h"
 
 using namespace KamataEngine;
 
 void TurretEnemy::Initialize() {
-	// --- 基底クラス初期化 ---
-	CharacterBase::Initialize();
+    // --- 基底クラス初期化 ---
+    CharacterBase::Initialize();
 
-	// --- モデル生成 ---
-	// 現在は球体モデルを使用（専用モデルがあれば差し替え可能）
-	model_.reset(Model::CreateSphere());
+    // --- モデル生成 ---
+    // 現在は球体モデルを使用（専用モデルがあれば差し替え可能）
+    model_.reset(Model::CreateSphere());
+    flashTextureHandle_ = TextureManager::Load("./Resources/white1x1.png");
 
-	// --- HP設定 ---
-	maxHp_ = initialHP_;
-	hp_ = maxHp_;
+    // --- HP設定 ---
+    maxHp_ = initialHP_;
+    hp_ = maxHp_;
 
-	// --- 見た目スケール ---
-	worldTransform_.scale_ = kTurretScale;
-	worldTransform_.UpdateMatrix();
+    // --- 見た目スケール ---
+    worldTransform_.scale_ = kTurretScale;
+    worldTransform_.UpdateMatrix();
 
-	// --- コライダー設定 ---
-	if (collider_) {
-		collider_->SetRadius(colliderRadius_);
-		collider_->SetTranslate(GetWorldTranslation());
-		collider_->Update();
-	}
+    // --- コライダー設定 ---
+    if (collider_) {
+        collider_->SetRadius(colliderRadius_);
+        collider_->SetTranslate(GetWorldTranslation());
+        collider_->Update();
+    }
 
-	// --- 初期状態 ---
-	bullets_.clear();
-	shootTimerFrames_ = 0;
-	state_ = State::Active;
-	isDead_ = false;
+    // --- 初期状態 ---
+    bullets_.clear();
+    shootTimerFrames_ = 0;
+    state_ = State::Active;
+    isDead_ = false;
+    flashTimer_ = 0.0f;
+    shakeTimer_ = 0.0f;
+    baseTranslation_ = worldTransform_.translation_;
 }
 
 void TurretEnemy::Update() {
-	// 死亡中も弾は更新して自然消滅させる
-	if (IsDead()) {
-		UpdateBullets_();
-		return;
-	}
+    // 死亡中も弾は更新して自然消滅させる
+    if (IsDead()) {
+        UpdateBullets_();
+        return;
+    }
 
-	// 砲台は移動しないため translation_ は更新しない
-	worldTransform_.UpdateMatrix();
+    const float dt = 1.0f / 60.0f;
+    if (flashTimer_ > 0.0f) {
+        flashTimer_ -= dt;
+    }
+    if (shakeTimer_ > 0.0f) {
+        shakeTimer_ -= dt;
+    }
 
-	// ターゲット追尾
-	AimToTarget_();
+    // 砲台は移動しないため translation_ は更新しない
+    worldTransform_.translation_ = baseTranslation_;
+    if (shakeTimer_ > 0.0f) {
+        const float t = shakeTimer_ / kShakeDuration;
+        worldTransform_.translation_.x += std::sin(t * 40.0f) * kShakePower * t;
+        worldTransform_.translation_.y += std::cos(t * 52.0f) * kShakePower * 0.5f * t;
+    }
+    worldTransform_.UpdateMatrix();
 
-	// --- 射撃管理 ---
-	shootTimerFrames_++;
-	if (shootTimerFrames_ >= shootIntervalFrames_) {
-		shootTimerFrames_ = 0;
-		state_ = State::Shooting;
-		Fire_();
-		state_ = State::Active;
-	}
+    // ターゲット追尾
+    AimToTarget_();
 
-	// --- コライダー同期 ---
-	if (collider_) {
-		collider_->SetTranslate(GetWorldTranslation());
-		collider_->Update();
-	}
+    // --- 射撃管理 ---
+    shootTimerFrames_++;
+    if (shootTimerFrames_ >= shootIntervalFrames_) {
+        shootTimerFrames_ = 0;
+        state_ = State::Shooting;
+        Fire_();
+        state_ = State::Active;
+    }
 
-	// --- 弾更新 ---
-	UpdateBullets_();
+    // --- コライダー同期 ---
+    if (collider_) {
+        collider_->SetTranslate(GetWorldTranslation());
+        collider_->Update();
+    }
+
+    // --- 弾更新 ---
+    UpdateBullets_();
 }
 
 void TurretEnemy::Draw(const Camera* camera) {
-	if (!camera) {
-		return;
-	}
+    if (!camera) {
+        return;
+    }
 
-	// 砲台本体
-	if (!IsDead() && model_) {
-		model_->Draw(worldTransform_, *camera, textureHandle_);
-	}
+    // 砲台本体
+    if (!IsDead() && model_) {
+        model_->Draw(worldTransform_, *camera, textureHandle_);
+        if (flashTimer_ > 0.0f && flashTextureHandle_ != 0u) {
+            Vector3 backupScale = worldTransform_.scale_;
+            const float t = flashTimer_ / kFlashDuration;
+            worldTransform_.scale_ = { backupScale.x * (1.0f + t * 0.3f), backupScale.y * (1.0f + t * 0.3f), backupScale.z * (1.0f + t * 0.3f) };
+            worldTransform_.UpdateMatrix();
+            model_->Draw(worldTransform_, *camera, flashTextureHandle_);
+            worldTransform_.scale_ = backupScale;
+            worldTransform_.UpdateMatrix();
+        }
+    }
 
-	// 弾描画
-	for (auto& bullet : bullets_) {
-		bullet->Draw(camera);
-	}
+    // 弾描画
+    for (auto& bullet : bullets_) {
+        bullet->Draw(camera);
+    }
 }
 
 void TurretEnemy::OnCollision(CharacterBase* /*other*/) {
-	if (IsDead()) {
-		return;
-	}
+    if (IsDead()) { return; }
 
-	// ダメージ処理
-	hp_--;
-	if (hp_ <= 0) {
-		isDead_ = true;
-	}
+    // ダメージ処理
+    hp_--;
+    flashTimer_ = kFlashDuration;
+    shakeTimer_ = kShakeDuration;
+    if (hp_ <= 0) {
+        isDead_ = true;
+    }
 }
 
 void TurretEnemy::AimToTarget_() {
-	if (!hasTarget_) {
-		return;
-	}
+    if (!hasTarget_) {
+        return;
+    }
 
-	const Vector3 selfPos = GetWorldTranslation();
-	Vector3 toTarget{targetPos_.x - selfPos.x, targetPos_.y - selfPos.y, targetPos_.z - selfPos.z};
+    const Vector3 selfPos = GetWorldTranslation();
+    Vector3 toTarget{ targetPos_.x - selfPos.x, targetPos_.y - selfPos.y, targetPos_.z - selfPos.z };
 
-	const float lenSq = toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z;
+    const float lenSq = toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z;
 
-	if (lenSq < 0.000001f) {
-		return;
-	}
+    if (lenSq < 0.000001f) {
+        return;
+    }
 
-	// Y軸回転のみでターゲットを向く
-	const float yaw = std::atan2(toTarget.x, toTarget.z);
-	worldTransform_.rotation_.y = yaw;
+    // Y軸回転のみでターゲットを向く
+    const float yaw = std::atan2(toTarget.x, toTarget.z);
+    worldTransform_.rotation_.y = yaw;
 }
 
 void TurretEnemy::Fire_() {
-	if (!hasTarget_) {
-		return;
-	}
+    if (!hasTarget_) {
+        return;
+    }
 
-	// --- 発射位置 ---
-	Vector3 muzzlePos = GetWorldTranslation();
-	const float yaw = worldTransform_.rotation_.y;
-	muzzlePos.x += std::sin(yaw) * kMuzzleForward;
-	muzzlePos.z += std::cos(yaw) * kMuzzleForward;
+    // --- 発射位置 ---
+    Vector3 muzzlePos = GetWorldTranslation();
+    const float yaw = worldTransform_.rotation_.y;
+    muzzlePos.x += std::sin(yaw) * kMuzzleForward;
+    muzzlePos.z += std::cos(yaw) * kMuzzleForward;
 
-	// --- 発射方向 ---
-	Vector3 dir{targetPos_.x - muzzlePos.x, targetPos_.y - muzzlePos.y, targetPos_.z - muzzlePos.z};
+    // --- 発射方向 ---
+    Vector3 dir{ targetPos_.x - muzzlePos.x, targetPos_.y - muzzlePos.y, targetPos_.z - muzzlePos.z };
 
-	const float len = std::sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-	if (len < 0.000001f) {
-		return;
-	}
-	dir.x /= len;
-	dir.y /= len;
-	dir.z /= len;
+    const float len = std::sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
+    if (len < 0.000001f) {
+        return;
+    }
+    dir.x /= len;
+    dir.y /= len;
+    dir.z /= len;
 
-	// --- Bullet生成 ---
-	auto bullet = std::make_unique<Bullet>();
-	bullet->Initialize();
-	bullet->SetSpeed(bulletSpeed_);
-	bullet->SetLifeTime(bulletLifeTimeSec_);
-	bullet->FireFrom(muzzlePos, dir);
+    // --- Bullet生成 ---
+    auto bullet = std::make_unique<Bullet>();
+    bullet->Initialize();
+    bullet->SetSpeed(bulletSpeed_);
+    bullet->SetLifeTime(bulletLifeTimeSec_);
+    bullet->FireFrom(muzzlePos, dir);
 
-	bullets_.push_back(std::move(bullet));
+    bullets_.push_back(std::move(bullet));
 }
 
 void TurretEnemy::UpdateBullets_() {
-	for (auto& bullet : bullets_) {
-		bullet->Update();
-	}
+    for (auto& bullet : bullets_) {
+        bullet->Update();
+    }
 
-	bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(), [](const std::unique_ptr<Bullet>& b) { return b->IsDead(); }), bullets_.end());
+    bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(), [](const std::unique_ptr<Bullet>& b) { return b->IsDead(); }), bullets_.end());
 }
 
 void TurretEnemy::SetColliderRadius(float radius) {
-	colliderRadius_ = radius;
-	if (collider_) {
-		collider_->SetRadius(radius);
-	}
+    colliderRadius_ = radius;
+    if (collider_) {
+        collider_->SetRadius(radius);
+    }
 }

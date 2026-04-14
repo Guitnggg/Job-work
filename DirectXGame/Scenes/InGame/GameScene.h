@@ -180,6 +180,26 @@ private:
     int kDamageGpuBurst_ = 32;
     float kDamageGpuSpeed_ = 6.0f;
 
+    // ========== ヒットフェードバック ==========
+    uint32_t seEnemyHitHandle_ = 0;
+    uint32_t seEnemyKillHandle_ = 0;
+    int hitStopFrames_ = 0;
+    int hitStopRequestFrames_ = 0;
+    int kEnemyHitStopFrames_ = 3;
+    int kEnemyKillBurstScale_ = 4;
+    int kEnemyHitBurstScale_ = 1;
+    uint32_t scorePopupTexHandle_ = 0;
+    std::unique_ptr<KamataEngine::Sprite> scorePopupDigitSprite_;
+
+    struct ScorePopup {
+        KamataEngine::Vector3 worldPos{ 0.0f, 0.0f, 0.0f };
+        int value = 0;
+        float life = 0.0f;
+        float maxLife = 0.0f;
+        float riseSpeed = 0.0f;
+    };
+    std::vector<ScorePopup> scorePopups_;
+
     // ========== ミサイルアフターバーナー ==========
     float kMissileAfterburnerLife_ = 0.28f;
     float kMissileAfterburnerStartScale_ = 0.13f;
