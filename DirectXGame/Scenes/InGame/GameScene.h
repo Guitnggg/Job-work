@@ -33,8 +33,8 @@ class TitleScene;
 class GameSceneUpdateExecutor;
 
 enum class GameState {
-	CountDown,   // 3カウント
-	Playing,     // ゲーム本編
+    CountDown,   // 3カウント
+    Playing,     // ゲーム本編
 };
 
 enum class GameResult {
@@ -44,10 +44,10 @@ enum class GameResult {
 };
 
 enum class SceneTransitionPhase {
-	None,        
-	IntroCinematic, // ゲーム開始前の演出
-	ClearCinematic, // クリア後の演出
-	FailCinematic,  // 失敗後の演出
+    None,
+    IntroCinematic, // ゲーム開始前の演出
+    ClearCinematic, // クリア後の演出
+    FailCinematic,  // 失敗後の演出
 };
 
 /// <summary>
@@ -89,7 +89,7 @@ private:
 
 public:
     bool IsEnd() const override { return isEnd_; }
-	std::unique_ptr<IScene> NextScene() const override;
+    std::unique_ptr<IScene> NextScene() const override;
 
     SceneName GetSceneName() const override { return SceneName::InGame; }
 
@@ -121,7 +121,7 @@ private:
 
     // ========== プレイヤー ==========
     Player* player_ = nullptr;
-	KamataEngine::Vector3 previousPlayerPos_{};
+    KamataEngine::Vector3 previousPlayerPos_{};
 
     // ========== 照準 ==========
     uint32_t reticleTexHandle_ = 0;
@@ -207,8 +207,8 @@ private:
     static constexpr float kPauseTitlePosY_ = 16.0f;
 
     // ポーズからの遷移要求
-	bool requestRetry_ = false;
-	bool requestToTitle_ = false;
+    bool requestRetry_ = false;
+    bool requestToTitle_ = false;
 
     // ========== クリア後演出用 ==========
     bool  isClearAnimating_ = false;
@@ -222,15 +222,15 @@ private:
     float kClearShrinkSpeed_ = 1.0f;
     float kClearAnimEndTime_ = 2.0f;
 
-     // ========== 遷移演出 ==========
-	SceneTransitionPhase transitionPhase_ = SceneTransitionPhase::None;
-	float transitionTimer_ = 0.0f;
-	float timeScale_ = 1.0f;
+    // ========== 遷移演出 ==========
+    SceneTransitionPhase transitionPhase_ = SceneTransitionPhase::None;
+    float transitionTimer_ = 0.0f;
+    float timeScale_ = 1.0f;
 
-	int transitionScoreBonus_ = 0;
-	bool failSecondExplosionDone_ = false;
+    int transitionScoreBonus_ = 0;
+    bool failSecondExplosionDone_ = false;
 
-	uint32_t seExplosionHandle_ = 0;
+    uint32_t seExplosionHandle_ = 0;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;
