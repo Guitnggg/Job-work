@@ -132,14 +132,10 @@ void Player::UpdateMoveAndBank_(float dt) {
         return;
 
     int ix = 0, iy = 0;
-    if (input_->PushKey(DIK_D) || input_->PushKey(DIK_RIGHT))
-        ix++;
-    if (input_->PushKey(DIK_A) || input_->PushKey(DIK_LEFT))
-        ix--;
-    if (input_->PushKey(DIK_W) || input_->PushKey(DIK_UP))
-        iy++;
-    if (input_->PushKey(DIK_S) || input_->PushKey(DIK_DOWN))
-        iy--;
+    if (input_->PushKey(DIK_D) || input_->PushKey(DIK_RIGHT)) { ix++; }
+    if (input_->PushKey(DIK_A) || input_->PushKey(DIK_LEFT)) { ix--; }
+    if (input_->PushKey(DIK_W) || input_->PushKey(DIK_UP)) { iy++; }
+    if (input_->PushKey(DIK_S) || input_->PushKey(DIK_DOWN)) { iy--; }
 
     worldTransform_.translation_.x += ix * kMoveSpeedXY * dt;
     worldTransform_.translation_.y += iy * kMoveSpeedXY * dt;
