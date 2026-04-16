@@ -33,8 +33,8 @@ class TitleScene;
 class GameSceneUpdateExecutor;
 
 enum class GameState {
-	CountDown,   // 3カウント
-	Playing,     // ゲーム本編
+    CountDown,   // 3カウント
+    Playing,     // ゲーム本編
 };
 
 enum class GameResult {
@@ -44,10 +44,10 @@ enum class GameResult {
 };
 
 enum class SceneTransitionPhase {
-	None,        
-	IntroCinematic, // ゲーム開始前の演出
-	ClearCinematic, // クリア後の演出
-	FailCinematic,  // 失敗後の演出
+    None,
+    IntroCinematic, // ゲーム開始前の演出
+    ClearCinematic, // クリア後の演出
+    FailCinematic,  // 失敗後の演出
 };
 
 /// <summary>
@@ -82,14 +82,10 @@ public:
 private:
     friend class GameSceneUpdateExecutor;
 
-    /// <summary>
-    /// デバッグ調整用 ImGui
-    /// </summary>
-    void DrawImGui();
 
 public:
     bool IsEnd() const override { return isEnd_; }
-	std::unique_ptr<IScene> NextScene() const override;
+    std::unique_ptr<IScene> NextScene() const override;
 
     SceneName GetSceneName() const override { return SceneName::InGame; }
 
@@ -180,6 +176,26 @@ private:
     int kDamageGpuBurst_ = 32;
     float kDamageGpuSpeed_ = 6.0f;
 
+    // ========== ヒットフェードバック ==========
+    uint32_t seEnemyHitHandle_ = 0;
+    uint32_t seEnemyKillHandle_ = 0;
+    int hitStopFrames_ = 0;
+    int hitStopRequestFrames_ = 0;
+    int kEnemyHitStopFrames_ = 3;
+    int kEnemyKillBurstScale_ = 4;
+    int kEnemyHitBurstScale_ = 1;
+    uint32_t scorePopupTexHandle_ = 0;
+    std::unique_ptr<KamataEngine::Sprite> scorePopupDigitSprite_;
+
+    struct ScorePopup {
+        KamataEngine::Vector3 worldPos{ 0.0f, 0.0f, 0.0f };
+        int value = 0;
+        float life = 0.0f;
+        float maxLife = 0.0f;
+        float riseSpeed = 0.0f;
+    };
+    std::vector<ScorePopup> scorePopups_;
+
     // ========== ミサイルアフターバーナー ==========
     float kMissileAfterburnerLife_ = 0.28f;
     float kMissileAfterburnerStartScale_ = 0.13f;
@@ -208,8 +224,8 @@ private:
     static constexpr float kPauseTitleScale_ = 0.7f;
 
     // ポーズからの遷移要求
-	bool requestRetry_ = false;
-	bool requestToTitle_ = false;
+    bool requestRetry_ = false;
+    bool requestToTitle_ = false;
 
     // ========== クリア後演出用 ==========
     bool  isClearAnimating_ = false;
@@ -240,10 +256,10 @@ private:
 	float transitionTimer_ = 0.0f;
 	float timeScale_ = 1.0f;
 
-	int transitionScoreBonus_ = 0;
-	bool failSecondExplosionDone_ = false;
+    int transitionScoreBonus_ = 0;
+    bool failSecondExplosionDone_ = false;
 
-	uint32_t seExplosionHandle_ = 0;
+    uint32_t seExplosionHandle_ = 0;
 
     // ========== シーン制御 ==========
     bool isEnd_ = false;
