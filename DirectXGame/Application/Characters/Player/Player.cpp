@@ -42,8 +42,7 @@ void Player::Update() {
             collider_->SetTranslate(GetWorldTranslation());
         return;
     }
-    if (isDead_)
-        return;
+    if (isDead_) { return; }
 
     if (hitFlashFrames_ > 0)
         --hitFlashFrames_;

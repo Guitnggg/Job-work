@@ -82,10 +82,6 @@ public:
 private:
     friend class GameSceneUpdateExecutor;
 
-    /// <summary>
-    /// デバッグ調整用 ImGui
-    /// </summary>
-    void DrawImGui();
 
 public:
     bool IsEnd() const override { return isEnd_; }

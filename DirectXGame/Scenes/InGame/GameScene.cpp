@@ -50,7 +50,7 @@ GameScene::~GameScene() {
 }
 
 void GameScene::Initialize() {
-    // ===== 基本 =====
+    // ===== 基本システム =====
     dxCommon_ = DirectXCommon::GetInstance();
     input_ = Input::GetInstance();
     audio_ = Audio::GetInstance();
@@ -295,71 +295,6 @@ void GameScene::Draw() {
 
     Sprite::PostDraw();
 #pragma endregion
-}
-
-void GameScene::DrawImGui() {
-#ifdef USE_IMGUI
-    ImGui::Begin("GameScene InGame");
-
-    ImGui::Checkbox("Pause Game Progress", &isDebugUpdatePaused_);
-    ImGui::Separator();
-
-    if (ImGui::BeginTabBar("GameSceneTabs")) {
-        if (ImGui::BeginTabItem("State")) {
-            ImGui::Text("GameState: %s", state_ == GameState::Playing ? "Playing" : "CountDown");
-            ImGui::Text("Result: %s", result_ == GameResult::Clear ? "Clear" : result_ == GameResult::Fail ? "Fail" : "None");
-            ImGui::Text("PauseMenu: %s", isPaused_ ? "Open" : "Closed");
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Score")) {
-            ImGui::DragInt("Score Per Enemy", &kScorePerEnemy_, 1.0f, 0, 10000);
-            ImGui::DragInt("Clear Score", &kClearScore_, 10.0f, 0, 999999);
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Damage")) {
-            ImGui::DragInt("GPU Burst", &kDamageGpuBurst_, 1.0f, 1, 200);
-            ImGui::DragFloat("GPU Speed", &kDamageGpuSpeed_, 0.01f, 0.0f, 40.0f);
-            ImGui::DragFloat("GPU Life", &kDamageGpuLife_, 0.01f, 0.01f, 10.0f);
-            ImGui::DragFloat("GPU Start Scale", &kDamageGpuStartScale_, 0.01f, 0.0f, 5.0f);
-            ImGui::DragFloat("GPU End Scale", &kDamageGpuEndScale_, 0.01f, 0.0f, 5.0f);
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Smoke")) {
-            ImGui::Text("Normal");
-            ImGui::DragFloat("Normal Emit Interval", &normalSmokeParams_.emitInterval, 0.001f, 0.001f, 1.0f);
-            ImGui::DragFloat("Normal Life", &normalSmokeParams_.lifeTime, 0.01f, 0.01f, 10.0f);
-            ImGui::DragFloat("Normal Start Scale", &normalSmokeParams_.startScale, 0.01f, 0.0f, 5.0f);
-            ImGui::DragInt("Normal Burst", &normalSmokeParams_.burstCount, 1.0f, 1, 100);
-            ImGui::DragFloat("Normal Base Z Speed", &normalSmokeParams_.baseZSpeed, 0.01f, -20.0f, 20.0f);
-
-            ImGui::Separator();
-            ImGui::Text("Boost");
-            ImGui::DragFloat("Boost Emit Interval", &boostSmokeParams_.emitInterval, 0.001f, 0.001f, 1.0f);
-            ImGui::DragFloat("Boost Life", &boostSmokeParams_.lifeTime, 0.01f, 0.01f, 10.0f);
-            ImGui::DragFloat("Boost Start Scale", &boostSmokeParams_.startScale, 0.01f, 0.0f, 5.0f);
-            ImGui::DragInt("Boost Burst", &boostSmokeParams_.burstCount, 1.0f, 1, 100);
-            ImGui::DragFloat("Boost Base Z Speed", &boostSmokeParams_.baseZSpeed, 0.01f, -20.0f, 20.0f);
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Clear")) {
-            ImGui::DragFloat("Clear Boost Z", &kClearBoostSpeedZ_, 0.01f, -20.0f, 20.0f);
-            ImGui::DragFloat("Clear Boost Y", &kClearBoostSpeedY_, 0.01f, -20.0f, 20.0f);
-            ImGui::DragFloat("Clear Rotate Speed X", &kClearRotateSpeedX_, 0.01f, -20.0f, 20.0f);
-            ImGui::DragFloat("Clear Shrink Start", &kClearShrinkStart_, 0.01f, 0.0f, 10.0f);
-            ImGui::DragFloat("Clear Shrink Speed", &kClearShrinkSpeed_, 0.01f, 0.0f, 20.0f);
-            ImGui::DragFloat("Clear End Time", &kClearAnimEndTime_, 0.01f, 0.1f, 20.0f);
-            ImGui::EndTabItem();
-        }
-
-        ImGui::EndTabBar();
-    }
-
-    ImGui::End();
-#endif
 }
 
 std::unique_ptr<IScene> GameScene::NextScene() const {

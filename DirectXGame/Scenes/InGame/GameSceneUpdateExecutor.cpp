@@ -49,13 +49,10 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
         default:
             break;
         }
-
-        gameScene.DrawImGui();
         return;
     }
 
     if (gameScene.state_ == GameState::Playing) {
-        gameScene.DrawImGui();
         if (gameScene.isDebugUpdatePaused_) {
             return;
         }
