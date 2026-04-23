@@ -9,7 +9,7 @@
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
     // KamataEngineの初期化、ゲームループ開始
-    KamataEngine::Initialize(L"LE3C_10_タカキ_ケンゴ_AstroWing");
+    KamataEngine::Initialize(L"LE4C_06_タカキ_ケンゴ_AstroWing");
     {
         // ゲームプレイ中はOSカーソルを非表示にする
         //while (ShowCursor(FALSE) >= 0) {}
