@@ -5922,6 +5922,7 @@ void BulletManager::Initialize() {
 	lockedTargets_.clear();
 
 	fireCooldownFrames_ = 0;
+	burstShotsRemaining_ = 0;
 	isHomingLocking_ = false;
 	homingLockFrame_ = 0;
 	homingCooldownFrames_ = 0;
@@ -5943,7 +5944,11 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 		--fireCooldownFrames_;
 	}
 
-	if (!input->IsTriggerMouse(0) || fireCooldownFrames_ > 0) {
+	if (input->IsTriggerMouse(0) && burstShotsRemaining_ <= 0 && fireCooldownFrames_ <= 0) {
+		burstShotsRemaining_ = kBurstShotCount;
+	}
+
+	if (burstShotsRemaining_ <= 0 || fireCooldownFrames_ > 0) {
 		HandleHomingMissile_(input, player, countDown, enemyManager);
 		return;
 	}
@@ -5959,7 +5964,8 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 	b->FireFrom(player->GetWorldTranslation(), dir);
 	bullets_.push_back(std::move(b));
 
-	fireCooldownFrames_ = kFireCooldownMax;
+	--burstShotsRemaining_;
+	fireCooldownFrames_ = (burstShotsRemaining_ > 0) ? kBurstIntervalFrames : kBurstCooldownFrames;
 
 	if (audio_ && shotSeHandle_ != 0) {
 		audio_->PlayWave(shotSeHandle_);
@@ -6228,7 +6234,10 @@ private:
 
 	// クールダウン
 	int32_t fireCooldownFrames_ = 0;
-	static constexpr int32_t kFireCooldownMax = 9;   // 通常弾：約0.15秒@60fps
+	int32_t burstShotsRemaining_ = 0;
+	static constexpr int32_t kBurstShotCount = 3;
+	static constexpr int32_t kBurstIntervalFrames = 3;   // バースト内の発射間隔(約0.05秒@60fps)
+	static constexpr int32_t kBurstCooldownFrames = 18;  // バースト後の待機時間(約0.3秒@60fps)
 
 	bool isHomingLocking_ = false;
 	int32_t homingLockFrame_ = 0;
