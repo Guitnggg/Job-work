@@ -7861,6 +7861,29 @@ void GameScene::Initialize() {
 
     previousPlayerPos_ = player_->GetWorldTranslation(); // プレイヤー位置情報
 
+    // ===== 操作UI =====
+    wasdTextureHandle_ = TextureManager::Load("./Resources/InGame/WASD.png");
+    const Vector2 keySize = { kWasdKeySize_, kWasdKeySize_ };
+    const Vector2 keyUvSize = { 96.0f, 96.0f };
+    wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ }));
+    wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_) }));
+    wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_) }));
+    wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_) }));
+    if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
+        wasdWSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        wasdASprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        wasdSSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        wasdDSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        wasdWSprite_->SetSize(keySize);
+        wasdASprite_->SetSize(keySize);
+        wasdSSprite_->SetSize(keySize);
+        wasdDSprite_->SetSize(keySize);
+        wasdWSprite_->SetTextureRect({ 96.0f, 0.0f }, keyUvSize);
+        wasdASprite_->SetTextureRect({ 0.0f, 96.0f }, keyUvSize);
+        wasdSSprite_->SetTextureRect({ 96.0f, 96.0f }, keyUvSize);
+        wasdDSprite_->SetTextureRect({ 192.0f, 96.0f }, keyUvSize);
+    }
+
 	// ===== スピードライン初期化 =====
 	speedLine_.Initialize(&camera_, kSpeedLineCount_);
 
@@ -8071,6 +8094,26 @@ void GameScene::Draw() {
         pauseMenu_->Draw();
     }
 
+    // 操作UI
+    if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
+        const bool isWPressed = input_->PushKey(DIK_W);
+        const bool isAPressed = input_->PushKey(DIK_A);
+        const bool isSPressed = input_->PushKey(DIK_S);
+        const bool isDPressed = input_->PushKey(DIK_D);
+        const Vector4 normalColor = { 1.0f, 1.0f, 1.0f, 0.85f };
+        const Vector4 pressedColor = { 0.35f, 0.95f, 1.0f, 1.0f };
+
+        wasdWSprite_->SetColor(isWPressed ? pressedColor : normalColor);
+        wasdASprite_->SetColor(isAPressed ? pressedColor : normalColor);
+        wasdSSprite_->SetColor(isSPressed ? pressedColor : normalColor);
+        wasdDSprite_->SetColor(isDPressed ? pressedColor : normalColor);
+
+        wasdWSprite_->Draw();
+        wasdASprite_->Draw();
+        wasdSSprite_->Draw();
+        wasdDSprite_->Draw();
+    }
+
     // Pauseガイド
     if (!isPaused_ && state_ == GameState::Playing) {
         if (pauseTitleSprite_) {
@@ -8225,6 +8268,17 @@ private:
     // ========== プレイヤー ==========
     std::unique_ptr<Player> player_;
 	KamataEngine::Vector3 previousPlayerPos_{};
+
+    // ========== 操作UI ==========
+    uint32_t wasdTextureHandle_ = 0;
+    std::unique_ptr<KamataEngine::Sprite> wasdWSprite_;
+    std::unique_ptr<KamataEngine::Sprite> wasdASprite_;
+    std::unique_ptr<KamataEngine::Sprite> wasdSSprite_;
+    std::unique_ptr<KamataEngine::Sprite> wasdDSprite_;
+    static constexpr float kWasdBaseX_ = 36.0f;
+    static constexpr float kWasdBaseY_ = 566.0f;
+    static constexpr float kWasdKeySize_ = 64.0f;
+    static constexpr float kWasdSpacing_ = 6.0f;
 
     // ========== 照準 ==========
     uint32_t reticleTexHandle_ = 0;
