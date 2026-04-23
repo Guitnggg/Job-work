@@ -85,9 +85,6 @@ void Bullet::Draw(const Camera* camera) {
     if (model_) {
         model_->Draw(worldTransform_, *camera, textureHandle_);
     }
-
-    // デバッグ用：コライダー描画
-    // if (collider_) { collider_->Draw(*camera); }
 }
 
 void Bullet::OnCollision(CharacterBase* /*other*/) {

@@ -15,7 +15,6 @@ void HomingMissile::Initialize() {
         model_.reset(Model::CreateFromOBJ("missile", true));
     }
 
-    //textureHandle_ = TextureManager::Load("./Resources/missile/Texture.png");
     worldTransform_.scale_ = kMissileScale;
     worldTransform_.UpdateMatrix();
 
