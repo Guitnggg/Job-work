@@ -119,6 +119,17 @@ private:
     std::unique_ptr<Player> player_;
 	KamataEngine::Vector3 previousPlayerPos_{};
 
+    // ========== 操作UI ==========
+    uint32_t wasdTextureHandle_ = 0;
+    std::unique_ptr<KamataEngine::Sprite> wasdWSprite_;
+    std::unique_ptr<KamataEngine::Sprite> wasdASprite_;
+    std::unique_ptr<KamataEngine::Sprite> wasdSSprite_;
+    std::unique_ptr<KamataEngine::Sprite> wasdDSprite_;
+    static constexpr float kWasdBaseX_ = 36.0f;
+    static constexpr float kWasdBaseY_ = 566.0f;
+    static constexpr float kWasdKeySize_ = 64.0f;
+    static constexpr float kWasdSpacing_ = 6.0f;
+
     // ========== 照準 ==========
     uint32_t reticleTexHandle_ = 0;
     std::unique_ptr<KamataEngine::Sprite>reticleSprite_;
