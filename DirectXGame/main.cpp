@@ -29,21 +29,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
                 break;
             }
 
-#ifdef USE_IMGUI
-            KamataEngine::ImGuiManager::GetInstance()->Begin();
-#endif
-
             // ゲームロジック更新
             sceneManager.Update();
 
             // 描画処理開始
             dxCommon->PreDraw();
             sceneManager.Draw();
-
-#ifdef USE_IMGUI
-            KamataEngine::ImGuiManager::GetInstance()->End();
-            KamataEngine::ImGuiManager::GetInstance()->Draw();
-#endif
 
             // 描画処理終了
             dxCommon->PostDraw();
