@@ -1673,9 +1673,6 @@ void Bullet::Draw(const Camera* camera) {
     if (model_) {
         model_->Draw(worldTransform_, *camera, textureHandle_);
     }
-
-    // デバッグ用：コライダー描画
-    // if (collider_) { collider_->Draw(*camera); }
 }
 
 void Bullet::OnCollision(CharacterBase* /*other*/) {
@@ -1805,7 +1802,6 @@ void HomingMissile::Initialize() {
         model_.reset(Model::CreateFromOBJ("missile", true));
     }
 
-    //textureHandle_ = TextureManager::Load("./Resources/missile/Texture.png");
     worldTransform_.scale_ = kMissileScale;
     worldTransform_.UpdateMatrix();
 
