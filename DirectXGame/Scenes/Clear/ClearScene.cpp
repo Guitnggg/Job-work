@@ -131,12 +131,10 @@ void ClearScene::Update() {
 	} break;
 
 	case ClearPhase::ResultCount: {
-		// Audio::GetInstance()->PlayWave(pointSEHandle_);
 		//  スコアを0→finalScore_までカウントアップ
 		const float speed = kResultCountSpeed; // 1秒で約500点増える感じ
 		int target = static_cast<int>(displayedScore_ + speed * dt);
 		if (target > finalScore_) {
-			// Audio::GetInstance()->StopWave(pointSEHandle_);
 			target = finalScore_;
 		}
 		int add = target - displayedScore_;
