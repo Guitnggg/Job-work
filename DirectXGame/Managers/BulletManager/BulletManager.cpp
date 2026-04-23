@@ -21,6 +21,7 @@ void BulletManager::Initialize() {
 	lockedTargets_.clear();
 
 	fireCooldownFrames_ = 0;
+	burstShotsRemaining_ = 0;
 	isHomingLocking_ = false;
 	homingLockFrame_ = 0;
 	homingCooldownFrames_ = 0;
@@ -42,7 +43,11 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 		--fireCooldownFrames_;
 	}
 
-	if (!input->IsTriggerMouse(0) || fireCooldownFrames_ > 0) {
+	if (input->IsTriggerMouse(0) && burstShotsRemaining_ <= 0 && fireCooldownFrames_ <= 0) {
+		burstShotsRemaining_ = kBurstShotCount;
+	}
+
+	if (burstShotsRemaining_ <= 0 || fireCooldownFrames_ > 0) {
 		HandleHomingMissile_(input, player, countDown, enemyManager);
 		return;
 	}
@@ -58,7 +63,8 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 	b->FireFrom(player->GetWorldTranslation(), dir);
 	bullets_.push_back(std::move(b));
 
-	fireCooldownFrames_ = kFireCooldownMax;
+	--burstShotsRemaining_;
+	fireCooldownFrames_ = (burstShotsRemaining_ > 0) ? kBurstIntervalFrames : kBurstCooldownFrames;
 
 	if (audio_ && shotSeHandle_ != 0) {
 		audio_->PlayWave(shotSeHandle_);

@@ -103,7 +103,10 @@ private:
 
 	// クールダウン
 	int32_t fireCooldownFrames_ = 0;
-	static constexpr int32_t kFireCooldownMax = 9;   // 通常弾：約0.15秒@60fps
+	int32_t burstShotsRemaining_ = 0;
+	static constexpr int32_t kBurstShotCount = 3;
+	static constexpr int32_t kBurstIntervalFrames = 3;   // バースト内の発射間隔(約0.05秒@60fps)
+	static constexpr int32_t kBurstCooldownFrames = 18;  // バースト後の待機時間(約0.3秒@60fps)
 
 	bool isHomingLocking_ = false;
 	int32_t homingLockFrame_ = 0;
