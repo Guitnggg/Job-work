@@ -2218,6 +2218,7 @@ File Path: DirectXGame/Application/Characters/Player/Player.cpp
 
 using namespace KamataEngine;
 
+// プレイヤー本体・武器・当たり判定・演出用パラメータの初期状態を設定する
 void Player::Initialize(Camera* camera) {
     CharacterBase::Initialize();
 
@@ -2247,6 +2248,7 @@ void Player::Initialize(Camera* camera) {
     aimYaw_ = 0.0f;
 }
 
+// 入力・移動・ロール・攻撃・被弾処理・死亡演出・コライダー同期を更新する
 void Player::Update() {
     if (isExploding_) {
         UpdateExplosion_();
@@ -2319,6 +2321,7 @@ void Player::Update() {
         collider_->SetTranslate(GetWorldTranslation());
 }
 
+// ロール回避中の時間と回転を更新し、回避中かどうかを返す
 bool Player::UpdateRoll_() {
     if (!isRolling_)
         return false;
@@ -2340,6 +2343,7 @@ bool Player::UpdateRoll_() {
     return true;
 }
 
+// 通常移動入力を位置と傾きに反映し、画面内に収まるように補正する
 void Player::UpdateMoveAndBank_(float dt) {
     if (!inputEnabled_ || !input_)
         return;
@@ -2367,6 +2371,7 @@ void Player::UpdateMoveAndBank_(float dt) {
     worldTransform_.rotation_.z = currentTiltZ_;
 }
 
+// プレイヤー本体・武器・爆発演出・デバック用コライダーを描画する
 void Player::Draw(const Camera* camera) {
     if (!camera || !model_ || isExplosionFinished_)
         return;
@@ -2375,12 +2380,14 @@ void Player::Draw(const Camera* camera) {
     model_->Draw(worldTransform_, *camera);
 }
 
+// 衝突したときにプレイヤーへダメージを与える
 void Player::OnCollision(CharacterBase*) {
     if (IsInvincible())
         return;
     Damage(kCollisionDamage);
 }
 
+// 外部から渡された照準方向を正規化して攻撃方法として保持する
 void Player::SetAimDirection(const KamataEngine::Vector3& dir) {
     const float lenSq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
     if (lenSq <= 0.000001f) {
@@ -2389,6 +2396,7 @@ void Player::SetAimDirection(const KamataEngine::Vector3& dir) {
     aimYaw_ = std::atan2(dir.x, dir.z);
 }
 
+// 無敵時間を考慮しながらHPを減らし、必要なら撃墜処理を開始する
 void Player::Damage(int32_t amount) {
     if (isDead_ || isExploding_)
         return;
@@ -2402,6 +2410,7 @@ void Player::Damage(int32_t amount) {
         Kill();
 }
 
+// プレイヤーを死亡状態にし、爆発演出や入力停止に必要な状態へ切り替える
 void Player::Kill() {
     if (isDead_ || isExploding_)
         return;
@@ -2414,6 +2423,7 @@ void Player::Kill() {
     }
 }
 
+// 死亡後の爆発タイマーと拡大・フェード演出を更新する
 void Player::UpdateExplosion_() {
     float t = static_cast<float>(explosionFrame_) / kExplosionDurationFrames;
     t = std::clamp(t, 0.0f, 1.0f);
@@ -2432,11 +2442,13 @@ void Player::UpdateExplosion_() {
     }
 }
 
+// 爆発などの補完に使用するイージング値を計算する
 float Player::EaseOutCubic(float t) const {
     float inv = 1.0f - t;
     return 1.0f - inv * inv * inv;
 }
 
+// 指定方向へロール回避を開始し、ロール用タイマーと向きを設定する
 void Player::StartRoll_(float dir) {
     if (isRolling_)
         return;
