@@ -4,6 +4,7 @@
 
 using namespace KamataEngine;
 
+// 通常弾のモデル・変換情報・コライダーなどの初期状態を準備する
 void Bullet::Initialize() {
     // 基底クラス初期化（WorldTransform / Collider）
     CharacterBase::Initialize();
@@ -27,6 +28,7 @@ void Bullet::Initialize() {
     elapsedTimeSec_ = 0.0f;
 }
 
+// 指定位置と方向から弾を発射状態にし、向き・速度・寿命を設定する
 void Bullet::FireFrom(const Vector3& worldPos, const Vector3& dir) {
     // 発射位置と進行方向を設定
     worldTransform_.translation_ = worldPos;
@@ -40,6 +42,7 @@ void Bullet::FireFrom(const Vector3& worldPos, const Vector3& dir) {
     worldTransform_.UpdateMatrix();
 }
 
+// 発射中の弾を移動させ、寿命や移動距離に応じて消滅判定を行う
 void Bullet::Update() {
     if (isDead_) {
         return;
@@ -77,6 +80,7 @@ void Bullet::Update() {
     }
 }
 
+// 発射中の通常弾とデバック用コライダーを描画する
 void Bullet::Draw(const Camera* camera) {
     if (!camera || isDead_) {
         return;
@@ -87,6 +91,7 @@ void Bullet::Draw(const Camera* camera) {
     }
 }
 
+// 弾が何かにあたって時に死亡フラグを立て、次の管理更新で消せるようにする
 void Bullet::OnCollision(CharacterBase* /*other*/) {
     // 衝突したら即消滅
     isDead_ = true;

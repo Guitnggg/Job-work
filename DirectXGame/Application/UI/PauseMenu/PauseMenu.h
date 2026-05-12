@@ -8,16 +8,22 @@
 #include "math/Vector2.h"
 #include "Application/Utility/MyMath/MyMath.h"
 
+/// <summary>
+	/// ポーズ中に表示するメニューUIを管理するクラス
+	/// 背景・メニュー項目・カーソル表示、入力による選択変更
+	/// 開閉アニメーションと選択結果の通知をまとめて行う
+/// </summary>
 class PauseMenu {
 public:
 	/// <summary>
-	/// 
+	/// ポーズメニューで選択された操作結果。
+	/// ゲーム側はこの値を見て再開・リトライ・タイトル遷移を行う。
 	/// </summary>
 	enum class Result {
-		None,
-		Resume,
-		Retry,
-		ToTitle,
+		None,     // 何もない
+		Resume,   // ゲームへ戻る
+		Retry,    // 現在のステージをやり直す
+		ToTitle,  // タイトル画面へ戻る
 	};
 
 public:
@@ -36,15 +42,30 @@ public:
 	/// </summary>
 	void Draw();
 
-	// 状態
+	/// <summary>
+	/// 現在の選択結果を取得する
+	/// </summary>
 	Result GetResult() const { return result_; }
+
+	/// <summary>
+	/// 選択結果を見決定状態に戻す
+	/// </summary>
 	void ResetResult() { result_ = Result::None; }
 
-	// アニメ開始
+	/// <summary>
+	/// ポーズメニューを開くアニメーションを開始する
+	/// </summary>
 	void StartOpenAnimation();
+
+	/// <summary>
+	/// ポーズメニューの閉じるアニメーションを開始する
+	/// </summary>
 	void StartCloseAnimation();
 
 private:
+	/// <summary>
+	/// 入力ン位応じてカーソル位置を変更する
+	/// </summary>
 	void MoveCursor();
 
 private:
@@ -85,22 +106,22 @@ private:
 
 private:
 	// ===== 状態 =====
-	Result result_ = Result::None;
-	int selectIndex_ = 0;
+	Result result_ = Result::None;  // メニューで決定された操作
+	int selectIndex_ = 0;           // 現在選択中の項目番号
 
-	bool isOpening_ = false;
-	bool isClosing_ = false;
+	bool isOpening_ = false;  // 開くアニメーション中か
+	bool isClosing_ = false;  // 閉じるアニメーション中か
 
-	float animTimer_ = 0.0f;
-	float scale_ = 1.0f;
+	float animTimer_ = 0.0f;  // アニメーションの経過時間
+	float scale_ = 1.0f;      // メニュー全体の表示スケール
 
 	KamataEngine::Vector2 basePos_ = {
 		kScreenWidth * 0.5f,
-		kScreenHeight * 0.45f
+		kScreenHeight * 0.45f 
 	};
 
 	// ===== スプライト =====
-	std::unique_ptr<KamataEngine::Sprite> bgSprite_;
-	std::vector<std::unique_ptr<KamataEngine::Sprite>> menuSprites_;
-	std::unique_ptr<KamataEngine::Sprite> cursorSprite_;
+	std::unique_ptr<KamataEngine::Sprite> bgSprite_;                  // 半透明の背景
+	std::vector<std::unique_ptr<KamataEngine::Sprite>> menuSprites_;  // メニュー項目画像
+	std::unique_ptr<KamataEngine::Sprite> cursorSprite_;              // 選択位置を示すカーソル
 };

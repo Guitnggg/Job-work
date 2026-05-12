@@ -2,6 +2,7 @@
 
 using namespace KamataEngine;
 
+// キャラクター共通のワールド座標と球体コライダーを初期化する
 void CharacterBase::Initialize() {
 	// --- ワールド変換初期化 ---
 	worldTransform_.Initialize();
@@ -14,6 +15,7 @@ void CharacterBase::Initialize() {
 	collider_->SetTranslate(GetWorldTranslation());
 }
 
+// ワールド行列を更新し、現在位置をコライダーへ同期する
 void CharacterBase::Update() {
 	// --- ワールド行列更新 ---
 	worldTransform_.UpdateMatrix();
@@ -27,6 +29,7 @@ void CharacterBase::Update() {
 	collider_->Update();
 }
 
+// ワールド行列から平行移動成分を取り出し、実際のワールド座標として返す
 Vector3 CharacterBase::GetWorldTranslation() const {
 	Vector3 result{};
 

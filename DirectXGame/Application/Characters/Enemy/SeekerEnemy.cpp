@@ -3,6 +3,7 @@
 
 using namespace KamataEngine;
 
+// 追尾敵のモデル・移動パラメータ・HP・コライダーなど初期状態を設定する
 void SeekerEnemy::Initialize() {
 	// --- 基底クラス初期化 ---
 	CharacterBase::Initialize();
@@ -44,6 +45,7 @@ void SeekerEnemy::Initialize() {
 	velocity_ = {0.0f, 0.0f, -1.0f};
 }
 
+// 被弾演出・ノックバック・追尾移動・死亡判定・コライダー同期をまとめて更新する
 void SeekerEnemy::Update() {
 	if (IsDead()) {
 		return;
@@ -165,6 +167,7 @@ void SeekerEnemy::Update() {
 	}
 }
 
+// 生存中の敵本体とデバック用コライダーを描画する
 void SeekerEnemy::Draw(const Camera* camera) {
 	if (!camera || IsDead() || !model_) {
 		return;
@@ -198,6 +201,7 @@ void SeekerEnemy::Draw(const Camera* camera) {
 	worldTransform_.UpdateMatrix();
 }
 
+// 衝突時にダメージ・ヒットストップ・点滅・ノックバックを発生させる
 void SeekerEnemy::OnCollision(CharacterBase* /*other*/) {
 	if (IsDead()) {
 		return;
@@ -235,6 +239,7 @@ void SeekerEnemy::OnCollision(CharacterBase* /*other*/) {
 	}
 }
 
+// 敵の当たり判定サイズを外部から調整する
 void SeekerEnemy::SetColliderRadius(float radius) {
 	colliderRadius_ = radius;
 	if (collider_) {
@@ -242,6 +247,7 @@ void SeekerEnemy::SetColliderRadius(float radius) {
 	}
 }
 
+// プレイ範囲外へ出た敵を死亡扱いにして管理対象から外させるようにする
 void SeekerEnemy::ClampDeathByBounds_() {
 	const Vector3 p = GetWorldTranslation();
 

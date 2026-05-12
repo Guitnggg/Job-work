@@ -8,6 +8,7 @@
 
 using namespace KamataEngine;
 
+// ホーミングミサイルのモデル・変換情報・コライダーなどを初期化する
 void HomingMissile::Initialize() {
     CharacterBase::Initialize();
 
@@ -30,6 +31,7 @@ void HomingMissile::Initialize() {
     velocity_ = { 0.0f, 0.0f, 1.0f };
 }
 
+// 指定位置からターゲットへ向けてミサイルを発射状態にする
 void HomingMissile::FireFrom(const Vector3& worldPos, CharacterBase* target) {
     worldTransform_.translation_ = worldPos;
     target_ = target;
@@ -42,6 +44,7 @@ void HomingMissile::FireFrom(const Vector3& worldPos, CharacterBase* target) {
     worldTransform_.UpdateMatrix();
 }
 
+// ターゲット方向への追尾・前進・寿命管理・コライダー同期を行う
 void HomingMissile::Update() {
     if (isDead_) {
         return;
@@ -68,6 +71,7 @@ void HomingMissile::Update() {
     }
 }
 
+// 発射中のミサイルとデバック用コライダーを描画する
 void HomingMissile::Draw(const Camera* camera) {
     if (!camera || isDead_ || !model_) {
         return;
@@ -82,4 +86,5 @@ void HomingMissile::Draw(const Camera* camera) {
 
 }
 
+// ミサイルが衝突したら死亡フラグを立てる
 void HomingMissile::OnCollision(CharacterBase*) { isDead_ = true; }

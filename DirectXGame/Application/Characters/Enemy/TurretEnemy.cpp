@@ -6,6 +6,7 @@
 
 using namespace KamataEngine;
 
+// 砲台のモデル・射撃設定・HP・コライダーなど初期状態を設定する
 void TurretEnemy::Initialize() {
     // --- 基底クラス初期化 ---
     CharacterBase::Initialize();
@@ -40,6 +41,7 @@ void TurretEnemy::Initialize() {
     baseTranslation_ = worldTransform_.translation_;
 }
 
+// ターゲット追尾・射撃クールタイム・弾更新・死亡判定・コライダー同期を行う
 void TurretEnemy::Update() {
     // 死亡中も弾は更新して自然消滅させる
     if (IsDead()) {
@@ -86,6 +88,7 @@ void TurretEnemy::Update() {
     UpdateBullets_();
 }
 
+// 砲台本体・発射済み弾・デバック用コライダーを描画する
 void TurretEnemy::Draw(const Camera* camera) {
     if (!camera) {
         return;
@@ -111,6 +114,7 @@ void TurretEnemy::Draw(const Camera* camera) {
     }
 }
 
+// 砲台が被弾したときのダメージ処理と死亡判定を行う
 void TurretEnemy::OnCollision(CharacterBase* /*other*/) {
     if (IsDead()) { return; }
 
@@ -123,6 +127,7 @@ void TurretEnemy::OnCollision(CharacterBase* /*other*/) {
     }
 }
 
+// ターゲット方向を向くように砲台のYaw回転を更新する
 void TurretEnemy::AimToTarget_() {
     if (!hasTarget_) {
         return;
@@ -142,6 +147,7 @@ void TurretEnemy::AimToTarget_() {
     worldTransform_.rotation_.y = yaw;
 }
 
+// 現在位置と向きから新しい弾を生成し、弾リストへ登録する
 void TurretEnemy::Fire_() {
     if (!hasTarget_) {
         return;
@@ -174,6 +180,7 @@ void TurretEnemy::Fire_() {
     bullets_.push_back(std::move(bullet));
 }
 
+// 砲台が発射した弾を更新し、不要になった弾を削除する
 void TurretEnemy::UpdateBullets_() {
     for (auto& bullet : bullets_) {
         bullet->Update();
@@ -182,6 +189,7 @@ void TurretEnemy::UpdateBullets_() {
     bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(), [](const std::unique_ptr<Bullet>& b) { return b->IsDead(); }), bullets_.end());
 }
 
+// 敵の当たり判定サイズを外部から調整する
 void TurretEnemy::SetColliderRadius(float radius) {
     colliderRadius_ = radius;
     if (collider_) {

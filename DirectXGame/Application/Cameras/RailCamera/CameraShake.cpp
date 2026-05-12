@@ -4,6 +4,7 @@
 
 using namespace KamataEngine;
 
+// 外部から受け取った揺れ方向がと強さをシェイク用速度に加算する
 void CameraShake::AddShake(const Vector3& direction, float power) {
 	// 極端に小さい方向ベクトルはノイズになるため無視する
 	if (MyMath::Length(direction) < kMinDirectionLength) {
@@ -15,6 +16,7 @@ void CameraShake::AddShake(const Vector3& direction, float power) {
 	velocity_ = MyMath::Add(velocity_, MyMath::Multiply(normalizedDir, power));
 }
 
+// シェイク速度をオフセットに反映し、ジェンスいさせて揺れを自然に収束させる
 void CameraShake::Update() {
 	// 速度を位置に反映
 	offset_ = MyMath::Add(offset_, velocity_);
@@ -26,6 +28,7 @@ void CameraShake::Update() {
 	offset_ = MyMath::Multiply(offset_, kDecayRate);
 }
 
+// シェイクの速度とオフセットを初期化し、揺れを完全に止める
 void CameraShake::Reset() {
 	// 揺れ状態を完全に初期化する
 	offset_ = kZeroVector;
