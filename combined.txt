@@ -858,6 +858,10 @@ void SeekerEnemy::Initialize() {
 	if (!model_) {
 		model_.reset(Model::CreateSphere());
 	}
+	objectColor_.Initialize();
+	objectColor_.SetColor({ 0.25f, 0.85f, 1.0f, 1.0f });
+	flashColor_.Initialize();
+	flashColor_.SetColor({ 1.0f, 1.0f, 0.30f, 1.0f });
 
 	// --- 初期姿勢 ---
 	worldTransform_.translation_ = initialPosition_;
@@ -1036,10 +1040,10 @@ void SeekerEnemy::Draw(const Camera* camera) {
 		}
 
 		if (visible) {
-			model_->Draw(worldTransform_, *camera, textureHandle_);
+			model_->Draw(worldTransform_, *camera, textureHandle_, &flashColor_);
 		}
 	} else {
-		model_->Draw(worldTransform_, *camera, textureHandle_);
+		model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
 	}
 
 	worldTransform_.scale_ = originalScale;
@@ -1115,6 +1119,7 @@ File Path: DirectXGame/Application/Characters/Enemy/SeekerEnemy.h
 
 #include "3d/Camera.h"
 #include "3d/Model.h"
+#include "3d/ObjectColor.h"
 #include "3d/WorldTransform.h"
 
 #include "Application/Characters/CharacterBase.h"
@@ -1227,6 +1232,8 @@ private:
 private:
 	// モデル
 	std::unique_ptr<KamataEngine::Model> model_;
+	KamataEngine::ObjectColor objectColor_;
+	KamataEngine::ObjectColor flashColor_;
 	uint32_t textureHandle_ = 0u;
 
 	// 動作パラメータ
@@ -1287,6 +1294,10 @@ void TurretEnemy::Initialize() {
     // --- モデル生成 ---
     // 現在は球体モデルを使用（専用モデルがあれば差し替え可能）
     model_.reset(Model::CreateSphere());
+    objectColor_.Initialize();
+    objectColor_.SetColor({ 0.95f, 0.32f, 0.18f, 1.0f });
+    flashColor_.Initialize();
+    flashColor_.SetColor({ 1.0f, 0.95f, 0.28f, 0.85f });
     flashTextureHandle_ = TextureManager::Load("./Resources/white1x1.png");
 
     // --- HP設定 ---
@@ -1369,13 +1380,13 @@ void TurretEnemy::Draw(const Camera* camera) {
 
     // 砲台本体
     if (!IsDead() && model_) {
-        model_->Draw(worldTransform_, *camera, textureHandle_);
+        model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
         if (flashTimer_ > 0.0f && flashTextureHandle_ != 0u) {
             Vector3 backupScale = worldTransform_.scale_;
             const float t = flashTimer_ / kFlashDuration;
             worldTransform_.scale_ = { backupScale.x * (1.0f + t * 0.3f), backupScale.y * (1.0f + t * 0.3f), backupScale.z * (1.0f + t * 0.3f) };
             worldTransform_.UpdateMatrix();
-            model_->Draw(worldTransform_, *camera, flashTextureHandle_);
+            model_->Draw(worldTransform_, *camera, flashTextureHandle_, &flashColor_);
             worldTransform_.scale_ = backupScale;
             worldTransform_.UpdateMatrix();
         }
@@ -1481,6 +1492,7 @@ File Path: DirectXGame/Application/Characters/Enemy/TurretEnemy.h
 
 #include "3d/Camera.h"
 #include "3d/Model.h"
+#include "3d/ObjectColor.h"
 #include "3d/WorldTransform.h"
 #include "math/Vector3.h"
 
@@ -1568,6 +1580,8 @@ private:
 private:
     // ---- 見た目 ----
     std::unique_ptr<KamataEngine::Model> model_;
+    KamataEngine::ObjectColor objectColor_;
+    KamataEngine::ObjectColor flashColor_;
     uint32_t textureHandle_ = 0u;
     uint32_t flashTextureHandle_ = 0u;
 
@@ -1632,6 +1646,8 @@ void Bullet::Initialize() {
 
     // モデル生成（簡易的に球）
     model_.reset(Model::CreateSphere());
+    objectColor_.Initialize();
+    objectColor_.SetColor({ 0.35f, 0.95f, 1.0f, 1.0f });
 
     // 見た目スケール
     worldTransform_.scale_ = kBulletScale;
@@ -1708,7 +1724,7 @@ void Bullet::Draw(const Camera* camera) {
     }
 
     if (model_) {
-        model_->Draw(worldTransform_, *camera, textureHandle_);
+        model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
     }
 }
 
@@ -1728,6 +1744,7 @@ File Path: DirectXGame/Application/Characters/Player/Bullet.h
 
 #include "3d/Camera.h"
 #include "3d/Model.h"
+#include "3d/ObjectColor.h"
 #include "3d/WorldTransform.h"
 
 #include "Application/Characters/CharacterBase.h"
@@ -1802,6 +1819,7 @@ private:
 private:
 	// モデル
 	std::unique_ptr<KamataEngine::Model> model_;
+	KamataEngine::ObjectColor objectColor_;
 	uint32_t textureHandle_ = 0u;
 
 	// 移動
@@ -1840,6 +1858,8 @@ void HomingMissile::Initialize() {
     if (!model_) {
         model_.reset(Model::CreateFromOBJ("missile", true));
     }
+    objectColor_.Initialize();
+    objectColor_.SetColor({ 0.98f, 0.88f, 0.24f, 1.0f });
 
     worldTransform_.scale_ = kMissileScale;
     worldTransform_.UpdateMatrix();
@@ -1903,16 +1923,17 @@ void HomingMissile::Draw(const Camera* camera) {
     }
 
     if (textureHandle_ != 0u) {
-        model_->Draw(worldTransform_, *camera, textureHandle_);
+        model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
     }
     else {
-        model_->Draw(worldTransform_, *camera);
+        model_->Draw(worldTransform_, *camera, &objectColor_);
     }
 
 }
 
 // ミサイルが衝突したら死亡フラグを立てる
 void HomingMissile::OnCollision(CharacterBase*) { isDead_ = true; }
+
 
 ============================================================
 File Path: DirectXGame/Application/Characters/Player/HomingMissile.h
@@ -1923,6 +1944,7 @@ File Path: DirectXGame/Application/Characters/Player/HomingMissile.h
 
 #include "3d/Camera.h"
 #include "3d/Model.h"
+#include "3d/ObjectColor.h"
 
 #include "Application/Characters/CharacterBase.h"
 
@@ -1990,6 +2012,7 @@ private:
 
 	// ===== メンバ変数 =====
 	std::unique_ptr<KamataEngine::Model> model_;
+	KamataEngine::ObjectColor objectColor_;
 	uint32_t textureHandle_ = 0u;
 
 	KamataEngine::Vector3 velocity_{0.0f, 0.0f, 1.0f};
@@ -2014,6 +2037,8 @@ void Laser::Initialize() {
 
 	// モデル生成（レーザー用）
 	model_.reset(Model::CreateFromOBJ("Beam", true));
+	objectColor_.Initialize();
+	objectColor_.SetColor({ 0.50f, 0.95f, 1.0f, 0.95f });
 
 	// 細長いスケール
 	worldTransform_.scale_ = kLaserScale;
@@ -2097,7 +2122,7 @@ void Laser::Draw(const Camera* camera) {
 	}
 
 	if (model_) {
-		model_->Draw(worldTransform_, *camera, textureHandle_);
+		model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
 	}
 }
 
@@ -2117,6 +2142,7 @@ File Path: DirectXGame/Application/Characters/Player/Laser.h
 
 #include "3d/Camera.h"
 #include "3d/Model.h"
+#include "3d/ObjectColor.h"
 #include "3d/WorldTransform.h"
 
 #include "Application/Characters/CharacterBase.h"
@@ -2190,6 +2216,7 @@ private:
 private:
 	// モデル
 	std::unique_ptr<KamataEngine::Model> model_;
+	KamataEngine::ObjectColor objectColor_;
 	uint32_t textureHandle_ = 0u;
 
 	// 移動
@@ -2697,8 +2724,6 @@ namespace {
     };
 
     // デフォルトの色
-    constexpr float kDefaultColor[4] = { 0.65f, 0.65f, 0.65f, 0.7f };
-
     // レンダーターゲット
     constexpr DXGI_FORMAT kRenderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
@@ -2720,6 +2745,10 @@ void GpuSmokeEmitter::Initialize(uint32_t maxParticles) {
 }
 
 void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, float life, float startScale, float endScale) {
+    Emit(position, velocity, life, startScale, endScale, { 0.65f, 0.65f, 0.65f, 0.7f }, { 0.12f, 0.12f, 0.12f, 0.0f });
+}
+
+void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, float life, float startScale, float endScale, const Vector4& startColor, const Vector4& endColor) {
     if (particles_.empty()) {
         return;
     }
@@ -2736,6 +2765,8 @@ void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, flo
     p.endScale = endScale;
     p.scale = startScale;
     p.active = 1.0f;
+    p.startColor = startColor;
+    p.endColor = endColor;
 
     // 次インデックス更新
     nextSpawnIndex_ = (nextSpawnIndex_ + 1) % maxParticles_;
@@ -2795,7 +2826,6 @@ void GpuSmokeEmitter::Draw(const Camera* camera) {
     if (mappedConstants_) {
         mappedConstants_->view = camera->matView;
         mappedConstants_->projection = camera->matProjection;
-        std::copy(std::begin(kDefaultColor), std::end(kDefaultColor), std::begin(mappedConstants_->color));
     }
 
     // パイプライン設定
@@ -3087,6 +3117,7 @@ void GpuSmokeEmitter::CreateConstantBuffer_() {
     }
 }
 
+
 ============================================================
 File Path: DirectXGame/Application/Effects/Smoke/GpuSmokeEmitter.h
 ============================================================
@@ -3101,115 +3132,70 @@ File Path: DirectXGame/Application/Effects/Smoke/GpuSmokeEmitter.h
 #include "3d/Camera.h"
 #include "math/Matrix4x4.h"
 #include "math/Vector3.h"
+#include "math/Vector4.h"
 
-/// <summary>
-/// GPUインスタンシングによるスモーク描画クラス
-/// ・CPU側でパーティクル更新
-/// ・StructuredBuffer として GPU に転送
-/// ・頂点シェーダー側でインスタンシング描画
-/// </summary>
 class GpuSmokeEmitter {
 public:
-	/// <summary>
-	/// パーティクルデータ構造体
-	/// </summary>
 	struct SmokeParticle {
-		KamataEngine::Vector3 position;  // ワールド座標
-		float scale = 0.0f;              // 現在スケール
+		KamataEngine::Vector3 position;
+		float scale = 0.0f;
 
-		KamataEngine::Vector3 velocity;  // 速度ベクトル
-		float life = 0.0f;               // 寿命
+		KamataEngine::Vector3 velocity;
+		float life = 0.0f;
 
-		float age = 0.0f;         // 経過時間
-		float startScale = 0.0f;  // 初期スケール
-		float endScale = 0.0f;    // 終了スケール
-		float active = 0.0f;      // 有効フラグ
+		float age = 0.0f;
+		float startScale = 0.0f;
+		float endScale = 0.0f;
+		float active = 0.0f;
+
+		KamataEngine::Vector4 startColor{ 0.65f, 0.65f, 0.65f, 0.7f };
+		KamataEngine::Vector4 endColor{ 0.12f, 0.12f, 0.12f, 0.0f };
 	};
 
 	GpuSmokeEmitter() = default;
 	~GpuSmokeEmitter() = default;
 
-	/// <summary>
-	/// 初期化処理
-	/// </summary>
-	/// <param name="maxParticles">最大パーティクル数</param>
 	void Initialize(uint32_t maxParticles);
-
-	/// <summary>
-	/// 更新処理
-	/// </summary>
-	/// <param name="dt">Δtime</param>
 	void Update(float dt);
-
-	/// <summary>
-	/// 描画処理
-	/// </summary>
-	/// <param name="camera">描画に使うカメ</param>
 	void Draw(const KamataEngine::Camera* camera);
 
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <param name="position"></param>
-	/// <param name="velocity"></param>
-	/// <param name="life"></param>
-	/// <param name="startScale"></param>
-	/// <param name="endScale"></param>
 	void Emit(const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale);
+	void Emit(const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale, const KamataEngine::Vector4& startColor, const KamataEngine::Vector4& endColor);
 
 private:
-	/// <summary>
-	/// パイプライン生成
-	/// </summary>
 	void CreatePipeline_();
-
-	/// <summary>
-	/// 頂点バッファ生成
-	/// </summary>
 	void CreateVertexBuffer_();
-
-	/// <summary>
-	/// パイプラインバッファ生成
-	/// </summary>
 	void CreateParticleBuffer_();
-
-	/// <summary>
-	/// 定数バッファ生成
-	/// </summary>
 	void CreateConstantBuffer_();
 
 private:
-	/// <summary>
-	/// シェーダーへ渡す定数データ
-	/// </summary>
 	struct Constants {
 		KamataEngine::Matrix4x4 view;
 		KamataEngine::Matrix4x4 projection;
-		float color[4];
 	};
 
-	uint32_t maxParticles_ = 0;    // 最大数
-	uint32_t nextSpawnIndex_ = 0;  // 次に上書きするインデックス
+	uint32_t maxParticles_ = 0;
+	uint32_t nextSpawnIndex_ = 0;
 
-	std::vector<SmokeParticle> particles_;  // CPU側パーティクル配列
+	std::vector<SmokeParticle> particles_;
 
-	// ===== GPUリソース =====
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> particleBuffer_;  // StructuredBuffer
-	SmokeParticle* mappedParticles_ = nullptr;               // CPUマップ領域
+	Microsoft::WRL::ComPtr<ID3D12Resource> particleBuffer_;
+	SmokeParticle* mappedParticles_ = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_;  // SRVヒープ
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;  // 定数バッファ
+	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
 	Constants* mappedConstants_ = nullptr;
 
 	uint32_t constantBufferSize_ = 0;
 };
+
 
 ============================================================
 File Path: DirectXGame/Application/Effects/Smoke/Smoke.cpp
@@ -8519,6 +8505,21 @@ File Path: DirectXGame/Scenes/InGame/GameSceneUpdateExecutor.cpp
 
 using namespace KamataEngine;
 
+namespace {
+    constexpr Vector4 kEngineCoreColor{ 0.35f, 0.85f, 1.0f, 0.72f };
+    constexpr Vector4 kEngineFadeColor{ 0.02f, 0.10f, 0.28f, 0.0f };
+    constexpr Vector4 kBoostCoreColor{ 0.62f, 0.95f, 1.0f, 0.95f };
+    constexpr Vector4 kBoostOuterColor{ 1.0f, 0.46f, 0.08f, 0.0f };
+    constexpr Vector4 kAfterburnerCoreColor{ 0.55f, 0.92f, 1.0f, 0.95f };
+    constexpr Vector4 kAfterburnerOuterColor{ 1.0f, 0.35f, 0.06f, 0.0f };
+    constexpr Vector4 kSparkStartColor{ 1.0f, 0.92f, 0.28f, 0.95f };
+    constexpr Vector4 kSparkEndColor{ 1.0f, 0.18f, 0.04f, 0.0f };
+    constexpr Vector4 kExplosionHotColor{ 1.0f, 0.82f, 0.22f, 1.0f };
+    constexpr Vector4 kExplosionFireColor{ 1.0f, 0.24f, 0.04f, 0.0f };
+    constexpr Vector4 kSmokeStartColor{ 0.24f, 0.22f, 0.20f, 0.55f };
+    constexpr Vector4 kSmokeEndColor{ 0.03f, 0.03f, 0.04f, 0.0f };
+}
+
 void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
     if (gameScene.hitStopRequestFrames_ > gameScene.hitStopFrames_) {
         gameScene.hitStopFrames_ = gameScene.hitStopRequestFrames_;
@@ -8640,7 +8641,7 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
     if (gameScene.damageSmokeEmitter_) {
         for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
             Vector3 v = { dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_ * 0.6f };
-            gameScene.damageSmokeEmitter_->Emit(pos, v, gameScene.kDamageGpuLife_, gameScene.kDamageGpuStartScale_, gameScene.kDamageGpuEndScale_);
+            gameScene.damageSmokeEmitter_->Emit(pos, v, gameScene.kDamageGpuLife_, gameScene.kDamageGpuStartScale_, gameScene.kDamageGpuEndScale_, kSparkStartColor, kSparkEndColor);
         }
     }
 }
@@ -8682,7 +8683,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
                     const Vector3 hitPos = e->GetWorldTranslation();
                     for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyHitBurstScale_; ++i) {
                         Vector3 v = { randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.45f) };
-                        gameScene.damageSmokeEmitter_->Emit(hitPos, v, gameScene.kDamageGpuLife_ * 0.6f, gameScene.kDamageGpuStartScale_ * 0.5f, gameScene.kDamageGpuEndScale_ * 0.5f);
+                        gameScene.damageSmokeEmitter_->Emit(hitPos, v, gameScene.kDamageGpuLife_ * 0.6f, gameScene.kDamageGpuStartScale_ * 0.5f, gameScene.kDamageGpuEndScale_ * 0.5f, kSparkStartColor, kSparkEndColor);
                     }
                     if (gameScene.audio_ && gameScene.seEnemyHitHandle_ != 0u) {
                         gameScene.audio_->PlayWave(gameScene.seEnemyHitHandle_, false, 0.25f);
@@ -8692,7 +8693,11 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
                     const Vector3 deadPos = e->GetWorldTranslation();
                     for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_; ++i) {
                         Vector3 v = { randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.6f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.6f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.3f) };
-                        gameScene.damageSmokeEmitter_->Emit(deadPos, v, gameScene.kDamageGpuLife_ * 1.7f, gameScene.kDamageGpuStartScale_ * 1.5f, 0.0f);
+                        gameScene.damageSmokeEmitter_->Emit(deadPos, v, gameScene.kDamageGpuLife_ * 1.0f, gameScene.kDamageGpuStartScale_ * 1.2f, gameScene.kDamageGpuEndScale_ * 1.8f, kExplosionHotColor, kExplosionFireColor);
+                    }
+                    for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
+                        Vector3 v = { randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.75f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.75f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.55f) };
+                        gameScene.damageSmokeEmitter_->Emit(deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f, gameScene.kDamageGpuEndScale_ * 3.0f, kSmokeStartColor, kSmokeEndColor);
                     }
                     if (gameScene.railCamera_) {
                         gameScene.railCamera_->AddShake({ randDist(enemyHitRng), randDist(enemyHitRng), 0.0f }, 0.7f);
@@ -8872,7 +8877,11 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
             const Vector3 vel = MyMath::TransformNormal(localVel, playerRotateMatrix);
 
             if (gameScene.engineSmokeEmitter_) {
-                gameScene.engineSmokeEmitter_->Emit(spawnPos, vel, params.lifeTime, params.startScale, 0.0f);
+                const bool isBoosting = gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_;
+                const Vector4 startColor = isBoosting ? kBoostCoreColor : kEngineCoreColor;
+                const Vector4 endColor = isBoosting ? kBoostOuterColor : kEngineFadeColor;
+                const float endScale = isBoosting ? params.startScale * 0.25f : params.startScale * 0.10f;
+                gameScene.engineSmokeEmitter_->Emit(spawnPos, vel, params.lifeTime, params.startScale, endScale, startColor, endColor);
             }
         }
     }
@@ -8910,7 +8919,13 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
         emitVel.x += randDist(rng);
         emitVel.y += randDist(rng);
         emitVel.z += randDist(rng);
-        gameScene.missileAfterburnerEmitter_->Emit(spawnPos, emitVel, gameScene.kMissileAfterburnerLife_, gameScene.kMissileAfterburnerStartScale_, gameScene.kMissileAfterburnerEndScale_);
+        gameScene.missileAfterburnerEmitter_->Emit(spawnPos, emitVel, gameScene.kMissileAfterburnerLife_, gameScene.kMissileAfterburnerStartScale_, gameScene.kMissileAfterburnerEndScale_, kAfterburnerCoreColor, kAfterburnerOuterColor);
+
+        Vector3 emberVel = emitVel;
+        emberVel.x += randDist(rng) * 0.8f;
+        emberVel.y += randDist(rng) * 0.8f;
+        emberVel.z += randDist(rng) * 0.8f;
+        gameScene.missileAfterburnerEmitter_->Emit(spawnPos, emberVel, gameScene.kMissileAfterburnerLife_ * 0.65f, gameScene.kMissileAfterburnerStartScale_ * 0.6f, 0.0f, kBoostOuterColor, kExplosionFireColor);
     }
 
     gameScene.missileAfterburnerEmitter_->Update(dt);
@@ -9036,7 +9051,13 @@ void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float
     for (int i = 0; i < count; i++) {
         if (gameScene.damageSmokeEmitter_) {
             Vector3 vel = { dist(rng) * (gameScene.kDamageGpuSpeed_ * scale), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale) };
-            gameScene.damageSmokeEmitter_->Emit(pos, vel, gameScene.kDamageGpuLife_ * 1.8f, gameScene.kDamageGpuStartScale_ * scale, 0.0f);
+            gameScene.damageSmokeEmitter_->Emit(pos, vel, gameScene.kDamageGpuLife_ * 1.3f, gameScene.kDamageGpuStartScale_ * scale, gameScene.kDamageGpuEndScale_ * scale, kExplosionHotColor, kExplosionFireColor);
+        }
+    }
+    for (int i = 0; i < count / 2; i++) {
+        if (gameScene.damageSmokeEmitter_) {
+            Vector3 vel = { dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f) };
+            gameScene.damageSmokeEmitter_->Emit(pos, vel, gameScene.kDamageGpuLife_ * 3.2f, gameScene.kDamageGpuStartScale_ * scale * 1.2f, gameScene.kDamageGpuEndScale_ * scale * 2.4f, kSmokeStartColor, kSmokeEndColor);
         }
     }
     if (gameScene.railCamera_) {
