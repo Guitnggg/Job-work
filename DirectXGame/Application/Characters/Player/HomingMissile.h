@@ -4,6 +4,7 @@
 
 #include "3d/Camera.h"
 #include "3d/Model.h"
+#include "3d/ObjectColor.h"
 
 #include "Application/Characters/CharacterBase.h"
 
@@ -71,6 +72,7 @@ private:
 
 	// ===== メンバ変数 =====
 	std::unique_ptr<KamataEngine::Model> model_;
+	KamataEngine::ObjectColor objectColor_;
 	uint32_t textureHandle_ = 0u;
 
 	KamataEngine::Vector3 velocity_{0.0f, 0.0f, 1.0f};

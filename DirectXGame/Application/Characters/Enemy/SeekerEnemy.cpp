@@ -13,6 +13,10 @@ void SeekerEnemy::Initialize() {
 	if (!model_) {
 		model_.reset(Model::CreateSphere());
 	}
+	objectColor_.Initialize();
+	objectColor_.SetColor({ 0.25f, 0.85f, 1.0f, 1.0f });
+	flashColor_.Initialize();
+	flashColor_.SetColor({ 1.0f, 1.0f, 0.30f, 1.0f });
 
 	// --- 初期姿勢 ---
 	worldTransform_.translation_ = initialPosition_;
@@ -191,10 +195,10 @@ void SeekerEnemy::Draw(const Camera* camera) {
 		}
 
 		if (visible) {
-			model_->Draw(worldTransform_, *camera, textureHandle_);
+			model_->Draw(worldTransform_, *camera, textureHandle_, &flashColor_);
 		}
 	} else {
-		model_->Draw(worldTransform_, *camera, textureHandle_);
+		model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
 	}
 
 	worldTransform_.scale_ = originalScale;

@@ -28,8 +28,6 @@ namespace {
     };
 
     // デフォルトの色
-    constexpr float kDefaultColor[4] = { 0.65f, 0.65f, 0.65f, 0.7f };
-
     // レンダーターゲット
     constexpr DXGI_FORMAT kRenderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
@@ -51,6 +49,10 @@ void GpuSmokeEmitter::Initialize(uint32_t maxParticles) {
 }
 
 void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, float life, float startScale, float endScale) {
+    Emit(position, velocity, life, startScale, endScale, { 0.65f, 0.65f, 0.65f, 0.7f }, { 0.12f, 0.12f, 0.12f, 0.0f });
+}
+
+void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, float life, float startScale, float endScale, const Vector4& startColor, const Vector4& endColor) {
     if (particles_.empty()) {
         return;
     }
@@ -67,6 +69,8 @@ void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, flo
     p.endScale = endScale;
     p.scale = startScale;
     p.active = 1.0f;
+    p.startColor = startColor;
+    p.endColor = endColor;
 
     // 次インデックス更新
     nextSpawnIndex_ = (nextSpawnIndex_ + 1) % maxParticles_;
@@ -126,7 +130,6 @@ void GpuSmokeEmitter::Draw(const Camera* camera) {
     if (mappedConstants_) {
         mappedConstants_->view = camera->matView;
         mappedConstants_->projection = camera->matProjection;
-        std::copy(std::begin(kDefaultColor), std::end(kDefaultColor), std::begin(mappedConstants_->color));
     }
 
     // パイプライン設定

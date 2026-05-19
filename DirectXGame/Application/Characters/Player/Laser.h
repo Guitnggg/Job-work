@@ -4,6 +4,7 @@
 
 #include "3d/Camera.h"
 #include "3d/Model.h"
+#include "3d/ObjectColor.h"
 #include "3d/WorldTransform.h"
 
 #include "Application/Characters/CharacterBase.h"
@@ -77,6 +78,7 @@ private:
 private:
 	// モデル
 	std::unique_ptr<KamataEngine::Model> model_;
+	KamataEngine::ObjectColor objectColor_;
 	uint32_t textureHandle_ = 0u;
 
 	// 移動

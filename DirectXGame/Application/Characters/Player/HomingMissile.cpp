@@ -15,6 +15,8 @@ void HomingMissile::Initialize() {
     if (!model_) {
         model_.reset(Model::CreateFromOBJ("missile", true));
     }
+    objectColor_.Initialize();
+    objectColor_.SetColor({ 0.98f, 0.88f, 0.24f, 1.0f });
 
     worldTransform_.scale_ = kMissileScale;
     worldTransform_.UpdateMatrix();
@@ -78,10 +80,10 @@ void HomingMissile::Draw(const Camera* camera) {
     }
 
     if (textureHandle_ != 0u) {
-        model_->Draw(worldTransform_, *camera, textureHandle_);
+        model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
     }
     else {
-        model_->Draw(worldTransform_, *camera);
+        model_->Draw(worldTransform_, *camera, &objectColor_);
     }
 
 }

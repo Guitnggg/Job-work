@@ -14,6 +14,10 @@ void TurretEnemy::Initialize() {
     // --- モデル生成 ---
     // 現在は球体モデルを使用（専用モデルがあれば差し替え可能）
     model_.reset(Model::CreateSphere());
+    objectColor_.Initialize();
+    objectColor_.SetColor({ 0.95f, 0.32f, 0.18f, 1.0f });
+    flashColor_.Initialize();
+    flashColor_.SetColor({ 1.0f, 0.95f, 0.28f, 0.85f });
     flashTextureHandle_ = TextureManager::Load("./Resources/white1x1.png");
 
     // --- HP設定 ---
@@ -96,13 +100,13 @@ void TurretEnemy::Draw(const Camera* camera) {
 
     // 砲台本体
     if (!IsDead() && model_) {
-        model_->Draw(worldTransform_, *camera, textureHandle_);
+        model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
         if (flashTimer_ > 0.0f && flashTextureHandle_ != 0u) {
             Vector3 backupScale = worldTransform_.scale_;
             const float t = flashTimer_ / kFlashDuration;
             worldTransform_.scale_ = { backupScale.x * (1.0f + t * 0.3f), backupScale.y * (1.0f + t * 0.3f), backupScale.z * (1.0f + t * 0.3f) };
             worldTransform_.UpdateMatrix();
-            model_->Draw(worldTransform_, *camera, flashTextureHandle_);
+            model_->Draw(worldTransform_, *camera, flashTextureHandle_, &flashColor_);
             worldTransform_.scale_ = backupScale;
             worldTransform_.UpdateMatrix();
         }

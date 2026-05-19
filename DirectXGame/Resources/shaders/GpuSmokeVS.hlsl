@@ -4,7 +4,6 @@ cbuffer ViewProjection : register(b0)
 {
     matrix view;
     matrix projection;
-    float4 color;
 };
 
 struct Particle
@@ -17,6 +16,8 @@ struct Particle
     float startScale;
     float endScale;
     float active;
+    float4 startColor;
+    float4 endColor;
 };
 
 StructuredBuffer<Particle> gParticles : register(t0);
@@ -58,6 +59,8 @@ VSOutput main(VSInput input)
     viewPos.xy += offset;
 
     output.svpos = mul(viewPos, projection);
-    output.color = float4(color.rgb, color.a * alpha);
+    float t = (p.life > 0.0f) ? saturate(p.age / p.life) : 1.0f;
+    float4 particleColor = lerp(p.startColor, p.endColor, t);
+    output.color = float4(particleColor.rgb, particleColor.a * alpha);
     return output;
 }

@@ -11,6 +11,8 @@ void Bullet::Initialize() {
 
     // モデル生成（簡易的に球）
     model_.reset(Model::CreateSphere());
+    objectColor_.Initialize();
+    objectColor_.SetColor({ 0.35f, 0.95f, 1.0f, 1.0f });
 
     // 見た目スケール
     worldTransform_.scale_ = kBulletScale;
@@ -87,7 +89,7 @@ void Bullet::Draw(const Camera* camera) {
     }
 
     if (model_) {
-        model_->Draw(worldTransform_, *camera, textureHandle_);
+        model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
     }
 }
 

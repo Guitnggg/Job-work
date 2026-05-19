@@ -7,6 +7,21 @@
 
 using namespace KamataEngine;
 
+namespace {
+    constexpr Vector4 kEngineCoreColor{ 0.35f, 0.85f, 1.0f, 0.72f };
+    constexpr Vector4 kEngineFadeColor{ 0.02f, 0.10f, 0.28f, 0.0f };
+    constexpr Vector4 kBoostCoreColor{ 0.62f, 0.95f, 1.0f, 0.95f };
+    constexpr Vector4 kBoostOuterColor{ 1.0f, 0.46f, 0.08f, 0.0f };
+    constexpr Vector4 kAfterburnerCoreColor{ 0.55f, 0.92f, 1.0f, 0.95f };
+    constexpr Vector4 kAfterburnerOuterColor{ 1.0f, 0.35f, 0.06f, 0.0f };
+    constexpr Vector4 kSparkStartColor{ 1.0f, 0.92f, 0.28f, 0.95f };
+    constexpr Vector4 kSparkEndColor{ 1.0f, 0.18f, 0.04f, 0.0f };
+    constexpr Vector4 kExplosionHotColor{ 1.0f, 0.82f, 0.22f, 1.0f };
+    constexpr Vector4 kExplosionFireColor{ 1.0f, 0.24f, 0.04f, 0.0f };
+    constexpr Vector4 kSmokeStartColor{ 0.24f, 0.22f, 0.20f, 0.55f };
+    constexpr Vector4 kSmokeEndColor{ 0.03f, 0.03f, 0.04f, 0.0f };
+}
+
 void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
     if (gameScene.hitStopRequestFrames_ > gameScene.hitStopFrames_) {
         gameScene.hitStopFrames_ = gameScene.hitStopRequestFrames_;
@@ -128,7 +143,7 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
     if (gameScene.damageSmokeEmitter_) {
         for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
             Vector3 v = { dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_ * 0.6f };
-            gameScene.damageSmokeEmitter_->Emit(pos, v, gameScene.kDamageGpuLife_, gameScene.kDamageGpuStartScale_, gameScene.kDamageGpuEndScale_);
+            gameScene.damageSmokeEmitter_->Emit(pos, v, gameScene.kDamageGpuLife_, gameScene.kDamageGpuStartScale_, gameScene.kDamageGpuEndScale_, kSparkStartColor, kSparkEndColor);
         }
     }
 }
@@ -170,7 +185,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
                     const Vector3 hitPos = e->GetWorldTranslation();
                     for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyHitBurstScale_; ++i) {
                         Vector3 v = { randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.45f) };
-                        gameScene.damageSmokeEmitter_->Emit(hitPos, v, gameScene.kDamageGpuLife_ * 0.6f, gameScene.kDamageGpuStartScale_ * 0.5f, gameScene.kDamageGpuEndScale_ * 0.5f);
+                        gameScene.damageSmokeEmitter_->Emit(hitPos, v, gameScene.kDamageGpuLife_ * 0.6f, gameScene.kDamageGpuStartScale_ * 0.5f, gameScene.kDamageGpuEndScale_ * 0.5f, kSparkStartColor, kSparkEndColor);
                     }
                     if (gameScene.audio_ && gameScene.seEnemyHitHandle_ != 0u) {
                         gameScene.audio_->PlayWave(gameScene.seEnemyHitHandle_, false, 0.25f);
@@ -180,7 +195,11 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
                     const Vector3 deadPos = e->GetWorldTranslation();
                     for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_; ++i) {
                         Vector3 v = { randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.6f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.6f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.3f) };
-                        gameScene.damageSmokeEmitter_->Emit(deadPos, v, gameScene.kDamageGpuLife_ * 1.7f, gameScene.kDamageGpuStartScale_ * 1.5f, 0.0f);
+                        gameScene.damageSmokeEmitter_->Emit(deadPos, v, gameScene.kDamageGpuLife_ * 1.0f, gameScene.kDamageGpuStartScale_ * 1.2f, gameScene.kDamageGpuEndScale_ * 1.8f, kExplosionHotColor, kExplosionFireColor);
+                    }
+                    for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
+                        Vector3 v = { randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.75f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.75f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.55f) };
+                        gameScene.damageSmokeEmitter_->Emit(deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f, gameScene.kDamageGpuEndScale_ * 3.0f, kSmokeStartColor, kSmokeEndColor);
                     }
                     if (gameScene.railCamera_) {
                         gameScene.railCamera_->AddShake({ randDist(enemyHitRng), randDist(enemyHitRng), 0.0f }, 0.7f);
@@ -360,7 +379,11 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
             const Vector3 vel = MyMath::TransformNormal(localVel, playerRotateMatrix);
 
             if (gameScene.engineSmokeEmitter_) {
-                gameScene.engineSmokeEmitter_->Emit(spawnPos, vel, params.lifeTime, params.startScale, 0.0f);
+                const bool isBoosting = gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_;
+                const Vector4 startColor = isBoosting ? kBoostCoreColor : kEngineCoreColor;
+                const Vector4 endColor = isBoosting ? kBoostOuterColor : kEngineFadeColor;
+                const float endScale = isBoosting ? params.startScale * 0.25f : params.startScale * 0.10f;
+                gameScene.engineSmokeEmitter_->Emit(spawnPos, vel, params.lifeTime, params.startScale, endScale, startColor, endColor);
             }
         }
     }
@@ -398,7 +421,13 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
         emitVel.x += randDist(rng);
         emitVel.y += randDist(rng);
         emitVel.z += randDist(rng);
-        gameScene.missileAfterburnerEmitter_->Emit(spawnPos, emitVel, gameScene.kMissileAfterburnerLife_, gameScene.kMissileAfterburnerStartScale_, gameScene.kMissileAfterburnerEndScale_);
+        gameScene.missileAfterburnerEmitter_->Emit(spawnPos, emitVel, gameScene.kMissileAfterburnerLife_, gameScene.kMissileAfterburnerStartScale_, gameScene.kMissileAfterburnerEndScale_, kAfterburnerCoreColor, kAfterburnerOuterColor);
+
+        Vector3 emberVel = emitVel;
+        emberVel.x += randDist(rng) * 0.8f;
+        emberVel.y += randDist(rng) * 0.8f;
+        emberVel.z += randDist(rng) * 0.8f;
+        gameScene.missileAfterburnerEmitter_->Emit(spawnPos, emberVel, gameScene.kMissileAfterburnerLife_ * 0.65f, gameScene.kMissileAfterburnerStartScale_ * 0.6f, 0.0f, kBoostOuterColor, kExplosionFireColor);
     }
 
     gameScene.missileAfterburnerEmitter_->Update(dt);
@@ -524,7 +553,13 @@ void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float
     for (int i = 0; i < count; i++) {
         if (gameScene.damageSmokeEmitter_) {
             Vector3 vel = { dist(rng) * (gameScene.kDamageGpuSpeed_ * scale), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale) };
-            gameScene.damageSmokeEmitter_->Emit(pos, vel, gameScene.kDamageGpuLife_ * 1.8f, gameScene.kDamageGpuStartScale_ * scale, 0.0f);
+            gameScene.damageSmokeEmitter_->Emit(pos, vel, gameScene.kDamageGpuLife_ * 1.3f, gameScene.kDamageGpuStartScale_ * scale, gameScene.kDamageGpuEndScale_ * scale, kExplosionHotColor, kExplosionFireColor);
+        }
+    }
+    for (int i = 0; i < count / 2; i++) {
+        if (gameScene.damageSmokeEmitter_) {
+            Vector3 vel = { dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f) };
+            gameScene.damageSmokeEmitter_->Emit(pos, vel, gameScene.kDamageGpuLife_ * 3.2f, gameScene.kDamageGpuStartScale_ * scale * 1.2f, gameScene.kDamageGpuEndScale_ * scale * 2.4f, kSmokeStartColor, kSmokeEndColor);
         }
     }
     if (gameScene.railCamera_) {
