@@ -46,7 +46,7 @@ public:
 private:
 	// 固定デルタタイム
 	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-	
+
 	// 小惑星のスポーン
 	void SpawnAsteroid();
 	float Rand(float min, float max);

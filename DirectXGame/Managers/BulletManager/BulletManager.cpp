@@ -133,7 +133,7 @@ void BulletManager::HandleHomingMissile_(KamataEngine::Input* input, Player* pla
 	lockedTargets_.clear();
 }
 
-void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager){
+void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager) {
 	if (!enemyManager) {
 		for (auto& m : homingMissiles_) {
 			if (m) {
@@ -154,9 +154,7 @@ void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager){
 			continue;
 		}
 
-		const bool exists = std::any_of(enemies.begin(), enemies.end(), [target](const std::unique_ptr<CharacterBase>& e) {
-			return e && e.get() == target && !e->IsDead();
-			});
+		const bool exists = std::any_of(enemies.begin(), enemies.end(), [target](const std::unique_ptr<CharacterBase>& e) { return e && e.get() == target && !e->IsDead(); });
 
 		if (!exists) {
 			m->ClearTarget();
@@ -164,7 +162,7 @@ void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager){
 	}
 }
 
-void BulletManager::UpdateBullets_(EnemyManager*enemyManager) {
+void BulletManager::UpdateBullets_(EnemyManager* enemyManager) {
 	// 通常弾更新
 	for (auto& b : bullets_) {
 		if (b) {
@@ -193,7 +191,6 @@ void BulletManager::UpdateBullets_(EnemyManager*enemyManager) {
 	RemoveDeadBullets_();
 }
 
-
 void BulletManager::RemoveDeadBullets_() {
 	bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(), [](const std::unique_ptr<Bullet>& b) { return !b || b->IsDead(); }), bullets_.end());
 
@@ -203,7 +200,7 @@ void BulletManager::RemoveDeadBullets_() {
 }
 
 void BulletManager::Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager) {
-	HandleShooting_(input, player, countDown, shootDir,enemyManager);
+	HandleShooting_(input, player, countDown, shootDir, enemyManager);
 	UpdateBullets_(enemyManager);
 }
 

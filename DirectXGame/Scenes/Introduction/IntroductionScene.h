@@ -21,13 +21,7 @@ public:
 	/// <summary>
 	/// 難易度選択
 	/// </summary>
-	enum class Difficulty {
-		Tutorial = 0,
-		Easy,
-		Normal,
-		Hard,
-		Count
-	};
+	enum class Difficulty { Tutorial = 0, Easy, Normal, Hard, Count };
 
 	/// <summary>
 	/// コンストラクタ

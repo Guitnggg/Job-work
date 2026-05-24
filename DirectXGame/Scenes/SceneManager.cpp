@@ -7,7 +7,7 @@ SceneManager::SceneManager() {
 		opBgmHandle_ = audio_->LoadWave("./Resources/SE/OPBGM.wav");
 		gameBgmHandle_ = audio_->LoadWave("./Resources/SE/Cold_Data.wav");
 	}
-	
+
 	// 黒フェード
 	fadeSprite_.reset(KamataEngine::Sprite::Create(
 	    0,                        // テクスチャハンドル（不要なら0でOK）
@@ -16,18 +16,11 @@ SceneManager::SceneManager() {
 	    {0.0f, 0.0f},             // アンカーポイント
 	    false,                    // FlipX
 	    false                     // FlipY
-	));
+	    ));
 	fadeSprite_->SetSize({1280, 720});
 
 	// 白フラッシュ
-	 flashSprite_.reset(KamataEngine::Sprite::Create(
-        0,
-        { 0.0f, 0.0f },
-        { 1.0f, 1.0f, 1.0f, 0.0f },
-        { 0.0f, 0.0f },
-        false,
-        false
-    ));
+	flashSprite_.reset(KamataEngine::Sprite::Create(0, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, false, false));
 	flashSprite_->SetSize({1280, 720});
 }
 

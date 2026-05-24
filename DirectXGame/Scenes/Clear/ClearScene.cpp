@@ -5,34 +5,34 @@
 using namespace KamataEngine;
 
 namespace {
-	constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-	constexpr float kScreenWidth = 1280.0f;
-	constexpr float kScreenHeight = 720.0f;
-	constexpr float kScoreDigitWidth = 32.0f;
-	constexpr int kScoreDigitCount = 5;
-	constexpr float kScoreCenterRate = 0.6f;
-	constexpr float kClearTextPosY = 200.0f;
-	constexpr float kReturnTextPosY = 620.0f;
-	constexpr float kClearStartWaitTime = 1.5f;
-	constexpr float kClearPopDuration = 0.8f;
-	constexpr float kClearPopOverScale = 1.2f;
-	constexpr float kClearPopFirstRate = 0.6f;
-	constexpr float kResultCountSpeed = 500.0f;
-	constexpr float kResultEndWaitTime = 0.5f;
-	constexpr float kReturnBlinkSpeed = 4.0f;
-	
-	constexpr int kAsteroidCount = 10;
-	constexpr float kAsteroidSpawnZMin = 0.0f;
-	constexpr float kAsteroidSpawnZMax = 140.0f;
-	constexpr float kAsteroidRecycleZ = -50.0f;
-	constexpr float kAsteroidSpawnInterval = 1.0f;
-	constexpr float kAsteroidRangeX = 25.0f;
-	constexpr float kAsteroidRangeY = 15.0f;
-	constexpr float kAsteroidSpeedMin = -0.3f;
-	constexpr float kAsteroidSpeedMax = -0.1f;
-	constexpr float kAsteroidRotMin = 0.01f;
-	constexpr float kAsteroidRotMax = 0.03f;
-}
+constexpr float kFixedDeltaTime = 1.0f / 60.0f;
+constexpr float kScreenWidth = 1280.0f;
+constexpr float kScreenHeight = 720.0f;
+constexpr float kScoreDigitWidth = 32.0f;
+constexpr int kScoreDigitCount = 5;
+constexpr float kScoreCenterRate = 0.6f;
+constexpr float kClearTextPosY = 200.0f;
+constexpr float kReturnTextPosY = 620.0f;
+constexpr float kClearStartWaitTime = 1.5f;
+constexpr float kClearPopDuration = 0.8f;
+constexpr float kClearPopOverScale = 1.2f;
+constexpr float kClearPopFirstRate = 0.6f;
+constexpr float kResultCountSpeed = 500.0f;
+constexpr float kResultEndWaitTime = 0.5f;
+constexpr float kReturnBlinkSpeed = 4.0f;
+
+constexpr int kAsteroidCount = 10;
+constexpr float kAsteroidSpawnZMin = 0.0f;
+constexpr float kAsteroidSpawnZMax = 140.0f;
+constexpr float kAsteroidRecycleZ = -50.0f;
+constexpr float kAsteroidSpawnInterval = 1.0f;
+constexpr float kAsteroidRangeX = 25.0f;
+constexpr float kAsteroidRangeY = 15.0f;
+constexpr float kAsteroidSpeedMin = -0.3f;
+constexpr float kAsteroidSpeedMax = -0.1f;
+constexpr float kAsteroidRotMin = 0.01f;
+constexpr float kAsteroidRotMax = 0.03f;
+} // namespace
 
 ClearScene::ClearScene(int finalScore) : finalScore_(finalScore) {}
 
@@ -118,8 +118,7 @@ void ClearScene::Update() {
 		float duration = kClearPopFirstRate;
 		float t = (std::min)(phaseTimer_ / duration, 1.0f);
 		float over = kClearPopOverScale;
-		float scale = (t < kClearPopFirstRate) ? over * (t / kClearPopFirstRate)
-			: over + (1.0f - over) * ((t - kClearPopFirstRate) / (1.0f - kClearPopFirstRate));
+		float scale = (t < kClearPopFirstRate) ? over * (t / kClearPopFirstRate) : over + (1.0f - over) * ((t - kClearPopFirstRate) / (1.0f - kClearPopFirstRate));
 
 		clearTextSprite_->SetSize({clearTextBaseSize_.x * scale, clearTextBaseSize_.y * scale});
 		clearTextSprite_->SetColor({1.0f, 1.0f, 1.0f, t});
@@ -156,7 +155,7 @@ void ClearScene::Update() {
 
 	case ClearPhase::WaitInput:
 		// 点滅用タイマー
-		float blinkSpeed = kReturnBlinkSpeed;  // 数字を変えると点滅の速さが変わる
+		float blinkSpeed = kReturnBlinkSpeed;                         // 数字を変えると点滅の速さが変わる
 		float a = 0.5f * (std::sin(phaseTimer_ * blinkSpeed) + 1.0f); // 0～1
 
 		if (returnTextSprite_) {

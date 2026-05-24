@@ -6,27 +6,27 @@
 using namespace KamataEngine;
 
 namespace {
-	constexpr int kAsteroidCount = 10;
-	constexpr float kAsteroidSpawnZMin = 0.0f;
-	constexpr float kAsteroidSpawnZMax = 140.0f;
-	constexpr float kAsteroidRecycleZ = -50.0f;
-	constexpr float kAsteroidSpawnInterval = 1.0f;
-	constexpr float kAsteroidRangeX = 25.0f;
-	constexpr float kAsteroidRangeY = 15.0f;
-	constexpr float kAsteroidSpeedMin = -0.3f;
-	constexpr float kAsteroidSpeedMax = -0.1f;
-	constexpr float kAsteroidRotMin = 0.01f;
-	constexpr float kAsteroidRotMax = 0.03f;
-	constexpr float kDifficultyBaseX = 700.0f;
-	constexpr float kDifficultyBaseY = 300.0f;
-	constexpr float kDifficultyStepY = 80.0f;
-	constexpr float kDifficultyNormalScale = 1.0f;
-	constexpr float kDifficultySelectedScale = 1.12f;
-	constexpr Vector4 kDifficultyNormalColor = { 0.8f, 0.8f, 0.8f, 1.0f };
-	constexpr Vector4 kDifficultySelectedColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-	constexpr Vector4 kDifficultyCursorColor = { 1.0f, 1.0f, 0.5f, 1.0f };
-	constexpr float kDifficultyCursorOffsetX = -54.0f;
-}
+constexpr int kAsteroidCount = 10;
+constexpr float kAsteroidSpawnZMin = 0.0f;
+constexpr float kAsteroidSpawnZMax = 140.0f;
+constexpr float kAsteroidRecycleZ = -50.0f;
+constexpr float kAsteroidSpawnInterval = 1.0f;
+constexpr float kAsteroidRangeX = 25.0f;
+constexpr float kAsteroidRangeY = 15.0f;
+constexpr float kAsteroidSpeedMin = -0.3f;
+constexpr float kAsteroidSpeedMax = -0.1f;
+constexpr float kAsteroidRotMin = 0.01f;
+constexpr float kAsteroidRotMax = 0.03f;
+constexpr float kDifficultyBaseX = 700.0f;
+constexpr float kDifficultyBaseY = 300.0f;
+constexpr float kDifficultyStepY = 80.0f;
+constexpr float kDifficultyNormalScale = 1.0f;
+constexpr float kDifficultySelectedScale = 1.12f;
+constexpr Vector4 kDifficultyNormalColor = {0.8f, 0.8f, 0.8f, 1.0f};
+constexpr Vector4 kDifficultySelectedColor = {1.0f, 1.0f, 1.0f, 1.0f};
+constexpr Vector4 kDifficultyCursorColor = {1.0f, 1.0f, 0.5f, 1.0f};
+constexpr float kDifficultyCursorOffsetX = -54.0f;
+} // namespace
 
 IntroductionScene::IntroductionScene() {}
 
@@ -48,15 +48,15 @@ void IntroductionScene::Initialize() {
 	introSprite_.reset(Sprite::Create(introTextureHandle_, {0.0f, 0.0f}));
 
 	const std::array<const char*, static_cast<size_t>(Difficulty::Count)> difficultyTexturePaths = {
-		"./Resources/Introduction/DifficultyTutorial.png",
-		"./Resources/Introduction/DifficultyEasy.png",
-		"./Resources/Introduction/DifficultyNormal.png",
-		"./Resources/Introduction/DifficultyHard.png",
+	    "./Resources/Introduction/DifficultyTutorial.png",
+	    "./Resources/Introduction/DifficultyEasy.png",
+	    "./Resources/Introduction/DifficultyNormal.png",
+	    "./Resources/Introduction/DifficultyHard.png",
 	};
 
 	for (size_t i = 0; i < difficultySprites_.size(); ++i) {
 		difficultyTextureHandles_[i] = TextureManager::Load(difficultyTexturePaths[i]);
-		difficultySprites_[i].reset(Sprite::Create(difficultyTextureHandles_[i], { kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i) }));
+		difficultySprites_[i].reset(Sprite::Create(difficultyTextureHandles_[i], {kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i)}));
 		difficultySprites_[i]->SetColor(kDifficultyNormalColor);
 	}
 
@@ -171,14 +171,13 @@ void IntroductionScene::Draw() {
 		if (!sprite) {
 			continue;
 		}
-		sprite->SetPosition({ kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i) });
+		sprite->SetPosition({kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i)});
 		if (static_cast<int>(i) == selectedIndex_) {
 			sprite->SetColor(kDifficultySelectedColor);
-			sprite->SetSize({ 512.0f * kDifficultySelectedScale, 128.0f * kDifficultySelectedScale });
-		}
-		else {
+			sprite->SetSize({512.0f * kDifficultySelectedScale, 128.0f * kDifficultySelectedScale});
+		} else {
 			sprite->SetColor(kDifficultyNormalColor);
-			sprite->SetSize({ 512.0f * kDifficultyNormalScale, 128.0f * kDifficultyNormalScale });
+			sprite->SetSize({512.0f * kDifficultyNormalScale, 128.0f * kDifficultyNormalScale});
 		}
 		sprite->Draw();
 	}
@@ -195,10 +194,10 @@ std::unique_ptr<IScene> IntroductionScene::NextScene() const {
 
 	case SceneName::InGame: {
 		constexpr std::array<const char*, static_cast<size_t>(Difficulty::Count)> kLevelJsonPaths = {
-			"./Resources/Levels/Tutorial.json",
-			"./Resources/Levels/Easy.json",
-			"./Resources/Levels/Normal.json",
-			"./Resources/Levels/Hard.json",
+		    "./Resources/Levels/Tutorial.json",
+		    "./Resources/Levels/Easy.json",
+		    "./Resources/Levels/Normal.json",
+		    "./Resources/Levels/Hard.json",
 		};
 
 		size_t index = static_cast<size_t>(selectedIndex_);
@@ -219,7 +218,7 @@ TransitionHint IntroductionScene::GetTransitionHint(SceneName to) const {
 	if (to == SceneName::InGame) {
 		h.style = TransitionStyle::WhiteFlash;
 		h.flashTime = 0.35f; // 既定0.16fより長め（好みに合わせて調整）
-		// h.fadeSpeed = 0.03f; // 必要なら黒フェード速度も上書き可能
+		                     // h.fadeSpeed = 0.03f; // 必要なら黒フェード速度も上書き可能
 	}
 	return h;
 }

@@ -22,7 +22,7 @@ public:
 	void Initialize() override;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	void FireFrom(const KamataEngine::Vector3& worldPos, CharacterBase* target);
 
@@ -59,12 +59,12 @@ public:
 	/// <summary>
 	/// 現在の進行方向ベクトルを取得
 	/// </summary>
-	const KamataEngine::Vector3& GetVelocity()const { return velocity_; }
+	const KamataEngine::Vector3& GetVelocity() const { return velocity_; }
 
 private:
 	// ===== 定数 =====
 	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-	static constexpr KamataEngine::Vector3 kMissileScale{ 0.3f,0.3f,0.7f };
+	static constexpr KamataEngine::Vector3 kMissileScale{0.3f, 0.3f, 0.7f};
 	static constexpr float kColliderRadius = 0.65f;
 	static constexpr float kSpeed = 1.4f;
 	static constexpr float kTurnRate = 0.14f;

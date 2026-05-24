@@ -40,7 +40,6 @@ private:
 
 private:
 	// ===== メンバ変数 =====
-	KamataEngine::Vector3 offset_{};  // カメラオフセット
-	KamataEngine::Vector3 velocity_{};  // 揺れ用速度ベクトル
-
+	KamataEngine::Vector3 offset_{};   // カメラオフセット
+	KamataEngine::Vector3 velocity_{}; // 揺れ用速度ベクトル
 };

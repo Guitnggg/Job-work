@@ -5,12 +5,12 @@
 using namespace KamataEngine;
 
 namespace {
-	constexpr float kUiMaxHp = 100.0f;
-	constexpr Vector2 kCoolPos{24.0f, 84.0f};
-	constexpr Vector2 kCoolSize{200.0f, 10.0f};
-	constexpr Vector2 kLockPos{24.0f, 98.0f};
-	constexpr Vector2 kLockBaseSize{200.0f, 6.0f};
-}
+constexpr float kUiMaxHp = 100.0f;
+constexpr Vector2 kCoolPos{24.0f, 84.0f};
+constexpr Vector2 kCoolSize{200.0f, 10.0f};
+constexpr Vector2 kLockPos{24.0f, 98.0f};
+constexpr Vector2 kLockBaseSize{200.0f, 6.0f};
+} // namespace
 
 void UIManager::Initialize(Player* player) {
 	player_ = player;

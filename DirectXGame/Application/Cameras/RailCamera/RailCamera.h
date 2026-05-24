@@ -72,12 +72,12 @@ private:
 	static constexpr float kMaxRollAngle = 0.35f;   // 最大ロール角（ラジアン）
 	static constexpr float kRollFollowRate = 0.15f; // ロール補間率
 
-	static constexpr float kRollPosOffsetX = 5.0f;  // ロールによるX位置補正量
-	static constexpr float kRollPosOffsetY = 0.5f;  // ロールによるY位置補正量
+	static constexpr float kRollPosOffsetX = 5.0f; // ロールによるX位置補正量
+	static constexpr float kRollPosOffsetY = 0.5f; // ロールによるY位置補正量
 
 private:
 	// ===== 基本 =====
-	KamataEngine::WorldTransform worldTransform_; // ワールド変換データ
+	KamataEngine::WorldTransform worldTransform_;  // ワールド変換データ
 	std::unique_ptr<KamataEngine::Camera> camera_; // カメラ（ビューポート）
 
 	// ===== 遅延追従 =====
@@ -91,6 +91,6 @@ private:
 	float targetRollAngle_ = 0.0f; // 目標ロール角
 
 	// ===== 演出用ズーム =====
-	float cinematicZoomZ_ = 0.0f; // 演出用ズームのZオフセット
+	float cinematicZoomZ_ = 0.0f;       // 演出用ズームのZオフセット
 	float targetCinematicZoomZ_ = 0.0f; // 演出用ズームの目標Zオフセット
 };

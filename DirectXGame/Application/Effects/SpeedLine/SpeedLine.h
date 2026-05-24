@@ -39,9 +39,9 @@ private:
 	/// スピードライン1本分のデータ
 	/// </summary>
 	struct LineParticle {
-		std::unique_ptr<KamataEngine::WorldTransform> worldTransform = nullptr;  // 変換情報（所有）
-		float speed = 0.0f;                                                      // 移動速度
-		float alpha = 1.0f;                                                      // 透明度（将来拡張用）
+		std::unique_ptr<KamataEngine::WorldTransform> worldTransform = nullptr; // 変換情報（所有）
+		float speed = 0.0f;                                                     // 移動速度
+		float alpha = 1.0f;                                                     // 透明度（将来拡張用）
 	};
 
 private:
@@ -89,7 +89,7 @@ private:
 
 private:
 	std::unique_ptr<KamataEngine::Model> model_ = nullptr; // 描画モデル
-	KamataEngine::Camera* camera_ = nullptr; // 使用カメラ
+	KamataEngine::Camera* camera_ = nullptr;               // 使用カメラ
 
 	std::vector<LineParticle> lines_; // ライン群
 	std::mt19937 random_;             // 乱数生成器

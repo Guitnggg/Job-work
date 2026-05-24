@@ -25,8 +25,8 @@ public:
 		float endScale = 0.0f;
 		float active = 0.0f;
 
-		KamataEngine::Vector4 startColor{ 0.65f, 0.65f, 0.65f, 0.7f };
-		KamataEngine::Vector4 endColor{ 0.12f, 0.12f, 0.12f, 0.0f };
+		KamataEngine::Vector4 startColor{0.65f, 0.65f, 0.65f, 0.7f};
+		KamataEngine::Vector4 endColor{0.12f, 0.12f, 0.12f, 0.0f};
 	};
 
 	GpuSmokeEmitter() = default;
@@ -37,7 +37,9 @@ public:
 	void Draw(const KamataEngine::Camera* camera);
 
 	void Emit(const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale);
-	void Emit(const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale, const KamataEngine::Vector4& startColor, const KamataEngine::Vector4& endColor);
+	void Emit(
+	    const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale, const KamataEngine::Vector4& startColor,
+	    const KamataEngine::Vector4& endColor);
 
 private:
 	void CreatePipeline_();

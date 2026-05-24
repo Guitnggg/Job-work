@@ -11,7 +11,7 @@ void Laser::Initialize() {
 	// モデル生成（レーザー用）
 	model_.reset(Model::CreateFromOBJ("Beam", true));
 	objectColor_.Initialize();
-	objectColor_.SetColor({ 0.50f, 0.95f, 1.0f, 0.95f });
+	objectColor_.SetColor({0.50f, 0.95f, 1.0f, 0.95f});
 
 	// 細長いスケール
 	worldTransform_.scale_ = kLaserScale;

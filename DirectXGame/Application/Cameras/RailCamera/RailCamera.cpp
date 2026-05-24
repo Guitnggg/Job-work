@@ -4,24 +4,24 @@
 
 using namespace KamataEngine;
 
-// 
+//
 RailCamera::RailCamera() {}
 
-// 
+//
 RailCamera::~RailCamera() {}
 
-// 
+//
 void RailCamera::Initialize() {
 	// ワールド変換初期化
 	worldTransform_.Initialize();
-	worldTransform_.translation_ = { 0.0f, 0.0f, kInitialZ };
+	worldTransform_.translation_ = {0.0f, 0.0f, kInitialZ};
 
-    // カメラ生成
+	// カメラ生成
 	camera_ = std::make_unique<Camera>();
-    camera_->Initialize();
+	camera_->Initialize();
 }
 
-// 
+//
 void RailCamera::Update() {
 	// --- レール移動（Z方向） ---
 	worldTransform_.translation_.z += kMoveSpeedZ;
@@ -59,9 +59,7 @@ void RailCamera::Update() {
 void RailCamera::SetCinematicZoom(float zoomZ) { targetCinematicZoomZ_ = zoomZ; }
 
 // 外部イベントから受け取った揺れをCameraShakeに中継する
-void RailCamera::AddShake(const Vector3& dir, float power) {
-	cameraShake_.AddShake(dir, power);
-}
+void RailCamera::AddShake(const Vector3& dir, float power) { cameraShake_.AddShake(dir, power); }
 
 // 左右移動入力からカメラの目標ロール角を計算する
 void RailCamera::SetMoveInput(float inputX) {

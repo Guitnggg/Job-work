@@ -6,12 +6,12 @@ class GameScene;
 /// GameScene の 1 フレーム更新を担当する実行クラス。
 /// GameScene 本体はライフサイクル管理と描画に集中し、更新の詳細を本クラスに
 /// </summary>
-class GameSceneUpdateExecutor{
+class GameSceneUpdateExecutor {
 public:
-    /// <summary>
-    /// GameSceneの更新を1フレーム分実行する
-    /// </summary>
-    static void Update(GameScene& gameScene);
+	/// <summary>
+	/// GameSceneの更新を1フレーム分実行する
+	/// </summary>
+	static void Update(GameScene& gameScene);
 
 private:
 	/// <summary>

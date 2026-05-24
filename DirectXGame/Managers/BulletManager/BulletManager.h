@@ -1,23 +1,19 @@
-#pragma once
+﻿#pragma once
 
 #include <KamataEngine.h>
 #include <memory>
 #include <vector>
 
 #include "Application/Characters/Player/Bullet.h"
-#include "Application/Characters/Player/Player.h"
-#include "Application/Characters/Player/Laser.h"
 #include "Application/Characters/Player/HomingMissile.h"
+#include "Application/Characters/Player/Laser.h"
+#include "Application/Characters/Player/Player.h"
 #include "UI/CountDown/CountDown.h"
 
 class EnemyManager;
 
 /// <summary>
-/// 弾の生成・更新・破棄を管理するクラス。
-/// ・プレイヤー入力を検知して弾を発射
-/// ・飛行中の弾の更新
-/// ・死亡（寿命/衝突/距離超過）した弾の後始末
-/// を一括で担当する。
+/// プレイヤーの通常弾、レーザー、ホーミングミサイル、ロックオン状態を管理する。
 /// </summary>
 class BulletManager {
 public:
@@ -25,43 +21,42 @@ public:
 	~BulletManager() = default;
 
 	/// <summary>
-	/// 初期化処理
+	/// 蛻晄悄蛹門・逅・
 	/// </summary>
 	void Initialize();
 
 	/// <summary>
-	/// 更新処理
-	/// 入力判定→弾の発射→弾の更新→死亡弾の削除
+	/// 譖ｴ譁ｰ蜃ｦ逅・
+	/// 蜈･蜉帛愛螳壺・蠑ｾ縺ｮ逋ｺ蟆・・蠑ｾ縺ｮ譖ｴ譁ｰ竊呈ｭｻ莠｡蠑ｾ縺ｮ蜑企勁
 	/// </summary>
-	/// <param name="input">入力処理を参照する為のポインタ</param>
-	/// <param name="player">弾の発射位置取得に使うプレイヤー</param>
-	/// <param name="countDown">カウントダウン中は発射操作を無効にする為の参照</param>
+	/// <param name="input">蜈･蜉帛・逅・ｒ蜿ら・縺吶ｋ轤ｺ縺ｮ繝昴う繝ｳ繧ｿ</param>
+	/// <param name="player">蠑ｾ縺ｮ逋ｺ蟆・ｽ咲ｽｮ蜿門ｾ励↓菴ｿ縺・・繝ｬ繧､繝､繝ｼ</param>
+	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ逋ｺ蟆・桃菴懊ｒ辟｡蜉ｹ縺ｫ縺吶ｋ轤ｺ縺ｮ蜿ら・</param>
 	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 描画処理
+	/// 謠冗判蜃ｦ逅・
 	/// </summary>
-	/// <param name="camera">描画に使用するカメラ</param>
+	/// <param name="camera">謠冗判縺ｫ菴ｿ逕ｨ縺吶ｋ繧ｫ繝｡繝ｩ</param>
 	void Draw(const KamataEngine::Camera* camera);
 
 	/// <summary>
-	/// 現在飛行中の弾のコンテナを参照で返す。
-	/// 外部で弾との当たり判定を行う用途で使用する。
+	/// 迴ｾ蝨ｨ鬟幄｡御ｸｭ縺ｮ蠑ｾ縺ｮ繧ｳ繝ｳ繝・リ繧貞盾辣ｧ縺ｧ霑斐☆縲・
+	/// 螟夜Κ縺ｧ蠑ｾ縺ｨ縺ｮ蠖薙◆繧雁愛螳壹ｒ陦後≧逕ｨ騾斐〒菴ｿ逕ｨ縺吶ｋ縲・
 	/// </summary>
-	/// <returns>弾のコンテナ(std::vector&lt;unique_ptr&lt;Bullet&gt;&gt;)</returns>
+	/// <returns>蠑ｾ縺ｮ繧ｳ繝ｳ繝・リ(std::vector&lt;unique_ptr&lt;Bullet&gt;&gt;)</returns>
 	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
 
 	/// <summary>
-	/// 現在飛行中のレーザー(Laser)のコンテナを参照で返す。
-	/// 外部でレーザーとの当たり判定を行う用途で使用する。
+	/// 迴ｾ蝨ｨ鬟幄｡御ｸｭ縺ｮ繝ｬ繝ｼ繧ｶ繝ｼ(Laser)縺ｮ繧ｳ繝ｳ繝・リ繧貞盾辣ｧ縺ｧ霑斐☆縲・
+	/// 螟夜Κ縺ｧ繝ｬ繝ｼ繧ｶ繝ｼ縺ｨ縺ｮ蠖薙◆繧雁愛螳壹ｒ陦後≧逕ｨ騾斐〒菴ｿ逕ｨ縺吶ｋ縲・
 	/// </summary>
 	std::vector<std::unique_ptr<Laser>>& GetLasers() { return lasers_; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	std::vector<std::unique_ptr<HomingMissile>>& GetHomingMissiles() { return homingMissiles_; }
-
 
 	float GetHomingCooldownRate() const;
 	int32_t GetCurrentLockCount() const { return static_cast<int32_t>(lockedTargets_.size()); }
@@ -71,28 +66,28 @@ public:
 
 private:
 	/// <summary>
-	/// プレイヤー入力に応じて弾発射処理を行う。
-	/// クールダウン制御もここで行う。
+	/// 繝励Ξ繧､繝､繝ｼ蜈･蜉帙↓蠢懊§縺ｦ蠑ｾ逋ｺ蟆・・逅・ｒ陦後≧縲・
+	/// 繧ｯ繝ｼ繝ｫ繝繧ｦ繝ｳ蛻ｶ蠕｡繧ゅ％縺薙〒陦後≧縲・
 	/// </summary>
 	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	void HandleHomingMissile_(KamataEngine::Input* input, Player* player, const CountDown& countDown, EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 全飛行弾の更新処理を行う。
+	/// 蜈ｨ鬟幄｡悟ｼｾ縺ｮ譖ｴ譁ｰ蜃ｦ逅・ｒ陦後≧縲・
 	/// </summary>
 	void UpdateBullets_(EnemyManager* enemyManager);
 
 	/// <summary>
-	/// ホーミング対象が既に削除済みのミサイルからターゲット参照を外す
+	/// 繝帙・繝溘Φ繧ｰ蟇ｾ雎｡縺梧里縺ｫ蜑企勁貂医∩縺ｮ繝溘し繧､繝ｫ縺九ｉ繧ｿ繝ｼ繧ｲ繝・ヨ蜿ら・繧貞､悶☆
 	/// </summary>
 	void ValidateHomingTargets_(EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 死亡状態（寿命切れ／衝突／距離制限）の弾をコンテナから削除する。
+	/// 豁ｻ莠｡迥ｶ諷具ｼ亥ｯｿ蜻ｽ蛻・ｌ・剰｡晉ｪ・ｼ剰ｷ晞屬蛻ｶ髯撰ｼ峨・蠑ｾ繧偵さ繝ｳ繝・リ縺九ｉ蜑企勁縺吶ｋ縲・
 	/// </summary>
 	void RemoveDeadBullets_();
 
@@ -101,12 +96,12 @@ private:
 	std::vector<std::unique_ptr<Laser>> lasers_;
 	std::vector<std::unique_ptr<HomingMissile>> homingMissiles_;
 
-	// クールダウン
+	// 繧ｯ繝ｼ繝ｫ繝繧ｦ繝ｳ
 	int32_t fireCooldownFrames_ = 0;
 	int32_t burstShotsRemaining_ = 0;
 	static constexpr int32_t kBurstShotCount = 3;
-	static constexpr int32_t kBurstIntervalFrames = 3;   // バースト内の発射間隔(約0.05秒@60fps)
-	static constexpr int32_t kBurstCooldownFrames = 18;  // バースト後の待機時間(約0.3秒@60fps)
+	static constexpr int32_t kBurstIntervalFrames = 3;  // 繝舌・繧ｹ繝亥・縺ｮ逋ｺ蟆・俣髫・邏・.05遘叩60fps)
+	static constexpr int32_t kBurstCooldownFrames = 18; // 繝舌・繧ｹ繝亥ｾ後・蠕・ｩ滓凾髢・邏・.3遘叩60fps)
 
 	bool isHomingLocking_ = false;
 	int32_t homingLockFrame_ = 0;
@@ -118,7 +113,7 @@ private:
 	static constexpr int32_t kHomingLockMaxFrame = 60;   // 1.0s
 	static constexpr int32_t kHomingMaxLockCount = 5;
 	static constexpr int32_t kHomingCooldownMaxFrame = 600; // 10s
-	
+
 	KamataEngine::Audio* audio_ = nullptr;
 	uint32_t shotSeHandle_ = 0;
 	uint32_t missileSeHandle_ = 0;

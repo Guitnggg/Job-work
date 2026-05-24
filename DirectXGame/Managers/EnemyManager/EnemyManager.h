@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <algorithm>
 #include <memory>
@@ -11,106 +11,96 @@
 #include "Application/Characters/Enemy/TurretEnemy.h"
 
 /// <summary>
-/// 敵キャラクター全体を管理するクラス。
-///
-/// ・JSON から敵出現データを読み込み
-/// ・時間経過に応じて敵を生成
-/// ・全敵の Update / Draw を一括管理
-/// ・死亡した敵の削除
-/// ・撃破時の爆発エフェクト生成
-///
-/// EnemyManager は「敵のライフサイクル管理」に専念し、
-/// 個々の敵の挙動（移動・攻撃・被弾処理）は
-/// 各 Enemy クラスへ委譲する。
+/// JSON の出現データを読み込み、敵の生成、更新、描画、破棄を管理する。
 /// </summary>
 class EnemyManager {
 public:
-    /// <summary>
-    /// 敵出現データ（JSON 1件分）
-    /// </summary>
-    struct EnemySpawnData {
-        float time = 0.0f;
-        KamataEngine::Vector3 pos{ 0.0f, 0.0f, 0.0f };
+	/// <summary>
+	/// 謨ｵ蜃ｺ迴ｾ繝・・繧ｿ・・SON 1莉ｶ蛻・ｼ・
+	/// </summary>
+	struct EnemySpawnData {
+		float time = 0.0f;
+		KamataEngine::Vector3 pos{0.0f, 0.0f, 0.0f};
 
-        // 敵タイプ（"seeker" / "turret"）
-        std::string type = "seeker";
+		// 謨ｵ繧ｿ繧､繝暦ｼ・seeker" / "turret"・・
+		std::string type = "seeker";
 
-        // ===== Seeker 用 =====
-        float speed = kDefaultSeekerSpeed;
-        float turnRate = kDefaultSeekerTurnRate;
+		// ===== Seeker 逕ｨ =====
+		float speed = kDefaultSeekerSpeed;
+		float turnRate = kDefaultSeekerTurnRate;
 
-        // ===== 共通 =====
-        int32_t hp = kDefaultHp;
-        float radius = kDefaultColliderRadius;
-        float lifeTime = kDefaultLifeTime;
+		// ===== 蜈ｱ騾・=====
+		int32_t hp = kDefaultHp;
+		float radius = kDefaultColliderRadius;
+		float lifeTime = kDefaultLifeTime;
 
-        // ===== Turret 用 =====
-        int32_t shootIntervalFrames = kDefaultShootIntervalFrames;
-        float bulletSpeed = kDefaultBulletSpeed;
-        float bulletLifeTime = kDefaultBulletLifeTime;
-    };
+		// ===== Turret 逕ｨ =====
+		int32_t shootIntervalFrames = kDefaultShootIntervalFrames;
+		float bulletSpeed = kDefaultBulletSpeed;
+		float bulletLifeTime = kDefaultBulletLifeTime;
+	};
 
 public:
-    /// <summary>初期化処理</summary>
-    void Initialize();
+	/// <summary>蛻晄悄蛹門・逅・/summary>
+	void Initialize();
 
-    /// <summary>
-    /// JSON 形式の敵出現データ読み込み
-    /// </summary>
-    void LoadEnemyCsv(const std::string& path);
+	/// <summary>
+	/// JSON 蠖｢蠑上・謨ｵ蜃ｺ迴ｾ繝・・繧ｿ隱ｭ縺ｿ霎ｼ縺ｿ
+	/// </summary>
+	void LoadEnemyCsv(const std::string& path);
 
-    /// <summary>
-    /// 更新処理
-    /// </summary>
-    /// <param name="dt">デルタタイム（秒）</param>
-    /// <param name="playerPos">プレイヤーのワールド座標</param>
-    void Update(float dt, const KamataEngine::Vector3& playerPos);
+	/// <summary>
+	/// 譖ｴ譁ｰ蜃ｦ逅・
+	/// </summary>
+	/// <param name="dt">繝・Ν繧ｿ繧ｿ繧､繝・育ｧ抵ｼ・/param>
+	/// <param name="playerPos">繝励Ξ繧､繝､繝ｼ縺ｮ繝ｯ繝ｼ繝ｫ繝牙ｺｧ讓・/param>
+	void Update(float dt, const KamataEngine::Vector3& playerPos);
 
-    /// <summary>
-    /// 描画処理
-    /// </summary>
-    void Draw(const KamataEngine::Camera* camera);
+	/// <summary>
+	/// 謠冗判蜃ｦ逅・
+	/// </summary>
+	void Draw(const KamataEngine::Camera* camera);
 
-    /// <summary>
-    /// 生存中の敵リスト取得（CollisionManager 用）
-    /// </summary>
-    std::vector<std::unique_ptr<CharacterBase>>& GetEnemies() { return enemies_; }
+	/// <summary>
+	/// 逕溷ｭ倅ｸｭ縺ｮ謨ｵ繝ｪ繧ｹ繝亥叙蠕暦ｼ・ollisionManager 逕ｨ・・
+	/// </summary>
+	std::vector<std::unique_ptr<CharacterBase>>& GetEnemies() { return enemies_; }
 
-    /// <summary>
-    /// プレイヤーから近い順の敵ポインタを最大数まで取得する
-    /// </summary>
-    std::vector<CharacterBase*> GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const;
+	/// <summary>
+	/// 繝励Ξ繧､繝､繝ｼ縺九ｉ霑代＞鬆・・謨ｵ繝昴う繝ｳ繧ｿ繧呈怙螟ｧ謨ｰ縺ｾ縺ｧ蜿門ｾ励☆繧・
+	/// </summary>
+	std::vector<CharacterBase*> GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const;
 
-    /// <summary>
-    /// 死亡した敵を削除する
-    /// </summary>
-    void RemoveDeadEnemies();
-
-private:
-    /// <summary>
-    /// 出現時間に達した敵を生成する
-    /// </summary>
-    void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
+	/// <summary>
+	/// 豁ｻ莠｡縺励◆謨ｵ繧貞炎髯､縺吶ｋ
+	/// </summary>
+	void RemoveDeadEnemies();
 
 private:
-    // ===== 定数（デフォルト値）=====
-    static constexpr float kDefaultSeekerSpeed = 0.2f;
-    static constexpr float kDefaultSeekerTurnRate = 0.15f;
-    static constexpr int32_t kDefaultHp = 1;
-    static constexpr float kDefaultColliderRadius = 1.0f;
-    static constexpr float kDefaultLifeTime = 30.0f;
-
-    static constexpr int32_t kDefaultShootIntervalFrames = 60;
-    static constexpr float kDefaultBulletSpeed = 2.8f;
-    static constexpr float kDefaultBulletLifeTime = 3.0f;
+	/// <summary>
+	/// 蜃ｺ迴ｾ譎る俣縺ｫ驕斐＠縺滓雰繧堤函謌舌☆繧・
+	/// </summary>
+	void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
 
 private:
-    // 生存中の敵
-    std::vector<std::unique_ptr<CharacterBase>> enemies_;
+	// ===== 螳壽焚・医ョ繝輔か繝ｫ繝亥､・・====
+	static constexpr float kDefaultSeekerSpeed = 0.2f;
+	static constexpr float kDefaultSeekerTurnRate = 0.15f;
+	static constexpr int32_t kDefaultHp = 1;
+	static constexpr float kDefaultColliderRadius = 1.0f;
+	static constexpr float kDefaultLifeTime = 30.0f;
 
-    // 出現待ち敵データ
-    std::vector<EnemySpawnData> enemySpawnList_;
+	static constexpr int32_t kDefaultShootIntervalFrames = 60;
+	static constexpr float kDefaultBulletSpeed = 2.8f;
+	static constexpr float kDefaultBulletLifeTime = 3.0f;
 
-    // 経過時間
-    float enemySpawnTimer_ = 0.0f;
+private:
+	// 逕溷ｭ倅ｸｭ縺ｮ謨ｵ
+	std::vector<std::unique_ptr<CharacterBase>> enemies_;
+
+	// 蜃ｺ迴ｾ蠕・■謨ｵ繝・・繧ｿ
+	std::vector<EnemySpawnData> enemySpawnList_;
+
+	// 邨碁℃譎る俣
+	float enemySpawnTimer_ = 0.0f;
 };
