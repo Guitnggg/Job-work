@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <KamataEngine.h>
 #include <algorithm>
@@ -60,20 +60,17 @@ public:
 	~GameScene();
 
 	/// <summary>
-	/// 蛻晄悄蛹門・逅・
-	/// 蜈ｨ縺ｦ縺ｮ繧ｲ繝ｼ繝隕∫ｴ繧堤函謌舌・蛻晄悄蛹悶☆繧・
-	/// 繝励Ξ繧､繝､繝ｼ繝ｻ螟ｩ逅・・繧ｫ繝｡繝ｩ繝ｻ謨ｵ繝ｻ蠑ｾ繝ｻUI繝ｻ貍泌・繝ｻ蜷・Δ繝・Ν繧堤函謌舌☆繧九・
+	/// ゲーム本編で使うオブジェクトと状態を初期化する。
 	/// </summary>
 	void Initialize() override;
 
 	/// <summary>
-	/// 譖ｴ譁ｰ蜃ｦ逅・
+	/// 1フレーム分の更新処理を行う。
 	/// </summary>
 	void Update() override;
 
 	/// <summary>
-	/// 謠冗判蜃ｦ逅・
-	/// 閭梧勹竊・D繧ｪ繝悶ず繧ｧ繧ｯ繝遺・UI縺ｮ鬆・↓謠冗判
+	/// 背景、3Dモデル、前面UIの順で描画する。
 	/// </summary>
 	void Draw() override;
 
@@ -87,7 +84,7 @@ public:
 	SceneName GetSceneName() const override { return SceneName::InGame; }
 
 private:
-	// ========== 蝓ｺ譛ｬ ==========
+	// ========== 基本 ==========
 	KamataEngine::DirectXCommon* dxCommon_ = nullptr;
 	KamataEngine::Input* input_ = nullptr;
 	KamataEngine::Audio* audio_ = nullptr;
@@ -96,27 +93,26 @@ private:
 	std::unique_ptr<KamataEngine::Model> model_;
 	KamataEngine::Camera camera_;
 
-	// ========== 繝輔Ξ繝ｼ繝 ==========
 	static constexpr float kFixedDeltaTime_ = 1.0f / 60.0f;
 
-	// ========== 繧ｹ繝・・繝・==========
+	// ========== ゲーム状態 ==========
 	GameState state_ = GameState::CountDown;
 
-	// ========== ・薙き繧ｦ繝ｳ繝・I ==========
+	// ========== カウントダウンUI ==========
 	CountDown countDown_;
 
-	// ========== 繝ｬ繝ｼ繝ｫ繧ｫ繝｡繝ｩ ==========
+	// ========== レールカメラ ==========
 	bool isRailCameraActive_ = true;
 	std::unique_ptr<RailCamera> railCamera_;
 
-	// ========== 螟ｩ逅・==========
+	// ========== 背景 ==========
 	std::unique_ptr<Skydome> skydome_;
 
-	// ========== 繝励Ξ繧､繝､繝ｼ ==========
+	// ========== プレイヤー ==========
 	std::unique_ptr<Player> player_;
 	KamataEngine::Vector3 previousPlayerPos_{};
 
-	// ========== 謫堺ｽ弑I ==========
+	// ========== WASDキーUI ==========
 	uint32_t wasdTextureHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> wasdWSprite_;
 	std::unique_ptr<KamataEngine::Sprite> wasdASprite_;
@@ -127,13 +123,13 @@ private:
 	static constexpr float kWasdKeySize_ = 64.0f;
 	static constexpr float kWasdSpacing_ = 6.0f;
 
-	// ========== 辣ｧ貅・==========
+	// ========== 照準 ==========
 	uint32_t reticleTexHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> reticleSprite_;
 	KamataEngine::Vector2 reticlePos_{640.0f, 360.0f};
 	KamataEngine::Vector3 shootDirection_{0.0f, 0.0f, 1.0f};
 
-	// ========== 繝溘し繧､繝ｫ繝ｭ繝・け繧ｪ繝ｳ貍泌・ ==========
+	// ========== ロックオンマーカー ==========
 	struct LockOnMarker {
 		std::unique_ptr<KamataEngine::Sprite> sprite;
 		CharacterBase* target = nullptr;
@@ -143,23 +139,23 @@ private:
 	uint32_t lockOnTexHandle_ = 0;
 	std::vector<LockOnMarker> lockOnMarkers_;
 
-	// ========== 繧ｹ繝・・繧ｸ繝・・繧ｿ ==========
+	// ========== レベルデータ ==========
 	std::string levelJsonPath_;
 
-	// ========== 蠑ｾ繝ｻ謨ｵ邂｡逅・==========
+	// ========== 敵・弾管理 ==========
 	EnemyManager enemyManager_;
 	BulletManager bulletManager_;
 
-	// ========== 繧ｹ繝斐・繝画ｼ泌・ ==========
+	// ========== スピードライン ==========
 	SpeedLine speedLine_;
 
-	// ========== 繧ｨ繝ｳ繧ｸ繝ｳ繧ｹ繝｢繝ｼ繧ｯ ==========
+	// ========== GPUパーティクル ==========
 	std::unique_ptr<GpuSmokeEmitter> engineSmokeEmitter_;
 	std::unique_ptr<GpuSmokeEmitter> damageSmokeEmitter_;
 	std::unique_ptr<GpuSmokeEmitter> missileAfterburnerEmitter_;
 	float smokeEmitTimer_ = 0.0f;
 
-	// 繧ｹ繝｢繝ｼ繧ｯ縺ｮ繝代Λ繝｡繝ｼ繧ｿ
+	// ========== 煙パラメータ ==========
 	struct SmokeParams {
 		float emitInterval = 0.1f;
 		float lifeTime = 0.2f;
@@ -167,15 +163,15 @@ private:
 		int burstCount = 1;
 		float baseZSpeed = -0.6f;
 	};
-	SmokeParams normalSmokeParams_; // 騾壼ｸｸ譎・
-	SmokeParams boostSmokeParams_;  // 繧ｯ繝ｪ繧｢貍泌・譎・
+	SmokeParams normalSmokeParams_; // 通常煙パラメータ
+	SmokeParams boostSmokeParams_;  // ブースト煙パラメータ
 
 	static constexpr float kSmokeOffsetY_ = -0.3f;
 	static constexpr float kSmokeOffsetZ_ = -1.5f;
 	static constexpr float kSmokeRandXY_ = 0.5f;
 	static constexpr float kSmokeRandZ_ = 0.10f;
 
-	// ========== GPU陲ｫ蠑ｾ貍泌・ ==========
+	// ========== GPUダメージエフェクト ==========
 	std::unordered_map<CharacterBase*, int32_t> prevEnemyHpMap_;
 	int32_t prevPlayerHp_ = 0;
 	float kDamageGpuLife_ = 0.35f;
@@ -184,7 +180,7 @@ private:
 	int kDamageGpuBurst_ = 32;
 	float kDamageGpuSpeed_ = 6.0f;
 
-	// ========== 繝偵ャ繝医ヵ繧ｧ繝ｼ繝峨ヰ繝・け ==========
+	// ========== 効果音 ==========
 	uint32_t seEnemyHitHandle_ = 0;
 	uint32_t seEnemyKillHandle_ = 0;
 	int hitStopFrames_ = 0;
@@ -204,7 +200,7 @@ private:
 	};
 	std::vector<ScorePopup> scorePopups_;
 
-	// ========== 繝溘し繧､繝ｫ繧｢繝輔ち繝ｼ繝舌・繝翫・ ==========
+	// ========== ミサイルアフターバーナー ==========
 	float kMissileAfterburnerLife_ = 0.28f;
 	float kMissileAfterburnerStartScale_ = 0.13f;
 	float kMissileAfterburnerEndScale_ = 0.0f;
@@ -212,14 +208,14 @@ private:
 	float kMissileAfterburnerOffsetZ_ = -0.55f;
 	float kMissileAfterburnerRand_ = 0.2f;
 
-	// ========== UI・・P繝舌・・上せ繧ｳ繧｢縺ｪ縺ｩ・・==========
+	// ========== UI・スコア関連 ==========
 	UIManager uiManager_;
 	int clearScore_ = 0;
 
 	int kScorePerEnemy_ = 100;
 	int kClearScore_ = 5000;
 
-	// ========== Pause繝｡繝九Η繝ｼ ==========
+	// ========== ポーズ ==========
 	bool isPaused_ = false;
 	bool isDebugUpdatePaused_ = false;
 	std::unique_ptr<PauseMenu> pauseMenu_;
@@ -231,11 +227,11 @@ private:
 	static constexpr float kPauseTitlePosY_ = 16.0f;
 	static constexpr float kPauseTitleScale_ = 0.7f;
 
-	// 繝昴・繧ｺ縺九ｉ縺ｮ驕ｷ遘ｻ隕∵ｱ・
+	// ========== リトライ・タイトル遷移 ==========
 	bool requestRetry_ = false;
 	bool requestToTitle_ = false;
 
-	// ========== 繧ｯ繝ｪ繧｢蠕梧ｼ泌・逕ｨ ==========
+	// ========== クリアアニメーション ==========
 	bool isClearAnimating_ = false;
 	float clearAnimTimer_ = 0.0f;
 
@@ -259,7 +255,7 @@ private:
 	static constexpr float kCameraShakeDuration_ = 1.0f;
 	static constexpr float kCameraInputScale_ = 40.0f;
 
-	// ========== 驕ｷ遘ｻ貍泌・ ==========
+	// ========== シーン遷移 ==========
 	SceneTransitionPhase transitionPhase_ = SceneTransitionPhase::None;
 	float transitionTimer_ = 0.0f;
 	float timeScale_ = 1.0f;
@@ -269,7 +265,7 @@ private:
 
 	uint32_t seExplosionHandle_ = 0;
 
-	// ========== 繧ｷ繝ｼ繝ｳ蛻ｶ蠕｡ ==========
+	// ========== ゲーム終了 ==========
 	bool isEnd_ = false;
 	GameResult result_ = GameResult::None;
 };
