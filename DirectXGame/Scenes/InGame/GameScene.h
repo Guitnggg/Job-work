@@ -123,6 +123,15 @@ private:
 	static constexpr float kWasdKeySize_ = 64.0f;
 	static constexpr float kWasdSpacing_ = 6.0f;
 
+	// ========== マウス操作UI ==========
+	uint32_t mouseTextureHandle_ = 0;
+	std::unique_ptr<KamataEngine::Sprite> mouseBaseSprite_;
+	std::unique_ptr<KamataEngine::Sprite> mouseLeftSprite_;
+	std::unique_ptr<KamataEngine::Sprite> mouseRightSprite_;
+	static constexpr float kMouseBaseX_ = 286.0f;
+	static constexpr float kMouseBaseY_ = 558.0f;
+	static constexpr float kMouseSize_ = 104.0f;
+
 	// ========== 照準 ==========
 	uint32_t reticleTexHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> reticleSprite_;
