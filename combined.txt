@@ -7714,6 +7714,23 @@ File Path: DirectXGame/Scenes/InGame/GameScene.cpp
 using namespace KamataEngine;
 
 namespace {
+void ApplyPressedSpriteState(Sprite* sprite, const Vector2& basePosition, const Vector2& baseSize, bool isPressed) {
+	if (!sprite) {
+		return;
+	}
+
+	const Vector4 normalColor = {1.0f, 1.0f, 1.0f, 0.88f};
+	const Vector4 pressedColor = {0.35f, 0.95f, 1.0f, 1.0f};
+	const float scale = isPressed ? 0.92f : 1.0f;
+	const float pressOffsetY = isPressed ? 4.0f : 0.0f;
+	const Vector2 size = {baseSize.x * scale, baseSize.y * scale};
+	const Vector2 position = {basePosition.x + (baseSize.x - size.x) * 0.5f, basePosition.y + (baseSize.y - size.y) * 0.5f + pressOffsetY};
+
+	sprite->SetPosition(position);
+	sprite->SetSize(size);
+	sprite->SetColor(isPressed ? pressedColor : normalColor);
+}
+
 void DrawPopupNumber(Sprite* digitSprite, int value, const Vector2& center, float scale, float alpha) {
 	if (!digitSprite) {
 		return;
@@ -7789,6 +7806,25 @@ void GameScene::Initialize() {
 		wasdASprite_->SetTextureRect({0.0f, 96.0f}, keyUvSize);
 		wasdSSprite_->SetTextureRect({96.0f, 96.0f}, keyUvSize);
 		wasdDSprite_->SetTextureRect({192.0f, 96.0f}, keyUvSize);
+	}
+
+	mouseTextureHandle_ = TextureManager::Load("./Resources/InGame/Mouse.png");
+	const Vector2 mouseSize = {kMouseSize_, kMouseSize_};
+	const Vector2 mouseButtonUvSize = {320.0f, 270.0f};
+	const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
+	mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_, kMouseBaseY_}, {1.0f, 1.0f, 1.0f, 0.55f}));
+	mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_, kMouseBaseY_}));
+	mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}));
+	if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
+		mouseBaseSprite_->SetAnchorPoint({0.0f, 0.0f});
+		mouseLeftSprite_->SetAnchorPoint({0.0f, 0.0f});
+		mouseRightSprite_->SetAnchorPoint({0.0f, 0.0f});
+		mouseBaseSprite_->SetSize(mouseSize);
+		mouseLeftSprite_->SetSize(mouseButtonSize);
+		mouseRightSprite_->SetSize(mouseButtonSize);
+		mouseBaseSprite_->SetTextureRect({0.0f, 0.0f}, {640.0f, 640.0f});
+		mouseLeftSprite_->SetTextureRect({0.0f, 0.0f}, mouseButtonUvSize);
+		mouseRightSprite_->SetTextureRect({320.0f, 0.0f}, mouseButtonUvSize);
 	}
 
 	// ===== スピードライン初期化 =====
@@ -8004,18 +8040,30 @@ void GameScene::Draw() {
 		const bool isAPressed = input_->PushKey(DIK_A);
 		const bool isSPressed = input_->PushKey(DIK_S);
 		const bool isDPressed = input_->PushKey(DIK_D);
-		const Vector4 normalColor = {1.0f, 1.0f, 1.0f, 0.85f};
-		const Vector4 pressedColor = {0.35f, 0.95f, 1.0f, 1.0f};
+		const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
 
-		wasdWSprite_->SetColor(isWPressed ? pressedColor : normalColor);
-		wasdASprite_->SetColor(isAPressed ? pressedColor : normalColor);
-		wasdSSprite_->SetColor(isSPressed ? pressedColor : normalColor);
-		wasdDSprite_->SetColor(isDPressed ? pressedColor : normalColor);
+		ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}, keySize, isWPressed);
+		ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isAPressed);
+		ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isSPressed);
+		ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isDPressed);
 
 		wasdWSprite_->Draw();
 		wasdASprite_->Draw();
 		wasdSSprite_->Draw();
 		wasdDSprite_->Draw();
+	}
+
+	if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
+		const bool isLeftPressed = input_->IsPressMouse(0);
+		const bool isRightPressed = input_->IsPressMouse(1);
+		const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
+
+		ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX_, kMouseBaseY_}, mouseButtonSize, isLeftPressed);
+		ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}, mouseButtonSize, isRightPressed);
+
+		mouseBaseSprite_->Draw();
+		mouseLeftSprite_->Draw();
+		mouseRightSprite_->Draw();
 	}
 
 	// Pauseガイド
@@ -8175,6 +8223,15 @@ private:
 	static constexpr float kWasdBaseY_ = 566.0f;
 	static constexpr float kWasdKeySize_ = 64.0f;
 	static constexpr float kWasdSpacing_ = 6.0f;
+
+	// ========== マウス操作UI ==========
+	uint32_t mouseTextureHandle_ = 0;
+	std::unique_ptr<KamataEngine::Sprite> mouseBaseSprite_;
+	std::unique_ptr<KamataEngine::Sprite> mouseLeftSprite_;
+	std::unique_ptr<KamataEngine::Sprite> mouseRightSprite_;
+	static constexpr float kMouseBaseX_ = 286.0f;
+	static constexpr float kMouseBaseY_ = 558.0f;
+	static constexpr float kMouseSize_ = 104.0f;
 
 	// ========== 照準 ==========
 	uint32_t reticleTexHandle_ = 0;
