@@ -31,6 +31,11 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	const float dt = gameScene.kFixedDeltaTime_ * gameScene.timeScale_;
 
 	if (gameScene.input_->TriggerKey(DIK_ESCAPE) && gameScene.state_ == GameState::Playing) {
+		if (gameScene.isPaused_ && gameScene.pauseMenu_->IsHowToOpen()) {
+			gameScene.pauseMenu_->Update();
+			return;
+		}
+
 		gameScene.isPaused_ = !gameScene.isPaused_;
 
 		if (gameScene.isPaused_) {
