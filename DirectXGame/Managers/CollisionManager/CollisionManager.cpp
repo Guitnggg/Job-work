@@ -39,6 +39,8 @@ void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<
 
 		// 半径の合計より近ければ衝突
 		if (dist2 <= r * r) {
+			player->SetLastDamageSource(CharacterBase::DamageSource::Collision);
+			e->SetLastDamageSource(CharacterBase::DamageSource::Collision);
 			player->OnCollision(e.get());
 			e->OnCollision(player);
 		}
@@ -93,6 +95,7 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
 
 			if (dist2 <= rr * rr) {
 				// 相互通知：敵は死に、弾は消える
+				e->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
 				e->OnCollision(b.get());
 				b->OnCollision(e.get());
 				// 1発で1体想定
@@ -143,6 +146,7 @@ void CollisionManager::ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<L
 
 			if (dist2 <= rsum * rsum) {
 				// 相互通知：敵側がダメージ処理、レーザー側は「消える/貫通」どちらでもOK
+				e->SetLastDamageSource(CharacterBase::DamageSource::Laser);
 				e->OnCollision(r.get());
 				r->OnCollision(e.get());
 
@@ -191,6 +195,7 @@ void CollisionManager::ResolveHomingMissileEnemyCollisions(std::vector<std::uniq
 			const float rr = mr + er;
 
 			if (dist2 <= rr * rr) {
+				e->SetLastDamageSource(CharacterBase::DamageSource::HomingMissile);
 				e->OnCollision(m.get());
 				m->OnCollision(e.get());
 				break;
@@ -238,6 +243,7 @@ void CollisionManager::ResolvePlayerTurretBulletCollisions(Player* player, std::
 			const float rr = pr + br;
 
 			if (dist2 <= rr * rr) {
+				player->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
 				player->OnCollision(tb.get());
 				tb->OnCollision(player);
 			}
