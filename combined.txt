@@ -9711,7 +9711,6 @@ private:
 	static void StartExplosionAtPlayer(GameScene& gameScene, float scale);
 };
 
-
 ============================================================
 File Path: DirectXGame/Scenes/Introduction/IntroductionScene.cpp
 ============================================================
