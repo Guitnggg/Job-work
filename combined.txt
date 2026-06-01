@@ -1884,12 +1884,20 @@ void Bullet::Initialize() {
 	}
 
 	// 状態初期化
-	isDead_ = false;
+	// Object Pool Pattern:
+	// Initialize() 直後はまだ発射されていないため、未使用状態として扱う。
+	// BulletManager::AcquireBullet_() から FireFrom() が呼ばれた時に active になる。
+	isDead_ = true;
 	elapsedTimeSec_ = 0.0f;
 }
 
 // 指定位置と方向から弾を発射状態にし、向き・速度・寿命を設定する
 void Bullet::FireFrom(const Vector3& worldPos, const Vector3& dir) {
+	// Object Pool Pattern:
+	// 再利用された弾でも正しく撃ち直せるように、発射時に寿命と死亡フラグをリセットする。
+	isDead_ = false;
+	elapsedTimeSec_ = 0.0f;
+
 	// 発射位置と進行方向を設定
 	worldTransform_.translation_ = worldPos;
 	dir_ = dir;
@@ -2004,6 +2012,12 @@ public:
 	/// 死亡判定
 	/// </summary>
 	bool IsDead() const override { return isDead_; }
+
+	/// <summary>
+	/// Object Pool Pattern: marks this bullet as available for reuse.
+	/// 弾を破棄せず、未使用状態としてプールに戻すための関数。
+	/// </summary>
+	void Deactivate() { isDead_ = true; }
 
 public:
 	/// <summary>
@@ -6275,6 +6289,17 @@ void BulletManager::Initialize() {
 	homingMissiles_.clear();
 	lockedTargets_.clear();
 
+	// Object Pool Pattern:
+	// 通常弾は連射で頻繁に生成・破棄されるため、最初に一定数を生成してプールとして保持する。
+	// 発射時はこの中から未使用(isDead_)の弾を取り出して再利用し、毎回 new/delete しないようにする。
+	bullets_.reserve(kInitialBulletPoolSize);
+	for (int32_t i = 0; i < kInitialBulletPoolSize; ++i) {
+		auto bullet = std::make_unique<Bullet>();
+		bullet->Initialize();
+		bullet->Deactivate();
+		bullets_.push_back(std::move(bullet));
+	}
+
 	fireCooldownFrames_ = 0;
 	burstShotsRemaining_ = 0;
 	isHomingLocking_ = false;
@@ -6313,10 +6338,12 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 		dir = kForward;
 	}
 
-	auto b = std::make_unique<Bullet>();
-	b->Initialize();
-	b->FireFrom(player->GetWorldTranslation(), dir);
-	bullets_.push_back(std::move(b));
+	// Object Pool Pattern:
+	// 新しい弾を直接生成せず、プールから再利用できる弾を取得して発射する。
+	Bullet* bullet = AcquireBullet_();
+	if (bullet) {
+		bullet->FireFrom(player->GetWorldTranslation(), dir);
+	}
 
 	--burstShotsRemaining_;
 	fireCooldownFrames_ = (burstShotsRemaining_ > 0) ? kBurstIntervalFrames : kBurstCooldownFrames;
@@ -6447,11 +6474,32 @@ void BulletManager::UpdateBullets_(EnemyManager* enemyManager) {
 }
 
 void BulletManager::RemoveDeadBullets_() {
-	bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(), [](const std::unique_ptr<Bullet>& b) { return !b || b->IsDead(); }), bullets_.end());
+	// Object Pool Pattern:
+	// 通常弾は死んでも vector から削除しない。isDead_ == true の弾として残し、
+	// 次の発射時に AcquireBullet_() で再利用する。
 
 	lasers_.erase(std::remove_if(lasers_.begin(), lasers_.end(), [](const std::unique_ptr<Laser>& r) { return !r || r->IsDead(); }), lasers_.end());
 
 	homingMissiles_.erase(std::remove_if(homingMissiles_.begin(), homingMissiles_.end(), [](const std::unique_ptr<HomingMissile>& m) { return !m || m->IsDead(); }), homingMissiles_.end());
+}
+
+Bullet* BulletManager::AcquireBullet_() {
+	// Object Pool Pattern:
+	// まずプール内の未使用弾を探す。見つかればそのインスタンスを再利用する。
+	for (auto& bullet : bullets_) {
+		if (bullet && bullet->IsDead()) {
+			return bullet.get();
+		}
+	}
+
+	// プールが足りない場合だけ追加生成する。通常時のメモリ確保回数を抑えつつ、
+	// 弾数が一時的に増えた場合にも対応できるようにしている。
+	auto bullet = std::make_unique<Bullet>();
+	bullet->Initialize();
+	bullet->Deactivate();
+	Bullet* result = bullet.get();
+	bullets_.push_back(std::move(bullet));
+	return result;
 }
 
 void BulletManager::Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager) {
@@ -6573,6 +6621,11 @@ private:
 	/// </summary>
 	void RemoveDeadBullets_();
 
+	/// <summary>
+	/// Object Pool Pattern: returns an inactive bullet from the pool, or grows the pool.
+	/// </summary>
+	Bullet* AcquireBullet_();
+
 private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
 	std::vector<std::unique_ptr<Laser>> lasers_;
@@ -6584,6 +6637,7 @@ private:
 	static constexpr int32_t kBurstShotCount = 3;
 	static constexpr int32_t kBurstIntervalFrames = 3;  // 繝舌・繧ｹ繝亥・縺ｮ逋ｺ蟆・俣髫・邏・.05遘叩60fps)
 	static constexpr int32_t kBurstCooldownFrames = 18; // 繝舌・繧ｹ繝亥ｾ後・蠕・ｩ滓凾髢・邏・.3遘叩60fps)
+	static constexpr int32_t kInitialBulletPoolSize = 64;
 
 	bool isHomingLocking_ = false;
 	int32_t homingLockFrame_ = 0;
@@ -7011,6 +7065,70 @@ using json = nlohmann::json;
 
 using namespace KamataEngine;
 
+namespace {
+// Strategy Pattern:
+// 難易度ごとの敵パラメータ補正を共通インターフェースにする。
+// EnemyManager は「どの難易度か」を意識せず、Apply() を呼ぶだけで補正を適用できる。
+class IEnemySpawnStrategy {
+public:
+	virtual ~IEnemySpawnStrategy() = default;
+	virtual void Apply(EnemyManager::EnemySpawnData& spawnData) const = 0;
+};
+
+// Tutorial は最初の練習用なので、敵速度と弾速を下げ、射撃間隔を長くする。
+class TutorialEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 0.85f;
+		spawnData.bulletSpeed *= 0.85f;
+		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.25f);
+	}
+};
+
+// Easy は Normal より少しだけ易しくするため、敵速度と弾速を抑える。
+class EasyEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 0.9f;
+		spawnData.bulletSpeed *= 0.9f;
+		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.15f);
+	}
+};
+
+// Normal は JSON の設定値をそのまま使う標準戦略。
+class NormalEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData&) const override {}
+};
+
+// Hard は敵を強くする戦略。速度、弾速、HP を上げ、射撃間隔を短くする。
+class HardEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 1.15f;
+		spawnData.bulletSpeed *= 1.15f;
+		spawnData.hp = (std::max)(spawnData.hp, spawnData.hp + 1);
+		spawnData.shootIntervalFrames = (std::max)(1, static_cast<int32_t>(spawnData.shootIntervalFrames * 0.8f));
+	}
+};
+
+std::unique_ptr<IEnemySpawnStrategy> CreateEnemySpawnStrategy(const std::string& path) {
+	// Strategy Pattern: difficulty-specific enemy tuning is selected by the level file.
+	// レベルファイル名から使用する戦略を選択する。新しい難易度を増やす場合は、
+	// IEnemySpawnStrategy の派生クラスと、この分岐を追加すればよい。
+	if (path.find("Tutorial") != std::string::npos) {
+		return std::make_unique<TutorialEnemySpawnStrategy>();
+	}
+	if (path.find("Easy") != std::string::npos) {
+		return std::make_unique<EasyEnemySpawnStrategy>();
+	}
+	if (path.find("Hard") != std::string::npos) {
+		return std::make_unique<HardEnemySpawnStrategy>();
+	}
+	return std::make_unique<NormalEnemySpawnStrategy>();
+}
+} // namespace
+
 void EnemyManager::Initialize() {
 	enemies_.clear();
 	enemySpawnList_.clear();
@@ -7034,6 +7152,10 @@ void EnemyManager::LoadEnemyCsv(const std::string& path) {
 	}
 
 	static std::mt19937_64 rng{123456789ull};
+	// Strategy Pattern:
+	// このロード処理内では具体的な難易度クラスを直接扱わず、
+	// 選択済みの戦略に敵データ補正を任せる。
+	const std::unique_ptr<IEnemySpawnStrategy> spawnStrategy = CreateEnemySpawnStrategy(path);
 
 	for (auto& r : root["randomAreas"]) {
 		const int32_t count = r.value("count", 0);
@@ -7086,6 +7208,9 @@ void EnemyManager::LoadEnemyCsv(const std::string& path) {
 			d.bulletSpeed = bulletSpeed;
 			d.bulletLifeTime = bulletLifeTime;
 
+			// Strategy Pattern:
+			// JSON から作った基本出現データに、難易度ごとの補正を適用する。
+			spawnStrategy->Apply(d);
 			enemySpawnList_.push_back(d);
 		}
 	}
@@ -7104,33 +7229,42 @@ void EnemyManager::SpawnEnemiesByCsv(const Vector3& playerPos) {
 
 		const Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
 
-		if (d.type == "turret") {
-			auto turret = std::make_unique<TurretEnemy>();
-			turret->GetWorldTransform().translation_ = spawnPos;
-
-			turret->SetInitialHP(d.hp);
-			turret->SetColliderRadius(d.radius);
-			turret->SetShootIntervalFrames(d.shootIntervalFrames);
-			turret->SetBulletSpeed(d.bulletSpeed);
-			turret->SetBulletLifeTime(d.bulletLifeTime);
-
-			turret->Initialize();
-			enemies_.push_back(std::move(turret));
-		} else {
-			auto seeker = std::make_unique<SeekerEnemy>();
-			seeker->SetInitialPosition(spawnPos);
-			seeker->SetSpeed(d.speed);
-			seeker->SetTurnRate(d.turnRate);
-			seeker->SetInitialHP(d.hp);
-			seeker->SetColliderRadius(d.radius);
-			seeker->SetLifeTime(d.lifeTime);
-
-			seeker->Initialize();
-			enemies_.push_back(std::move(seeker));
+		auto enemy = CreateEnemy_(d, spawnPos);
+		if (enemy) {
+			enemies_.push_back(std::move(enemy));
 		}
 
 		enemySpawnList_.erase(enemySpawnList_.begin());
 	}
+}
+
+std::unique_ptr<CharacterBase> EnemyManager::CreateEnemy_(const EnemySpawnData& spawnData, const Vector3& spawnPos) const {
+	// Factory Method Pattern:
+	// EnemyManager requests creation, and each enemy type setup is centralized here.
+	if (spawnData.type == "turret") {
+		auto turret = std::make_unique<TurretEnemy>();
+		turret->GetWorldTransform().translation_ = spawnPos;
+
+		turret->SetInitialHP(spawnData.hp);
+		turret->SetColliderRadius(spawnData.radius);
+		turret->SetShootIntervalFrames(spawnData.shootIntervalFrames);
+		turret->SetBulletSpeed(spawnData.bulletSpeed);
+		turret->SetBulletLifeTime(spawnData.bulletLifeTime);
+
+		turret->Initialize();
+		return turret;
+	}
+
+	auto seeker = std::make_unique<SeekerEnemy>();
+	seeker->SetInitialPosition(spawnPos);
+	seeker->SetSpeed(spawnData.speed);
+	seeker->SetTurnRate(spawnData.turnRate);
+	seeker->SetInitialHP(spawnData.hp);
+	seeker->SetColliderRadius(spawnData.radius);
+	seeker->SetLifeTime(spawnData.lifeTime);
+
+	seeker->Initialize();
+	return seeker;
 }
 
 void EnemyManager::Update(float dt, const Vector3& playerPos) {
@@ -7193,6 +7327,7 @@ std::vector<CharacterBase*> EnemyManager::GetNearestEnemies(const KamataEngine::
 void EnemyManager::RemoveDeadEnemies() {
 	enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
 }
+
 
 ============================================================
 File Path: DirectXGame/Managers/EnemyManager/EnemyManager.h
@@ -7280,6 +7415,11 @@ private:
 	/// 蜃ｺ迴ｾ譎る俣縺ｫ驕斐＠縺滓雰繧堤函謌舌☆繧・
 	/// </summary>
 	void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
+
+	/// <summary>
+	/// Factory Method Pattern: creates an enemy instance from EnemySpawnData.
+	/// </summary>
+	std::unique_ptr<CharacterBase> CreateEnemy_(const EnemySpawnData& spawnData, const KamataEngine::Vector3& spawnPos) const;
 
 private:
 	// ===== 螳壽焚・医ョ繝輔か繝ｫ繝亥､・・====
@@ -8829,7 +8969,77 @@ constexpr Vector4 kExplosionHotColor{1.0f, 0.82f, 0.22f, 1.0f};
 constexpr Vector4 kExplosionFireColor{1.0f, 0.24f, 0.04f, 0.0f};
 constexpr Vector4 kSmokeStartColor{0.24f, 0.22f, 0.20f, 0.55f};
 constexpr Vector4 kSmokeEndColor{0.03f, 0.03f, 0.04f, 0.0f};
+
+class IPauseMenuCommand {
+public:
+	virtual ~IPauseMenuCommand() = default;
+
+	// Command Pattern:
+	// ポーズメニューで選ばれた処理を Execute() に閉じ込める。
+	// 呼び出し側は具体的な処理内容を知らずにコマンドを実行できる。
+	virtual void Execute(GameScene& gameScene) = 0;
+};
+
+// ResumeCommand: ゲームへ戻る処理を表すコマンド。
+class ResumeCommand : public IPauseMenuCommand {
+public:
+	void Execute(GameScene& gameScene) override {
+		GameSceneUpdateExecutor::ExecuteResumeCommand(gameScene);
+	}
+};
+
+// RetryCommand: 現在のステージをやり直す処理を表すコマンド。
+class RetryCommand : public IPauseMenuCommand {
+public:
+	void Execute(GameScene& gameScene) override {
+		GameSceneUpdateExecutor::ExecuteRetryCommand(gameScene);
+	}
+};
+
+// ToTitleCommand: タイトル画面へ戻る処理を表すコマンド。
+class ToTitleCommand : public IPauseMenuCommand {
+public:
+	void Execute(GameScene& gameScene) override {
+		GameSceneUpdateExecutor::ExecuteToTitleCommand(gameScene);
+	}
+};
+
+std::unique_ptr<IPauseMenuCommand> CreatePauseMenuCommand(PauseMenu::Result result) {
+	// Command Pattern: each menu decision is encapsulated as an executable command.
+	// PauseMenu は「何が選ばれたか」だけを返し、実際の処理は対応する Command に任せる。
+	switch (result) {
+	case PauseMenu::Result::Resume:
+		return std::make_unique<ResumeCommand>();
+	case PauseMenu::Result::Retry:
+		return std::make_unique<RetryCommand>();
+	case PauseMenu::Result::ToTitle:
+		return std::make_unique<ToTitleCommand>();
+	default:
+		return nullptr;
+	}
+}
 } // namespace
+
+void GameSceneUpdateExecutor::ExecuteResumeCommand(GameScene& gameScene) {
+	// Command Pattern:
+	// ResumeCommand の実処理。GameScene の private メンバー更新は friend である Executor が担当する。
+	gameScene.pauseMenu_->StartCloseAnimation();
+	gameScene.isPaused_ = false;
+}
+
+void GameSceneUpdateExecutor::ExecuteRetryCommand(GameScene& gameScene) {
+	// Command Pattern:
+	// RetryCommand の実処理。次のシーン生成時にリトライとして扱われるフラグを立てる。
+	gameScene.requestRetry_ = true;
+	gameScene.isEnd_ = true;
+}
+
+void GameSceneUpdateExecutor::ExecuteToTitleCommand(GameScene& gameScene) {
+	// Command Pattern:
+	// ToTitleCommand の実処理。タイトルへ戻る遷移要求を立てる。
+	gameScene.requestToTitle_ = true;
+	gameScene.isEnd_ = true;
+}
 
 void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	// ヒットストップは複数箇所から要求されるため、現在の残りフレームより長い要求だけを採用する
@@ -8862,24 +9072,11 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	if (gameScene.isPaused_) {
 		gameScene.pauseMenu_->Update();
 
-		switch (gameScene.pauseMenu_->GetResult()) {
-		case PauseMenu::Result::Resume:
-			gameScene.pauseMenu_->StartCloseAnimation();
-			gameScene.isPaused_ = false;
-			break;
-
-		case PauseMenu::Result::Retry:
-			gameScene.requestRetry_ = true;
-			gameScene.isEnd_ = true;
-			break;
-
-		case PauseMenu::Result::ToTitle:
-			gameScene.requestToTitle_ = true;
-			gameScene.isEnd_ = true;
-			break;
-
-		default:
-			break;
+		// Command Pattern:
+		// 選択結果から Command を作成し、Execute() だけを呼ぶ。
+		// メニュー項目を増やす場合は Command クラスを追加すれば分岐の肥大化を抑えられる。
+		if (auto command = CreatePauseMenuCommand(gameScene.pauseMenu_->GetResult())) {
+			command->Execute(gameScene);
 		}
 		return;
 	}
@@ -9420,6 +9617,13 @@ public:
 	/// </summary>
 	static void Update(GameScene& gameScene);
 
+	/// <summary>
+	/// Command Pattern support: pause menu command actions.
+	/// </summary>
+	static void ExecuteResumeCommand(GameScene& gameScene);
+	static void ExecuteRetryCommand(GameScene& gameScene);
+	static void ExecuteToTitleCommand(GameScene& gameScene);
+
 private:
 	/// <summary>
 	/// カウントダウンの更新処理
@@ -9506,6 +9710,7 @@ private:
 	/// </summary>
 	static void StartExplosionAtPlayer(GameScene& gameScene, float scale);
 };
+
 
 ============================================================
 File Path: DirectXGame/Scenes/Introduction/IntroductionScene.cpp
