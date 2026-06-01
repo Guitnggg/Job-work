@@ -30,9 +30,11 @@ void PauseMenu::Initialize() {
 		texHandles[i] = TextureManager::Load(kMenuTexPaths[i]);
 	}
 
-	const uint32_t resumeTex = texHandles[static_cast<int>(MenuTex::HowTo)];
+	const uint32_t resumeTex = texHandles[static_cast<int>(MenuTex::Resume)];
+	const uint32_t howToTex = texHandles[static_cast<int>(MenuTex::HowTo)];
 	const uint32_t restartTex = texHandles[static_cast<int>(MenuTex::Restart)];
 	const uint32_t titleTex = texHandles[static_cast<int>(MenuTex::ToTitle)];
+	const uint32_t howToPlayTex = texHandles[static_cast<int>(MenuTex::HowToPlay)];
 	const uint32_t whiteTex = texHandles[static_cast<int>(MenuTex::White)];
 
 	// --- 背景 ---
@@ -42,7 +44,7 @@ void PauseMenu::Initialize() {
 	// --- メニュー ---
 	menuSprites_.resize(kMenuCount);
 
-	const uint32_t menuTex[kMenuCount] = {resumeTex, restartTex, titleTex};
+	const uint32_t menuTex[kMenuCount] = {resumeTex, howToTex, restartTex, titleTex};
 
 	for (int i = 0; i < kMenuCount; ++i) {
 		Vector2 pos = basePos_;
@@ -55,6 +57,10 @@ void PauseMenu::Initialize() {
 	// --- カーソル ---
 	cursorSprite_.reset(Sprite::Create(whiteTex, basePos_, {1, 1, 0, 1}));
 	cursorSprite_->SetSize(kCursorBaseSize);
+
+	howToSprite_.reset(Sprite::Create(howToPlayTex, {kScreenWidth * 0.5f, kScreenHeight * 0.5f}, {1, 1, 1, 1}));
+	howToSprite_->SetAnchorPoint({0.5f, 0.5f});
+	howToSprite_->SetSize(kHowToSize);
 }
 
 // =========================
@@ -65,12 +71,14 @@ void PauseMenu::StartOpenAnimation() {
 	scale_ = kStartScale;
 	isOpening_ = true;
 	isClosing_ = false;
+	isHowToOpen_ = false;
 }
 
 void PauseMenu::StartCloseAnimation() {
 	animTimer_ = 0.0f;
 	isClosing_ = true;
 	isOpening_ = false;
+	isHowToOpen_ = false;
 }
 
 // =========================
@@ -107,6 +115,13 @@ void PauseMenu::Update() {
 		return;
 	}
 
+	if (isHowToOpen_) {
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_ESCAPE)) {
+			isHowToOpen_ = false;
+		}
+		return;
+	}
+
 	MoveCursor();
 
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
@@ -115,9 +130,12 @@ void PauseMenu::Update() {
 			result_ = Result::Resume;
 			break;
 		case 1:
-			result_ = Result::Retry;
+			isHowToOpen_ = true;
 			break;
 		case 2:
+			result_ = Result::Retry;
+			break;
+		case 3:
 			result_ = Result::ToTitle;
 			break;
 		}
@@ -129,11 +147,11 @@ void PauseMenu::Update() {
 // =========================
 void PauseMenu::MoveCursor() {
 
-	if (Input::GetInstance()->TriggerKey(DIK_UP)) {
+	if (Input::GetInstance()->TriggerKey(DIK_W)) {
 		selectIndex_ = (selectIndex_ + kMenuCount - 1) % kMenuCount;
 	}
 
-	if (Input::GetInstance()->TriggerKey(DIK_DOWN)) {
+	if (Input::GetInstance()->TriggerKey(DIK_S)) {
 		selectIndex_ = (selectIndex_ + 1) % kMenuCount;
 	}
 
@@ -158,4 +176,8 @@ void PauseMenu::Draw() {
 
 	cursorSprite_->SetSize({kCursorBaseSize.x * scale_, kCursorBaseSize.y * scale_});
 	cursorSprite_->Draw();
+
+	if (isHowToOpen_ && howToSprite_) {
+		howToSprite_->Draw();
+	}
 }

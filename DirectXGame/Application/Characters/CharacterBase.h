@@ -15,6 +15,18 @@
 class CharacterBase {
 public:
 	/// <summary>
+	/// 最後に受けたダメージソース
+	/// </summary>
+	enum class DamageSource {
+		Unknown,
+		Bullet,
+		Laser,
+		HomingMissile,
+		Collision
+	};
+
+public:
+	/// <summary>
 	/// 仮想デストラクタ
 	/// </summary>
 	virtual ~CharacterBase() = default;
@@ -89,6 +101,11 @@ public: /// === Getters === ///
 	/// </summary>
 	int32_t GetMaxHP() const { return maxHp_; }
 
+	/// <summary>
+	/// 最後に受けたダメージソースを取得する
+	/// </summary>
+	DamageSource GetLastDamageSource() const { return lastDamageSource_; }
+
 public: /// === Setters === ///
 	/// <summary>
 	/// 親の設定（RailCamera など）
@@ -115,6 +132,11 @@ public: /// === Setters === ///
 	/// </summary>
 	void SetHP(int32_t hp) { hp_ = hp; }
 
+	/// <summary>
+	/// 最後に受けたダメージソースを記録する
+	/// </summary>
+	void SetLastDamageSource(DamageSource source) { lastDamageSource_ = source; }
+
 protected:
 	// ワールド変換情報
 	KamataEngine::WorldTransform worldTransform_;
@@ -130,4 +152,7 @@ protected:
 
 	// 最大体力
 	int32_t maxHp_ = 0;
+
+	// 
+	DamageSource lastDamageSource_ = DamageSource::Unknown;
 };

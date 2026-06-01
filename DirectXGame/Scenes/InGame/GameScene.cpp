@@ -336,35 +336,37 @@ void GameScene::Draw() {
 	}
 
 	// 操作UI
-	if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
-		const bool isWPressed = input_->PushKey(DIK_W);
-		const bool isAPressed = input_->PushKey(DIK_A);
-		const bool isSPressed = input_->PushKey(DIK_S);
-		const bool isDPressed = input_->PushKey(DIK_D);
-		const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
+	if (!isPaused_) {
+		if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
+			const bool isWPressed = input_->PushKey(DIK_W);
+			const bool isAPressed = input_->PushKey(DIK_A);
+			const bool isSPressed = input_->PushKey(DIK_S);
+			const bool isDPressed = input_->PushKey(DIK_D);
+			const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
 
-		ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}, keySize, isWPressed);
-		ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isAPressed);
-		ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isSPressed);
-		ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isDPressed);
+			ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}, keySize, isWPressed);
+			ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isAPressed);
+			ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isSPressed);
+			ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isDPressed);
 
-		wasdWSprite_->Draw();
-		wasdASprite_->Draw();
-		wasdSSprite_->Draw();
-		wasdDSprite_->Draw();
-	}
+			wasdWSprite_->Draw();
+			wasdASprite_->Draw();
+			wasdSSprite_->Draw();
+			wasdDSprite_->Draw();
+		}
 
-	if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
-		const bool isLeftPressed = input_->IsPressMouse(0);
-		const bool isRightPressed = input_->IsPressMouse(1);
-		const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
+		if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
+			const bool isLeftPressed = input_->IsPressMouse(0);
+			const bool isRightPressed = input_->IsPressMouse(1);
+			const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
 
-		ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX_, kMouseBaseY_}, mouseButtonSize, isLeftPressed);
-		ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}, mouseButtonSize, isRightPressed);
+			ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX_, kMouseBaseY_}, mouseButtonSize, isLeftPressed);
+			ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}, mouseButtonSize, isRightPressed);
 
-		mouseBaseSprite_->Draw();
-		mouseLeftSprite_->Draw();
-		mouseRightSprite_->Draw();
+			mouseBaseSprite_->Draw();
+			mouseLeftSprite_->Draw();
+			mouseRightSprite_->Draw();
+		}
 	}
 
 	// Pauseガイド

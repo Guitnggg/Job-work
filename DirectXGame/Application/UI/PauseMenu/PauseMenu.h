@@ -47,6 +47,8 @@ public:
 	/// </summary>
 	Result GetResult() const { return result_; }
 
+	bool IsHowToOpen() const { return isHowToOpen_; }
+
 	/// <summary>
 	/// 選択結果を見決定状態に戻す
 	/// </summary>
@@ -70,23 +72,25 @@ private:
 
 private:
 	// ===== テクスチャ =====
-	enum class MenuTex { HowTo, Restart, ToTitle, White, Count };
+	enum class MenuTex { Resume, HowTo, Restart, ToTitle, HowToPlay, White, Count };
 
-	static constexpr const char* kMenuTexPaths[static_cast<int>(MenuTex::Count)] = {"./Resources/UI/HowTo.png", "./Resources/UI/Restart.png", "./Resources/UI/ToTitle.png", "./Resources/White1x1.png"};
+	static constexpr const char* kMenuTexPaths[static_cast<int>(MenuTex::Count)] = {
+	    "./Resources/UI/HowTo.png", "./Resources/UI/HowToMenu.png", "./Resources/UI/Restart.png", "./Resources/UI/Totitle.png", "./Resources/UI/HowToPlay.png", "./Resources/White1x1.png"};
 
 	// ===== 画面・UI定数 =====
 	static constexpr float kScreenWidth = 1280.0f;
 	static constexpr float kScreenHeight = 720.0f;
 
-	static constexpr KamataEngine::Vector2 kMenuBaseSize = {360.0f, 64.0f};
+	static constexpr KamataEngine::Vector2 kMenuBaseSize = {300.0f, 40.0f};
 	static constexpr KamataEngine::Vector2 kCursorBaseSize = {20.0f, 20.0f};
+	static constexpr KamataEngine::Vector2 kHowToSize = {960.0f, 540.0f};
 
 	static constexpr float kMenuSpacing = 72.0f;
 	static constexpr float kCursorOffsetX = 40.0f;
 
 	static constexpr float kBackgroundAlpha = 0.6f;
 
-	static constexpr int kMenuCount = 3;
+	static constexpr int kMenuCount = 4;
 
 	// ===== アニメーション定数 =====
 	static constexpr float kAnimDuration = 0.25f;
@@ -104,10 +108,13 @@ private:
 	float animTimer_ = 0.0f; // アニメーションの経過時間
 	float scale_ = 1.0f;     // メニュー全体の表示スケール
 
+	bool isHowToOpen_ = false;
+
 	KamataEngine::Vector2 basePos_ = {kScreenWidth * 0.5f, kScreenHeight * 0.45f};
 
 	// ===== スプライト =====
 	std::unique_ptr<KamataEngine::Sprite> bgSprite_;                 // 半透明の背景
 	std::vector<std::unique_ptr<KamataEngine::Sprite>> menuSprites_; // メニュー項目画像
 	std::unique_ptr<KamataEngine::Sprite> cursorSprite_;             // 選択位置を示すカーソル
+	std::unique_ptr<KamataEngine::Sprite> howToSprite_;
 };

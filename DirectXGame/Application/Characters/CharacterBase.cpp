@@ -4,6 +4,9 @@ using namespace KamataEngine;
 
 // キャラクター共通のワールド座標と球体コライダーを初期化する
 void CharacterBase::Initialize() {
+	// 
+	lastDamageSource_ = DamageSource::Unknown;
+
 	// --- ワールド変換初期化 ---
 	worldTransform_.Initialize();
 

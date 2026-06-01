@@ -7,6 +7,9 @@
 
 using namespace KamataEngine;
 
+// 各種 GPU パーティクルで使う色定義。
+// Emit 呼び出し側では「発生時の色」と「寿命切れ時の色」を渡すため、
+// エンジン煙・ミサイル噴射・被弾火花・爆発煙ごとに用途が分かる名前にしている。
 namespace {
 constexpr Vector4 kEngineCoreColor{0.35f, 0.85f, 1.0f, 0.72f};
 constexpr Vector4 kEngineFadeColor{0.02f, 0.10f, 0.28f, 0.0f};
@@ -23,14 +26,22 @@ constexpr Vector4 kSmokeEndColor{0.03f, 0.03f, 0.04f, 0.0f};
 } // namespace
 
 void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
+	// ヒットストップは複数箇所から要求されるため、現在の残りフレームより長い要求だけを採用する
 	if (gameScene.hitStopRequestFrames_ > gameScene.hitStopFrames_) {
 		gameScene.hitStopFrames_ = gameScene.hitStopRequestFrames_;
 		gameScene.hitStopRequestFrames_ = 0;
 	}
 
+	// timeScale_ はカウントダウン直後・クリア/失敗演出でスローを掛けるため、以降の更新処理にはスケール済みの固定デルタを渡す
 	const float dt = gameScene.kFixedDeltaTime_ * gameScene.timeScale_;
 
+	// ESC でポーズを開閉する。HowTo 表示中だけは ESC をポーズ解除に使わず、メニュー側へ処理を渡す
 	if (gameScene.input_->TriggerKey(DIK_ESCAPE) && gameScene.state_ == GameState::Playing) {
+		if (gameScene.isPaused_ && gameScene.pauseMenu_->IsHowToOpen()) {
+			gameScene.pauseMenu_->Update();
+			return;
+		}
+
 		gameScene.isPaused_ = !gameScene.isPaused_;
 
 		if (gameScene.isPaused_) {
@@ -41,6 +52,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		}
 	}
 
+	// ポーズ中はゲーム本体を進めず、メニュー操作の結果だけを監視する
 	if (gameScene.isPaused_) {
 		gameScene.pauseMenu_->Update();
 
@@ -67,9 +79,12 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	}
 
 	if (gameScene.state_ == GameState::Playing) {
+		// デバック停止中は演出も含めたゲーム更新を完全に止める
 		if (gameScene.isDebugUpdatePaused_) {
 			return;
 		}
+
+		// ヒットストップ中は戦闘・演出を止め、ロックオン/UI/カメらだけ最低限更新して表示崩れを防ぐ
 		if (gameScene.result_ == GameResult::None && gameScene.hitStopFrames_ > 0) {
 			--gameScene.hitStopFrames_;
 			UpdateLockOnMarkers(gameScene);
@@ -194,22 +209,28 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 				}
 				if (nowHp < prevHp && e->IsDead()) {
 					const Vector3 deadPos = e->GetWorldTranslation();
-					for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_; ++i) {
+					const bool killedByMissile = e->GetLastDamageSource() == CharacterBase::DamageSource::HomingMissile;
+					const float killEffectScale = killedByMissile ? 2.0f : 1.0f;
+					const int fireBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_ * killEffectScale);
+					const int smokeBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * killEffectScale);
+					for (int i = 0; i < fireBurstCount; ++i) {
 						Vector3 v = {
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.6f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.6f),
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.3f)};
+							  randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale),
+							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.3f * killEffectScale) };
 						gameScene.damageSmokeEmitter_->Emit(
-						    deadPos, v, gameScene.kDamageGpuLife_ * 1.0f, gameScene.kDamageGpuStartScale_ * 1.2f, gameScene.kDamageGpuEndScale_ * 1.8f, kExplosionHotColor, kExplosionFireColor);
+							deadPos, v, gameScene.kDamageGpuLife_ * 1.0f, gameScene.kDamageGpuStartScale_ * 1.2f * killEffectScale, gameScene.kDamageGpuEndScale_ * 1.8f * killEffectScale,
+							kExplosionHotColor, kExplosionFireColor);
 					}
-					for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
+					for (int i = 0; i < smokeBurstCount; ++i) {
 						Vector3 v = {
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.75f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.75f),
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.55f)};
+						   randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.75f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.75f * killEffectScale),
+							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.55f * killEffectScale) };
 						gameScene.damageSmokeEmitter_->Emit(
-						    deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f, gameScene.kDamageGpuEndScale_ * 3.0f, kSmokeStartColor, kSmokeEndColor);
+							deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f * killEffectScale, gameScene.kDamageGpuEndScale_ * 3.0f * killEffectScale,
+							kSmokeStartColor, kSmokeEndColor);
 					}
 					if (gameScene.railCamera_) {
-						gameScene.railCamera_->AddShake({randDist(enemyHitRng), randDist(enemyHitRng), 0.0f}, 0.7f);
+						gameScene.railCamera_->AddShake({ randDist(enemyHitRng), randDist(enemyHitRng), 0.0f }, 0.7f * killEffectScale);
 					}
 					gameScene.hitStopRequestFrames_ = (std::max)(gameScene.hitStopRequestFrames_, gameScene.kEnemyHitStopFrames_);
 
