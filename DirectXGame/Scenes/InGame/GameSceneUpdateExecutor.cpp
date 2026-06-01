@@ -23,7 +23,77 @@ constexpr Vector4 kExplosionHotColor{1.0f, 0.82f, 0.22f, 1.0f};
 constexpr Vector4 kExplosionFireColor{1.0f, 0.24f, 0.04f, 0.0f};
 constexpr Vector4 kSmokeStartColor{0.24f, 0.22f, 0.20f, 0.55f};
 constexpr Vector4 kSmokeEndColor{0.03f, 0.03f, 0.04f, 0.0f};
+
+class IPauseMenuCommand {
+public:
+	virtual ~IPauseMenuCommand() = default;
+
+	// Command Pattern:
+	// ポーズメニューで選ばれた処理を Execute() に閉じ込める。
+	// 呼び出し側は具体的な処理内容を知らずにコマンドを実行できる。
+	virtual void Execute(GameScene& gameScene) = 0;
+};
+
+// ResumeCommand: ゲームへ戻る処理を表すコマンド。
+class ResumeCommand : public IPauseMenuCommand {
+public:
+	void Execute(GameScene& gameScene) override {
+		GameSceneUpdateExecutor::ExecuteResumeCommand(gameScene);
+	}
+};
+
+// RetryCommand: 現在のステージをやり直す処理を表すコマンド。
+class RetryCommand : public IPauseMenuCommand {
+public:
+	void Execute(GameScene& gameScene) override {
+		GameSceneUpdateExecutor::ExecuteRetryCommand(gameScene);
+	}
+};
+
+// ToTitleCommand: タイトル画面へ戻る処理を表すコマンド。
+class ToTitleCommand : public IPauseMenuCommand {
+public:
+	void Execute(GameScene& gameScene) override {
+		GameSceneUpdateExecutor::ExecuteToTitleCommand(gameScene);
+	}
+};
+
+std::unique_ptr<IPauseMenuCommand> CreatePauseMenuCommand(PauseMenu::Result result) {
+	// Command Pattern: each menu decision is encapsulated as an executable command.
+	// PauseMenu は「何が選ばれたか」だけを返し、実際の処理は対応する Command に任せる。
+	switch (result) {
+	case PauseMenu::Result::Resume:
+		return std::make_unique<ResumeCommand>();
+	case PauseMenu::Result::Retry:
+		return std::make_unique<RetryCommand>();
+	case PauseMenu::Result::ToTitle:
+		return std::make_unique<ToTitleCommand>();
+	default:
+		return nullptr;
+	}
+}
 } // namespace
+
+void GameSceneUpdateExecutor::ExecuteResumeCommand(GameScene& gameScene) {
+	// Command Pattern:
+	// ResumeCommand の実処理。GameScene の private メンバー更新は friend である Executor が担当する。
+	gameScene.pauseMenu_->StartCloseAnimation();
+	gameScene.isPaused_ = false;
+}
+
+void GameSceneUpdateExecutor::ExecuteRetryCommand(GameScene& gameScene) {
+	// Command Pattern:
+	// RetryCommand の実処理。次のシーン生成時にリトライとして扱われるフラグを立てる。
+	gameScene.requestRetry_ = true;
+	gameScene.isEnd_ = true;
+}
+
+void GameSceneUpdateExecutor::ExecuteToTitleCommand(GameScene& gameScene) {
+	// Command Pattern:
+	// ToTitleCommand の実処理。タイトルへ戻る遷移要求を立てる。
+	gameScene.requestToTitle_ = true;
+	gameScene.isEnd_ = true;
+}
 
 void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	// ヒットストップは複数箇所から要求されるため、現在の残りフレームより長い要求だけを採用する
@@ -56,24 +126,11 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	if (gameScene.isPaused_) {
 		gameScene.pauseMenu_->Update();
 
-		switch (gameScene.pauseMenu_->GetResult()) {
-		case PauseMenu::Result::Resume:
-			gameScene.pauseMenu_->StartCloseAnimation();
-			gameScene.isPaused_ = false;
-			break;
-
-		case PauseMenu::Result::Retry:
-			gameScene.requestRetry_ = true;
-			gameScene.isEnd_ = true;
-			break;
-
-		case PauseMenu::Result::ToTitle:
-			gameScene.requestToTitle_ = true;
-			gameScene.isEnd_ = true;
-			break;
-
-		default:
-			break;
+		// Command Pattern:
+		// 選択結果から Command を作成し、Execute() だけを呼ぶ。
+		// メニュー項目を増やす場合は Command クラスを追加すれば分岐の肥大化を抑えられる。
+		if (auto command = CreatePauseMenuCommand(gameScene.pauseMenu_->GetResult())) {
+			command->Execute(gameScene);
 		}
 		return;
 	}

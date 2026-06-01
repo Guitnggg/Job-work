@@ -26,12 +26,20 @@ void Bullet::Initialize() {
 	}
 
 	// 状態初期化
-	isDead_ = false;
+	// Object Pool Pattern:
+	// Initialize() 直後はまだ発射されていないため、未使用状態として扱う。
+	// BulletManager::AcquireBullet_() から FireFrom() が呼ばれた時に active になる。
+	isDead_ = true;
 	elapsedTimeSec_ = 0.0f;
 }
 
 // 指定位置と方向から弾を発射状態にし、向き・速度・寿命を設定する
 void Bullet::FireFrom(const Vector3& worldPos, const Vector3& dir) {
+	// Object Pool Pattern:
+	// 再利用された弾でも正しく撃ち直せるように、発射時に寿命と死亡フラグをリセットする。
+	isDead_ = false;
+	elapsedTimeSec_ = 0.0f;
+
 	// 発射位置と進行方向を設定
 	worldTransform_.translation_ = worldPos;
 	dir_ = dir;

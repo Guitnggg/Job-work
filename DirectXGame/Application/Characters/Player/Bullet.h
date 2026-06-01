@@ -42,6 +42,12 @@ public:
 	/// </summary>
 	bool IsDead() const override { return isDead_; }
 
+	/// <summary>
+	/// Object Pool Pattern: marks this bullet as available for reuse.
+	/// 弾を破棄せず、未使用状態としてプールに戻すための関数。
+	/// </summary>
+	void Deactivate() { isDead_ = true; }
+
 public:
 	/// <summary>
 	/// 発射処理
