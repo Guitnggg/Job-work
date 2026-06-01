@@ -82,6 +82,11 @@ private:
 	/// </summary>
 	void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
 
+	/// <summary>
+	/// Factory Method Pattern: creates an enemy instance from EnemySpawnData.
+	/// </summary>
+	std::unique_ptr<CharacterBase> CreateEnemy_(const EnemySpawnData& spawnData, const KamataEngine::Vector3& spawnPos) const;
+
 private:
 	// ===== 螳壽焚・医ョ繝輔か繝ｫ繝亥､・・====
 	static constexpr float kDefaultSeekerSpeed = 0.2f;

@@ -103,33 +103,42 @@ void EnemyManager::SpawnEnemiesByCsv(const Vector3& playerPos) {
 
 		const Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
 
-		if (d.type == "turret") {
-			auto turret = std::make_unique<TurretEnemy>();
-			turret->GetWorldTransform().translation_ = spawnPos;
-
-			turret->SetInitialHP(d.hp);
-			turret->SetColliderRadius(d.radius);
-			turret->SetShootIntervalFrames(d.shootIntervalFrames);
-			turret->SetBulletSpeed(d.bulletSpeed);
-			turret->SetBulletLifeTime(d.bulletLifeTime);
-
-			turret->Initialize();
-			enemies_.push_back(std::move(turret));
-		} else {
-			auto seeker = std::make_unique<SeekerEnemy>();
-			seeker->SetInitialPosition(spawnPos);
-			seeker->SetSpeed(d.speed);
-			seeker->SetTurnRate(d.turnRate);
-			seeker->SetInitialHP(d.hp);
-			seeker->SetColliderRadius(d.radius);
-			seeker->SetLifeTime(d.lifeTime);
-
-			seeker->Initialize();
-			enemies_.push_back(std::move(seeker));
+		auto enemy = CreateEnemy_(d, spawnPos);
+		if (enemy) {
+			enemies_.push_back(std::move(enemy));
 		}
 
 		enemySpawnList_.erase(enemySpawnList_.begin());
 	}
+}
+
+std::unique_ptr<CharacterBase> EnemyManager::CreateEnemy_(const EnemySpawnData& spawnData, const Vector3& spawnPos) const {
+	// Factory Method Pattern:
+	// EnemyManager requests creation, and each enemy type setup is centralized here.
+	if (spawnData.type == "turret") {
+		auto turret = std::make_unique<TurretEnemy>();
+		turret->GetWorldTransform().translation_ = spawnPos;
+
+		turret->SetInitialHP(spawnData.hp);
+		turret->SetColliderRadius(spawnData.radius);
+		turret->SetShootIntervalFrames(spawnData.shootIntervalFrames);
+		turret->SetBulletSpeed(spawnData.bulletSpeed);
+		turret->SetBulletLifeTime(spawnData.bulletLifeTime);
+
+		turret->Initialize();
+		return turret;
+	}
+
+	auto seeker = std::make_unique<SeekerEnemy>();
+	seeker->SetInitialPosition(spawnPos);
+	seeker->SetSpeed(spawnData.speed);
+	seeker->SetTurnRate(spawnData.turnRate);
+	seeker->SetInitialHP(spawnData.hp);
+	seeker->SetColliderRadius(spawnData.radius);
+	seeker->SetLifeTime(spawnData.lifeTime);
+
+	seeker->Initialize();
+	return seeker;
 }
 
 void EnemyManager::Update(float dt, const Vector3& playerPos) {
