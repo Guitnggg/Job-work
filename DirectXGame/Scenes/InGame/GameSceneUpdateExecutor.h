@@ -13,6 +13,13 @@ public:
 	/// </summary>
 	static void Update(GameScene& gameScene);
 
+	/// <summary>
+	/// Command Pattern support: pause menu command actions.
+	/// </summary>
+	static void ExecuteResumeCommand(GameScene& gameScene);
+	static void ExecuteRetryCommand(GameScene& gameScene);
+	static void ExecuteToTitleCommand(GameScene& gameScene);
+
 private:
 	/// <summary>
 	/// カウントダウンの更新処理

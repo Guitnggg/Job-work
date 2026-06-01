@@ -10,6 +10,70 @@ using json = nlohmann::json;
 
 using namespace KamataEngine;
 
+namespace {
+// Strategy Pattern:
+// 難易度ごとの敵パラメータ補正を共通インターフェースにする。
+// EnemyManager は「どの難易度か」を意識せず、Apply() を呼ぶだけで補正を適用できる。
+class IEnemySpawnStrategy {
+public:
+	virtual ~IEnemySpawnStrategy() = default;
+	virtual void Apply(EnemyManager::EnemySpawnData& spawnData) const = 0;
+};
+
+// Tutorial は最初の練習用なので、敵速度と弾速を下げ、射撃間隔を長くする。
+class TutorialEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 0.85f;
+		spawnData.bulletSpeed *= 0.85f;
+		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.25f);
+	}
+};
+
+// Easy は Normal より少しだけ易しくするため、敵速度と弾速を抑える。
+class EasyEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 0.9f;
+		spawnData.bulletSpeed *= 0.9f;
+		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.15f);
+	}
+};
+
+// Normal は JSON の設定値をそのまま使う標準戦略。
+class NormalEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData&) const override {}
+};
+
+// Hard は敵を強くする戦略。速度、弾速、HP を上げ、射撃間隔を短くする。
+class HardEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 1.15f;
+		spawnData.bulletSpeed *= 1.15f;
+		spawnData.hp = (std::max)(spawnData.hp, spawnData.hp + 1);
+		spawnData.shootIntervalFrames = (std::max)(1, static_cast<int32_t>(spawnData.shootIntervalFrames * 0.8f));
+	}
+};
+
+std::unique_ptr<IEnemySpawnStrategy> CreateEnemySpawnStrategy(const std::string& path) {
+	// Strategy Pattern: difficulty-specific enemy tuning is selected by the level file.
+	// レベルファイル名から使用する戦略を選択する。新しい難易度を増やす場合は、
+	// IEnemySpawnStrategy の派生クラスと、この分岐を追加すればよい。
+	if (path.find("Tutorial") != std::string::npos) {
+		return std::make_unique<TutorialEnemySpawnStrategy>();
+	}
+	if (path.find("Easy") != std::string::npos) {
+		return std::make_unique<EasyEnemySpawnStrategy>();
+	}
+	if (path.find("Hard") != std::string::npos) {
+		return std::make_unique<HardEnemySpawnStrategy>();
+	}
+	return std::make_unique<NormalEnemySpawnStrategy>();
+}
+} // namespace
+
 void EnemyManager::Initialize() {
 	enemies_.clear();
 	enemySpawnList_.clear();
@@ -33,6 +97,10 @@ void EnemyManager::LoadEnemyCsv(const std::string& path) {
 	}
 
 	static std::mt19937_64 rng{123456789ull};
+	// Strategy Pattern:
+	// このロード処理内では具体的な難易度クラスを直接扱わず、
+	// 選択済みの戦略に敵データ補正を任せる。
+	const std::unique_ptr<IEnemySpawnStrategy> spawnStrategy = CreateEnemySpawnStrategy(path);
 
 	for (auto& r : root["randomAreas"]) {
 		const int32_t count = r.value("count", 0);
@@ -85,6 +153,9 @@ void EnemyManager::LoadEnemyCsv(const std::string& path) {
 			d.bulletSpeed = bulletSpeed;
 			d.bulletLifeTime = bulletLifeTime;
 
+			// Strategy Pattern:
+			// JSON から作った基本出現データに、難易度ごとの補正を適用する。
+			spawnStrategy->Apply(d);
 			enemySpawnList_.push_back(d);
 		}
 	}

@@ -20,6 +20,17 @@ void BulletManager::Initialize() {
 	homingMissiles_.clear();
 	lockedTargets_.clear();
 
+	// Object Pool Pattern:
+	// 通常弾は連射で頻繁に生成・破棄されるため、最初に一定数を生成してプールとして保持する。
+	// 発射時はこの中から未使用(isDead_)の弾を取り出して再利用し、毎回 new/delete しないようにする。
+	bullets_.reserve(kInitialBulletPoolSize);
+	for (int32_t i = 0; i < kInitialBulletPoolSize; ++i) {
+		auto bullet = std::make_unique<Bullet>();
+		bullet->Initialize();
+		bullet->Deactivate();
+		bullets_.push_back(std::move(bullet));
+	}
+
 	fireCooldownFrames_ = 0;
 	burstShotsRemaining_ = 0;
 	isHomingLocking_ = false;
@@ -58,10 +69,12 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 		dir = kForward;
 	}
 
-	auto b = std::make_unique<Bullet>();
-	b->Initialize();
-	b->FireFrom(player->GetWorldTranslation(), dir);
-	bullets_.push_back(std::move(b));
+	// Object Pool Pattern:
+	// 新しい弾を直接生成せず、プールから再利用できる弾を取得して発射する。
+	Bullet* bullet = AcquireBullet_();
+	if (bullet) {
+		bullet->FireFrom(player->GetWorldTranslation(), dir);
+	}
 
 	--burstShotsRemaining_;
 	fireCooldownFrames_ = (burstShotsRemaining_ > 0) ? kBurstIntervalFrames : kBurstCooldownFrames;
@@ -192,11 +205,32 @@ void BulletManager::UpdateBullets_(EnemyManager* enemyManager) {
 }
 
 void BulletManager::RemoveDeadBullets_() {
-	bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(), [](const std::unique_ptr<Bullet>& b) { return !b || b->IsDead(); }), bullets_.end());
+	// Object Pool Pattern:
+	// 通常弾は死んでも vector から削除しない。isDead_ == true の弾として残し、
+	// 次の発射時に AcquireBullet_() で再利用する。
 
 	lasers_.erase(std::remove_if(lasers_.begin(), lasers_.end(), [](const std::unique_ptr<Laser>& r) { return !r || r->IsDead(); }), lasers_.end());
 
 	homingMissiles_.erase(std::remove_if(homingMissiles_.begin(), homingMissiles_.end(), [](const std::unique_ptr<HomingMissile>& m) { return !m || m->IsDead(); }), homingMissiles_.end());
+}
+
+Bullet* BulletManager::AcquireBullet_() {
+	// Object Pool Pattern:
+	// まずプール内の未使用弾を探す。見つかればそのインスタンスを再利用する。
+	for (auto& bullet : bullets_) {
+		if (bullet && bullet->IsDead()) {
+			return bullet.get();
+		}
+	}
+
+	// プールが足りない場合だけ追加生成する。通常時のメモリ確保回数を抑えつつ、
+	// 弾数が一時的に増えた場合にも対応できるようにしている。
+	auto bullet = std::make_unique<Bullet>();
+	bullet->Initialize();
+	bullet->Deactivate();
+	Bullet* result = bullet.get();
+	bullets_.push_back(std::move(bullet));
+	return result;
 }
 
 void BulletManager::Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager) {

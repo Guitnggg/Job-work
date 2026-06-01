@@ -91,6 +91,11 @@ private:
 	/// </summary>
 	void RemoveDeadBullets_();
 
+	/// <summary>
+	/// Object Pool Pattern: returns an inactive bullet from the pool, or grows the pool.
+	/// </summary>
+	Bullet* AcquireBullet_();
+
 private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
 	std::vector<std::unique_ptr<Laser>> lasers_;
@@ -102,6 +107,7 @@ private:
 	static constexpr int32_t kBurstShotCount = 3;
 	static constexpr int32_t kBurstIntervalFrames = 3;  // 繝舌・繧ｹ繝亥・縺ｮ逋ｺ蟆・俣髫・邏・.05遘叩60fps)
 	static constexpr int32_t kBurstCooldownFrames = 18; // 繝舌・繧ｹ繝亥ｾ後・蠕・ｩ滓凾髢・邏・.3遘叩60fps)
+	static constexpr int32_t kInitialBulletPoolSize = 64;
 
 	bool isHomingLocking_ = false;
 	int32_t homingLockFrame_ = 0;
