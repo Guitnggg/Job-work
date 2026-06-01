@@ -18,18 +18,37 @@
 /// ・一定間隔で弾を発射
 /// ・発射した弾は砲台内部で管理する
 /// </summary>
+
+class TurretEnemyStateBase;
+class TurretEnemyActiveState;
+class TurretEnemyShootingState;
+
 class TurretEnemy : public CharacterBase {
 public:
-	/// <summary>初期化処理</summary>
+	/// <summary>
+	/// 
+	/// </summary>
+	TurretEnemy();
+	~TurretEnemy()override;
+
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
 	void Initialize() override;
 
-	/// <summary>更新処理</summary>
+	/// <summary>
+	/// 更新処理
+	/// </summary>
 	void Update() override;
 
-	/// <summary>描画処理</summary>
+	/// <summary>
+	/// 描画処理
+	/// </summary>
 	void Draw(const KamataEngine::Camera* camera) override;
 
-	/// <summary>当たり判定時の処理</summary>
+	/// <summary>
+	/// 当たり判定時の処理
+	/// </summary>
 	void OnCollision(CharacterBase* other) override;
 
 	/// <summary>
@@ -46,33 +65,38 @@ public:
 	const std::vector<std::unique_ptr<Bullet>>& GetBullets() const { return bullets_; }
 
 public: // ---- 外部設定 ----
-	/// <summary>砲台が狙うターゲット位置</summary>
+	/// <summary>
+	/// 砲台が狙うターゲット位置
+	/// </summary>
 	void SetTarget(const KamataEngine::Vector3& worldTarget) {
 		targetPos_ = worldTarget;
 		hasTarget_ = true;
 	}
 
-	/// <summary>射撃間隔（フレーム）</summary>
+	/// <summary>
+	/// 射撃間隔（フレーム）
+	/// </summary>
 	void SetShootIntervalFrames(int32_t frames) { shootIntervalFrames_ = frames; }
 
-	/// <summary>弾速度</summary>
+	/// <summary>
+	/// 弾速度
+	/// </summary>
 	void SetBulletSpeed(float speed) { bulletSpeed_ = speed; }
 
-	/// <summary>弾寿命（秒）</summary>
+	/// <summary>
+	/// 弾寿命（秒）
+	/// </summary>
 	void SetBulletLifeTime(float sec) { bulletLifeTimeSec_ = sec; }
 
-	/// <summary>初期HP</summary>
+	/// <summary>
+	/// 初期HP
+	/// </summary>
 	void SetInitialHP(int32_t hp) { initialHP_ = hp; }
 
-	/// <summary>コライダー半径</summary>
+	/// <summary>
+	/// コライダー半径
+	/// </summary>
 	void SetColliderRadius(float radius);
-
-private:
-	/// <summary>行動状態</summary>
-	enum class State {
-		Active,  // 通常待機
-		Shooting // 射撃中（拡張用）
-	};
 
 private:
 	// ===== 定数 =====
@@ -98,7 +122,8 @@ private:
 	uint32_t flashTextureHandle_ = 0u;
 
 	// ---- 砲台パラメータ ----
-	State state_ = State::Active;
+	std::unique_ptr<TurretEnemyStateBase> state_;
+	std::unique_ptr<TurretEnemyStateBase> pendingState_;
 
 	int32_t initialHP_ = kDefaultHP;
 	float colliderRadius_ = kDefaultColliderRadius;
@@ -139,4 +164,13 @@ private:
 
 	/// <summary>弾の更新と不要弾の削除</summary>
 	void UpdateBullets_();
+
+	void UpdateBodyFeedback_(float dt);
+	void SyncCollider_();
+	void ChangeState_(std::unique_ptr<TurretEnemyStateBase> nextState);
+	void RequestStateChange_(std::unique_ptr<TurretEnemyStateBase> nextState);
+	void ApplyPendingStateChange_();
+
+	friend class TurretEnemyActiveState;
+	friend class TurretEnemyShootingState;
 };

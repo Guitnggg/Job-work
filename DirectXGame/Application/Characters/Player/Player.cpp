@@ -5,6 +5,156 @@
 
 using namespace KamataEngine;
 
+/// <summary>
+/// Player の振る舞いを状態ごとに分離するための State Pattern 用基底クラス。
+/// </summary>
+class PlayerStateBase {
+public:
+	virtual ~PlayerStateBase() = default;
+	virtual void Enter(Player&) {}
+	virtual void Update(Player& player) = 0;
+	virtual void Exit(Player&) {}
+};
+
+/// <summary>
+/// 通常操作状態。移動、被弾演出、ロール開始入力を担当する。
+/// </summary>
+class PlayerNormalState : public PlayerStateBase {
+public:
+	void Enter(Player& player) override {
+		player.isRolling_ = false;
+	}
+
+	void Update(Player& player) override {
+		if (player.hitFlashFrames_ > 0) {
+			--player.hitFlashFrames_;
+		}
+		if (player.invincibleFrames_ > 0) {
+			--player.invincibleFrames_;
+		}
+
+		player.worldTransform_.rotation_.z -= player.lastHitRollOffset_;
+		player.lastHitRollOffset_ = 0.0f;
+
+		player.UpdateMoveAndBank_(Player::kFixedDeltaTime);
+
+		float rollOffset = 0.0f;
+		if (player.hitFlashFrames_ > 0) {
+			float t = 1.0f - static_cast<float>(player.hitFlashFrames_) / Player::kHitFlashDuration;
+			rollOffset = std::sin(t * Player::kHitRollFreq) * Player::kHitRollAmp;
+			float pulse = 1.0f + std::sin(t * Player::kHitPulseFreq) * Player::kHitPulseAmp;
+			player.worldTransform_.scale_ = { player.initialScale_.x * pulse, player.initialScale_.y * pulse, player.initialScale_.z * pulse };
+		}
+		else {
+			player.worldTransform_.scale_ = player.initialScale_;
+		}
+
+		player.worldTransform_.rotation_.z += rollOffset;
+		player.lastHitRollOffset_ = rollOffset;
+
+		if (player.input_ && player.inputEnabled_) {
+			if (player.input_->TriggerKey(DIK_D)) {
+				if (player.doubleTapFrameD_ > 0 && player.doubleTapFrameD_ < Player::kDoubleTapThreshold) {
+					player.StartRoll_(1.0f);
+					player.doubleTapFrameD_ = 0;
+				}
+				else {
+					player.doubleTapFrameD_ = 1;
+				}
+			}
+			if (player.input_->TriggerKey(DIK_A)) {
+				if (player.doubleTapFrameA_ > 0 && player.doubleTapFrameA_ < Player::kDoubleTapThreshold) {
+					player.StartRoll_(-1.0f);
+					player.doubleTapFrameA_ = 0;
+				}
+				else {
+					player.doubleTapFrameA_ = 1;
+				}
+			}
+
+			if (player.doubleTapFrameA_ > 0 && ++player.doubleTapFrameA_ > Player::kDoubleTapThreshold) {
+				player.doubleTapFrameA_ = 0;
+			}
+			if (player.doubleTapFrameD_ > 0 && ++player.doubleTapFrameD_ > Player::kDoubleTapThreshold) {
+				player.doubleTapFrameD_ = 0;
+			}
+		}
+
+		player.worldTransform_.UpdateMatrix();
+		player.SyncCollider_();
+	}
+};
+
+/// <summary>
+/// ロール回避状態。一定時間の移動・回転と無敵扱いを担当する。
+/// </summary>
+class PlayerRollState : public PlayerStateBase {
+public:
+	void Enter(Player& player) override {
+		player.worldTransform_.rotation_.z -= player.lastHitRollOffset_;
+		player.lastHitRollOffset_ = 0.0f;
+	}
+
+	void Update(Player& player) override {
+		if (player.hitFlashFrames_ > 0) {
+			--player.hitFlashFrames_;
+		}
+		if (player.invincibleFrames_ > 0) {
+			--player.invincibleFrames_;
+		}
+
+		player.UpdateRoll_();
+		player.worldTransform_.UpdateMatrix();
+		player.SyncCollider_();
+
+		if (!player.isRolling_) {
+			player.RequestStateChange_(std::make_unique<PlayerNormalState>());
+		}
+	}
+};
+
+/// <summary>
+/// 死亡完了状態。更新処理を行わず、終了済みであることを表す。
+/// </summary>
+class PlayerDeadState : public PlayerStateBase {
+public:
+	void Enter(Player& player) override {
+		player.isRolling_ = false;
+		player.isExploding_ = false;
+		player.isDead_ = true;
+		player.isExplosionFinished_ = true;
+	}
+
+	void Update(Player&) override {}
+};
+
+/// <summary>
+/// 爆発演出状態。死亡時の演出更新だけを担当する。
+/// </summary>
+class PlayerExplosionState : public PlayerStateBase {
+public:
+	void Enter(Player& player) override {
+		player.inputEnabled_ = false;
+		player.isRolling_ = false;
+		player.worldTransform_.rotation_.z -= player.lastHitRollOffset_;
+		player.lastHitRollOffset_ = 0.0f;
+	}
+
+	void Update(Player& player) override {
+		player.UpdateExplosion_();
+		player.worldTransform_.UpdateMatrix();
+		player.SyncCollider_();
+
+		if (player.isExplosionFinished_) {
+			player.RequestStateChange_(std::make_unique<PlayerDeadState>());
+		}
+	}
+};
+
+Player::Player() = default;
+
+Player::~Player() = default;
+
 // プレイヤー本体・武器・当たり判定・演出用パラメータの初期状態を設定する
 void Player::Initialize(Camera* camera) {
 	CharacterBase::Initialize();
@@ -33,78 +183,25 @@ void Player::Initialize(Camera* camera) {
 	isExplosionFinished_ = false;
 	explosionFrame_ = 0;
 	aimYaw_ = 0.0f;
+	inputEnabled_ = true;
+	tookDamageEvent_ = false;
+	hitFlashFrames_ = 0;
+	invincibleFrames_ = 0;
+	lastHitRollOffset_ = 0.0f;
+	doubleTapFrameA_ = 0;
+	doubleTapFrameD_ = 0;
+	pendingState_.reset();
+
+	ChangeState_(std::make_unique<PlayerNormalState>());
 }
 
-// 入力・移動・ロール・攻撃・被弾処理・死亡演出・コライダー同期を更新する
+// 現在の State オブジェクトに更新処理を委譲する
 void Player::Update() {
-	if (isExploding_) {
-		UpdateExplosion_();
-		worldTransform_.UpdateMatrix();
-		if (collider_)
-			collider_->SetTranslate(GetWorldTranslation());
-		return;
+	if (!state_) {
+		ChangeState_(std::make_unique<PlayerNormalState>());
 	}
-	if (isDead_) {
-		return;
-	}
-
-	if (hitFlashFrames_ > 0)
-		--hitFlashFrames_;
-	if (invincibleFrames_ > 0)
-		--invincibleFrames_;
-
-	worldTransform_.rotation_.z -= lastHitRollOffset_;
-	lastHitRollOffset_ = 0.0f;
-
-	if (UpdateRoll_()) {
-		worldTransform_.UpdateMatrix();
-		if (collider_)
-			collider_->SetTranslate(GetWorldTranslation());
-		return;
-	}
-
-	UpdateMoveAndBank_(kFixedDeltaTime);
-
-	float rollOffset = 0.0f;
-	if (hitFlashFrames_ > 0) {
-		float t = 1.0f - static_cast<float>(hitFlashFrames_) / kHitFlashDuration;
-		rollOffset = std::sin(t * kHitRollFreq) * kHitRollAmp;
-		float pulse = 1.0f + std::sin(t * kHitPulseFreq) * kHitPulseAmp;
-		worldTransform_.scale_ = {initialScale_.x * pulse, initialScale_.y * pulse, initialScale_.z * pulse};
-	} else {
-		worldTransform_.scale_ = initialScale_;
-	}
-
-	worldTransform_.rotation_.z += rollOffset;
-	lastHitRollOffset_ = rollOffset;
-
-	if (input_) {
-		if (input_->TriggerKey(DIK_D)) {
-			if (doubleTapFrameD_ > 0 && doubleTapFrameD_ < kDoubleTapThreshold) {
-				StartRoll_(1.0f);
-				doubleTapFrameD_ = 0;
-			} else {
-				doubleTapFrameD_ = 1;
-			}
-		}
-		if (input_->TriggerKey(DIK_A)) {
-			if (doubleTapFrameA_ > 0 && doubleTapFrameA_ < kDoubleTapThreshold) {
-				StartRoll_(-1.0f);
-				doubleTapFrameA_ = 0;
-			} else {
-				doubleTapFrameA_ = 1;
-			}
-		}
-
-		if (doubleTapFrameA_ > 0 && ++doubleTapFrameA_ > kDoubleTapThreshold)
-			doubleTapFrameA_ = 0;
-		if (doubleTapFrameD_ > 0 && ++doubleTapFrameD_ > kDoubleTapThreshold)
-			doubleTapFrameD_ = 0;
-	}
-
-	worldTransform_.UpdateMatrix();
-	if (collider_)
-		collider_->SetTranslate(GetWorldTranslation());
+	state_->Update(*this);
+	ApplyPendingStateChange_();
 }
 
 // ロール回避中の時間と回転を更新し、回避中かどうかを返す
@@ -204,7 +301,7 @@ void Player::Damage(int32_t amount) {
 		Kill();
 }
 
-// プレイヤーを死亡状態にし、爆発演出や入力停止に必要な状態へ切り替える
+// プレイヤーを死亡状態にし、爆発演出状態へ切り替える
 void Player::Kill() {
 	if (isDead_ || isExploding_)
 		return;
@@ -215,6 +312,8 @@ void Player::Kill() {
 	if (audio_ && seExplosion_ >= 0) {
 		audio_->PlayWave(seExplosion_);
 	}
+
+	ChangeState_(std::make_unique<PlayerExplosionState>());
 }
 
 // 死亡後の爆発タイマーと拡大・フェード演出を更新する
@@ -254,4 +353,37 @@ void Player::StartRoll_(float dir) {
 	rollStartPos_ = worldTransform_.translation_;
 	rollEndPos_ = rollStartPos_;
 	rollEndPos_.x += kRollMoveDistance * rollDir_;
+	rollEndPos_.x = std::clamp(rollEndPos_.x, kClampXMin, kClampXMax);
+
+	RequestStateChange_(std::make_unique<PlayerRollState>());
+}
+
+// State Pattern の状態を即時切り替えする
+void Player::ChangeState_(std::unique_ptr<PlayerStateBase> nextState) {
+	if (state_) {
+		state_->Exit(*this);
+	}
+	state_ = std::move(nextState);
+	if (state_) {
+		state_->Enter(*this);
+	}
+}
+
+// State 更新中に安全に切り替えるため、次フレーム用状態を予約する
+void Player::RequestStateChange_(std::unique_ptr<PlayerStateBase> nextState) {
+	pendingState_ = std::move(nextState);
+}
+
+// 予約済みの State を反映する
+void Player::ApplyPendingStateChange_() {
+	if (pendingState_) {
+		ChangeState_(std::move(pendingState_));
+	}
+}
+
+// コライダー位置を現在のワールド座標へ同期する
+void Player::SyncCollider_() {
+	if (collider_) {
+		collider_->SetTranslate(GetWorldTranslation());
+	}
 }

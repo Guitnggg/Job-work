@@ -6,6 +6,8 @@
 #include "audio/Audio.h"
 #include "input/Input.h"
 
+#include <memory>
+
 #include "Application/Characters/CharacterBase.h"
 
 /// <summary>
@@ -17,9 +19,17 @@
 ///
 /// 入力・生存状態・演出制御を一括で管理する。
 /// </summary>
+
+class PlayerStateBase;
+class PlayerNormalState;
+class PlayerRollState;
+class PlayerExplosionState;
+class PlayerDeadState;
+
 class Player : public CharacterBase {
 public:
-	~Player() override = default;
+	Player();
+	~Player() override;
 
 	/// <summary>
 	/// 初期化処理
@@ -107,6 +117,15 @@ private:
 	void UpdateMoveAndBank_(float dt);
 	void StartRoll_(float dir);
 	bool UpdateRoll_();
+	void ChangeState_(std::unique_ptr<PlayerStateBase> nextState);
+	void RequestStateChange_(std::unique_ptr<PlayerStateBase> nextState);
+	void ApplyPendingStateChange_();
+	void SyncCollider_();
+
+	friend class PlayerNormalState;
+	friend class PlayerRollState;
+	friend class PlayerExplosionState;
+	friend class PlayerDeadState;
 
 private:
 	// ===== 定数 =====
@@ -159,6 +178,10 @@ private:
 	KamataEngine::Model* model_ = nullptr;
 	KamataEngine::Input* input_ = nullptr;
 	KamataEngine::Audio* audio_ = nullptr;
+
+	// ===== ステートパターン =====
+	std::unique_ptr<PlayerStateBase> state_;
+	std::unique_ptr<PlayerStateBase> pendingState_;
 
 	// ===== 傾き =====
 	float targetTiltZ_ = 0.0f;

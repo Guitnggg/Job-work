@@ -6,6 +6,58 @@
 
 using namespace KamataEngine;
 
+/// <summary>
+/// TurretEnemy の行動を状態ごとに分離するための State Pattern 用基底クラス。
+/// </summary>
+class TurretEnemyStateBase {
+public:
+	virtual ~TurretEnemyStateBase() = default;
+	virtual void Enter(TurretEnemy&) {}
+	virtual void Update(TurretEnemy& turret, float dt) = 0;
+	virtual void Exit(TurretEnemy&) {}
+};
+
+/// <summary>
+/// 通常待機・照準・射撃クールタイム状態。
+/// </summary>
+class TurretEnemyActiveState : public TurretEnemyStateBase {
+public:
+	void Update(TurretEnemy& turret, float dt) override;
+};
+
+/// <summary>
+/// 発射を1フレーム分の明確な状態として扱う。
+/// </summary>
+class TurretEnemyShootingState : public TurretEnemyStateBase {
+public:
+	void Enter(TurretEnemy& turret) override;
+	void Update(TurretEnemy& turret, float dt) override;
+};
+
+void TurretEnemyActiveState::Update(TurretEnemy& turret, float) {
+	turret.AimToTarget_();
+
+	turret.shootTimerFrames_++;
+	if (turret.shootTimerFrames_ >= turret.shootIntervalFrames_) {
+		turret.shootTimerFrames_ = 0;
+		turret.RequestStateChange_(std::make_unique<TurretEnemyShootingState>());
+	}
+}
+
+void TurretEnemyShootingState::Enter(TurretEnemy& turret) {
+	turret.AimToTarget_();
+	turret.Fire_();
+}
+
+void TurretEnemyShootingState::Update(TurretEnemy& turret, float) {
+	turret.RequestStateChange_(std::make_unique<TurretEnemyActiveState>());
+}
+
+TurretEnemy::TurretEnemy() = default;
+
+TurretEnemy::~TurretEnemy() = default;
+
+
 // 砲台のモデル・射撃設定・HP・コライダーなど初期状態を設定する
 void TurretEnemy::Initialize() {
 	// --- 基底クラス初期化 ---
@@ -38,14 +90,15 @@ void TurretEnemy::Initialize() {
 	// --- 初期状態 ---
 	bullets_.clear();
 	shootTimerFrames_ = 0;
-	state_ = State::Active;
+	pendingState_.reset();
+	ChangeState_(std::make_unique<TurretEnemyActiveState>());
 	isDead_ = false;
 	flashTimer_ = 0.0f;
 	shakeTimer_ = 0.0f;
 	baseTranslation_ = worldTransform_.translation_;
 }
 
-// ターゲット追尾・射撃クールタイム・弾更新・死亡判定・コライダー同期を行う
+// ターゲット追尾・射撃クールタイム・弾更新・死亡判定・コライダー同期を現在の State に委譲する
 void TurretEnemy::Update() {
 	// 死亡中も弾は更新して自然消滅させる
 	if (IsDead()) {
@@ -54,41 +107,16 @@ void TurretEnemy::Update() {
 	}
 
 	const float dt = 1.0f / 60.0f;
-	if (flashTimer_ > 0.0f) {
-		flashTimer_ -= dt;
-	}
-	if (shakeTimer_ > 0.0f) {
-		shakeTimer_ -= dt;
-	}
+	UpdateBodyFeedback_(dt);
 
-	// 砲台は移動しないため translation_ は更新しない
-	worldTransform_.translation_ = baseTranslation_;
-	if (shakeTimer_ > 0.0f) {
-		const float t = shakeTimer_ / kShakeDuration;
-		worldTransform_.translation_.x += std::sin(t * 40.0f) * kShakePower * t;
-		worldTransform_.translation_.y += std::cos(t * 52.0f) * kShakePower * 0.5f * t;
+	if (!state_) {
+		ChangeState_(std::make_unique<TurretEnemyActiveState>());
 	}
-	worldTransform_.UpdateMatrix();
+	state_->Update(*this, dt);
+	ApplyPendingStateChange_();
 
-	// ターゲット追尾
-	AimToTarget_();
+	SyncCollider_();
 
-	// --- 射撃管理 ---
-	shootTimerFrames_++;
-	if (shootTimerFrames_ >= shootIntervalFrames_) {
-		shootTimerFrames_ = 0;
-		state_ = State::Shooting;
-		Fire_();
-		state_ = State::Active;
-	}
-
-	// --- コライダー同期 ---
-	if (collider_) {
-		collider_->SetTranslate(GetWorldTranslation());
-		collider_->Update();
-	}
-
-	// --- 弾更新 ---
 	UpdateBullets_();
 }
 
@@ -193,6 +221,56 @@ void TurretEnemy::UpdateBullets_() {
 	}
 
 	bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(), [](const std::unique_ptr<Bullet>& b) { return b->IsDead(); }), bullets_.end());
+}
+
+// 被弾フラッシュや揺れなど、状態に依存しない見た目のフィードバックを更新する
+void TurretEnemy::UpdateBodyFeedback_(float dt) {
+	if (flashTimer_ > 0.0f) {
+		flashTimer_ -= dt;
+	}
+	if (shakeTimer_ > 0.0f) {
+		shakeTimer_ -= dt;
+	}
+
+	// 砲台は移動しないため translation_ は更新しない
+	worldTransform_.translation_ = baseTranslation_;
+	if (shakeTimer_ > 0.0f) {
+		const float t = shakeTimer_ / kShakeDuration;
+		worldTransform_.translation_.x += std::sin(t * 40.0f) * kShakePower * t;
+		worldTransform_.translation_.y += std::cos(t * 52.0f) * kShakePower * 0.5f * t;
+	}
+	worldTransform_.UpdateMatrix();
+}
+
+// コライダー位置を現在のワールド座標へ同期する
+void TurretEnemy::SyncCollider_() {
+	if (collider_) {
+		collider_->SetTranslate(GetWorldTranslation());
+		collider_->Update();
+	}
+}
+
+// State Pattern の状態を即時切り替えする
+void TurretEnemy::ChangeState_(std::unique_ptr<TurretEnemyStateBase> nextState) {
+	if (state_) {
+		state_->Exit(*this);
+	}
+	state_ = std::move(nextState);
+	if (state_) {
+		state_->Enter(*this);
+	}
+}
+
+// State 更新中でも安全に切り替えられるよう、次の状態を予約する
+void TurretEnemy::RequestStateChange_(std::unique_ptr<TurretEnemyStateBase> nextState) {
+	pendingState_ = std::move(nextState);
+}
+
+// 予約済みの State を反映する
+void TurretEnemy::ApplyPendingStateChange_() {
+	if (pendingState_) {
+		ChangeState_(std::move(pendingState_));
+	}
 }
 
 // 敵の当たり判定サイズを外部から調整する

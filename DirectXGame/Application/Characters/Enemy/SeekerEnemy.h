@@ -13,8 +13,19 @@
 /// プレイヤーやターゲットへ向かって旋回追尾する敵キャラクター。
 /// 通常追尾・被弾演出（フラッシュ／ヒットストップ／ノックバック）を備える。
 /// </summary>
+
+class SeekerEnemyStateBase;
+class SeekerEnemyActiveState;
+class SeekerEnemyHitStopState;
+
 class SeekerEnemy : public CharacterBase {
 public:
+	/// <summary>
+	/// 
+	/// </summary>
+	SeekerEnemy();
+	~SeekerEnemy() override;
+
 	/// <summary>
 	/// 初期化処理
 	/// </summary>
@@ -81,15 +92,6 @@ public: // ==== 外部設定パラメータ ====
 	void SetInitialPosition(const KamataEngine::Vector3& pos) { initialPosition_ = pos; }
 
 private:
-	/// <summary>
-	/// 行動状態
-	/// </summary>
-	enum class State {
-		Active, // 通常追尾
-		HitStop // ヒットストップ中
-	};
-
-private:
 	// ===== 定数（挙動・演出パラメータ）=====
 	static constexpr float kDefaultSpeed = 0.2f;
 	static constexpr float kDefaultTurnRate = 0.15f;
@@ -138,7 +140,8 @@ private:
 	bool isDead_ = false;
 
 	// 状態・演出
-	State state_ = State::Active;
+	std::unique_ptr<SeekerEnemyStateBase> state_;
+	std::unique_ptr<SeekerEnemyStateBase> pendingState_;
 
 	float flashTimer_ = 0.0f;
 	float hitStopTimer_ = 0.0f;
@@ -157,4 +160,14 @@ private:
 	/// 範囲外・寿命による強制死亡判定
 	/// </summary>
 	void ClampDeathByBounds_();
+	void UpdateFlashAndHitMotionTimer_(float dt);
+	void UpdateActiveMotion_(float dt);
+	void UpdateHitStopMotion_(float dt);
+	void SyncCollider_();
+	void ChangeState_(std::unique_ptr<SeekerEnemyStateBase> nextState);
+	void RequestStateChange_(std::unique_ptr<SeekerEnemyStateBase> nextState);
+	void ApplyPendingStateChange_();
+
+	friend class SeekerEnemyActiveState;
+	friend class SeekerEnemyHitStopState;
 };
