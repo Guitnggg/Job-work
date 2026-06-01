@@ -23,6 +23,7 @@ public:
 	/// <summary>
 	/// 
 	/// </summary>
+	SeekerEnemy();
 	~SeekerEnemy() override;
 
 	/// <summary>

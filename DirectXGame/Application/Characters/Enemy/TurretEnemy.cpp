@@ -53,6 +53,8 @@ void TurretEnemyShootingState::Update(TurretEnemy& turret, float) {
 	turret.RequestStateChange_(std::make_unique<TurretEnemyActiveState>());
 }
 
+TurretEnemy::TurretEnemy() = default;
+
 TurretEnemy::~TurretEnemy() = default;
 
 

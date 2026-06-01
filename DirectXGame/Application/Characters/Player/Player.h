@@ -28,6 +28,7 @@ class PlayerDeadState;
 
 class Player : public CharacterBase {
 public:
+	Player();
 	~Player() override;
 
 	/// <summary>

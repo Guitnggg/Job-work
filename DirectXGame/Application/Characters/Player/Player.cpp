@@ -151,6 +151,8 @@ public:
 	}
 };
 
+Player::Player() = default;
+
 Player::~Player() = default;
 
 // プレイヤー本体・武器・当たり判定・演出用パラメータの初期状態を設定する

@@ -28,6 +28,7 @@ public:
 	/// <summary>
 	/// 
 	/// </summary>
+	TurretEnemy();
 	~TurretEnemy()override;
 
 	/// <summary>

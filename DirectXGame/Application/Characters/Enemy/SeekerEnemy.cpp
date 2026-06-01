@@ -34,6 +34,8 @@ public:
 	}
 };
 
+SeekerEnemy::SeekerEnemy() = default;
+
 SeekerEnemy::~SeekerEnemy() = default;
 
 // 追尾敵のモデル・移動パラメータ・HP・コライダーなど初期状態を設定する
