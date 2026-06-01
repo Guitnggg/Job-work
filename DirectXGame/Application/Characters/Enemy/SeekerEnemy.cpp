@@ -3,6 +3,39 @@
 
 using namespace KamataEngine;
 
+/// <summary>
+/// SeekerEnemy の行動を状態ごとに分離するための State Pattern 用基底クラス。
+/// </summary>
+class SeekerEnemyStateBase {
+public:
+	virtual ~SeekerEnemyStateBase() = default;
+	virtual void Enter(SeekerEnemy&) {}
+	virtual void Update(SeekerEnemy& enemy, float dt) = 0;
+	virtual void Exit(SeekerEnemy&) {}
+};
+
+/// <summary>
+/// 通常追尾状態。
+/// </summary>
+class SeekerEnemyActiveState : public SeekerEnemyStateBase {
+public:
+	void Update(SeekerEnemy& enemy, float dt) override {
+		enemy.UpdateActiveMotion_(dt);
+	}
+};
+
+/// <summary>
+/// 被弾ヒットストップ状態。
+/// </summary>
+class SeekerEnemyHitStopState : public SeekerEnemyStateBase {
+public:
+	void Update(SeekerEnemy& enemy, float dt) override {
+		enemy.UpdateHitStopMotion_(dt);
+	}
+};
+
+SeekerEnemy::~SeekerEnemy() = default;
+
 // 追尾敵のモデル・移動パラメータ・HP・コライダーなど初期状態を設定する
 void SeekerEnemy::Initialize() {
 	// --- 基底クラス初期化 ---
@@ -38,7 +71,8 @@ void SeekerEnemy::Initialize() {
 	// --- 状態初期化 ---
 	timeSec_ = 0.0f;
 	isDead_ = false;
-	state_ = State::Active;
+	pendingState_.reset();
+	ChangeState_(std::make_unique<SeekerEnemyActiveState>());
 
 	flashTimer_ = 0.0f;
 	hitStopTimer_ = 0.0f;
@@ -49,7 +83,7 @@ void SeekerEnemy::Initialize() {
 	velocity_ = {0.0f, 0.0f, -1.0f};
 }
 
-// 被弾演出・ノックバック・追尾移動・死亡判定・コライダー同期をまとめて更新する
+// 被弾演出・ノックバック・追尾移動・死亡判定・コライダー同期を現在の State に委譲する
 void SeekerEnemy::Update() {
 	if (IsDead()) {
 		return;
@@ -64,13 +98,7 @@ void SeekerEnemy::Update() {
 		return;
 	}
 
-	// --- フラッシュ更新 ---
-	if (flashTimer_ > 0.0f) {
-		flashTimer_ -= dt;
-		if (flashTimer_ < 0.0f) {
-			flashTimer_ = 0.0f;
-		}
-	}
+	UpdateFlashAndHitMotionTimer_(dt);
 
 	// --- 被弾モーション更新 ---
 	if (hitMotionTimer_ > 0.0f) {
@@ -80,95 +108,11 @@ void SeekerEnemy::Update() {
 		}
 	}
 
-	switch (state_) {
-	case State::Active: {
-		// ===== 通常追尾処理 =====
-		Vector3 pos = worldTransform_.translation_;
-
-		if (hasTarget_) {
-			Vector3 toTarget{targetPos_.x - pos.x, targetPos_.y - pos.y, targetPos_.z - pos.z};
-
-			float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
-			if (len > 0.00001f) {
-				toTarget.x /= len;
-				toTarget.y /= len;
-				toTarget.z /= len;
-			}
-
-			// 旋回補間
-			velocity_.x = (1.0f - turnRate_) * velocity_.x + turnRate_ * toTarget.x;
-			velocity_.y = (1.0f - turnRate_) * velocity_.y + turnRate_ * toTarget.y;
-			velocity_.z = (1.0f - turnRate_) * velocity_.z + turnRate_ * toTarget.z;
-
-			float vlen = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
-			if (vlen > 0.00001f) {
-				velocity_.x /= vlen;
-				velocity_.y /= vlen;
-				velocity_.z /= vlen;
-			}
-		}
-
-		// 前進
-		pos.x += velocity_.x * speed_;
-		pos.y += velocity_.y * speed_;
-		pos.z += velocity_.z * speed_;
-
-		// 被弾ノックバック
-		if (hitMotionTimer_ > 0.0f) {
-			float t = hitMotionTimer_ / kHitMotionDuration;
-			pos.x += hitDir_.x * kHitKnockback * t;
-			pos.y += hitDir_.y * kHitKnockback * t;
-			pos.z += hitDir_.z * kHitKnockback * t;
-			worldTransform_.rotation_.z = hitBaseRollZ_ + kHitRollRad * t;
-		}
-
-		worldTransform_.translation_ = pos;
-
-		// 見た目用回転
-		worldTransform_.rotation_.y += kYawRotateSpeed * dt;
-		worldTransform_.UpdateMatrix();
-
-		if (collider_) {
-			collider_->SetTranslate(GetWorldTranslation());
-			collider_->Update();
-		}
-		break;
+	if (!state_) {
+		ChangeState_(std::make_unique<SeekerEnemyActiveState>());
 	}
-
-	case State::HitStop: {
-		// ===== ヒットストップ中 =====
-		hitStopTimer_ -= dt;
-
-		Vector3 pos = hitBasePos_;
-		if (hitMotionTimer_ > 0.0f) {
-			float t = hitMotionTimer_ / kHitMotionDuration;
-			pos.x += hitDir_.x * kHitKnockback * t;
-			pos.y += hitDir_.y * kHitKnockback * t;
-			pos.z += hitDir_.z * kHitKnockback * t;
-			worldTransform_.rotation_.z = hitBaseRollZ_ + kHitRollRad * t;
-		} else {
-			worldTransform_.rotation_.z = hitBaseRollZ_;
-		}
-
-		worldTransform_.translation_ = pos;
-		worldTransform_.UpdateMatrix();
-
-		if (collider_) {
-			collider_->SetTranslate(GetWorldTranslation());
-			collider_->Update();
-		}
-
-		if (hitStopTimer_ <= 0.0f) {
-			hitStopTimer_ = 0.0f;
-			if (pendingExplode_) {
-				isDead_ = true;
-			} else {
-				state_ = State::Active;
-			}
-		}
-		break;
-	}
-	}
+	state_->Update(*this, dt);
+	ApplyPendingStateChange_();
 }
 
 // 生存中の敵本体とデバック用コライダーを描画する
@@ -220,7 +164,7 @@ void SeekerEnemy::OnCollision(CharacterBase* /*other*/) {
 	// フラッシュ・ヒットストップ
 	flashTimer_ = kFlashDuration;
 	hitStopTimer_ = kHitStopDuration;
-	state_ = State::HitStop;
+	RequestStateChange_(std::make_unique<SeekerEnemyHitStopState>());
 
 	// 被弾基準
 	hitBasePos_ = worldTransform_.translation_;
@@ -261,5 +205,133 @@ void SeekerEnemy::ClampDeathByBounds_() {
 
 	if (timeSec_ >= lifeTimeSec_) {
 		isDead_ = true;
+	}
+}
+
+// フラッシュと被弾モーションのタイマーを更新する
+void SeekerEnemy::UpdateFlashAndHitMotionTimer_(float dt) {
+	if (flashTimer_ > 0.0f) {
+		flashTimer_ -= dt;
+		if (flashTimer_ < 0.0f) {
+			flashTimer_ = 0.0f;
+		}
+	}
+
+	if (hitMotionTimer_ > 0.0f) {
+		hitMotionTimer_ -= dt;
+		if (hitMotionTimer_ < 0.0f) {
+			hitMotionTimer_ = 0.0f;
+		}
+	}
+}
+
+// 通常追尾状態の挙動を更新する
+void SeekerEnemy::UpdateActiveMotion_(float dt) {
+	Vector3 pos = worldTransform_.translation_;
+
+	if (hasTarget_) {
+		Vector3 toTarget{ targetPos_.x - pos.x, targetPos_.y - pos.y, targetPos_.z - pos.z };
+
+		float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+		if (len > 0.00001f) {
+			toTarget.x /= len;
+			toTarget.y /= len;
+			toTarget.z /= len;
+		}
+
+		// 旋回補間
+		velocity_.x = (1.0f - turnRate_) * velocity_.x + turnRate_ * toTarget.x;
+		velocity_.y = (1.0f - turnRate_) * velocity_.y + turnRate_ * toTarget.y;
+		velocity_.z = (1.0f - turnRate_) * velocity_.z + turnRate_ * toTarget.z;
+
+		float vlen = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
+		if (vlen > 0.00001f) {
+			velocity_.x /= vlen;
+			velocity_.y /= vlen;
+			velocity_.z /= vlen;
+		}
+	}
+
+	// 前進
+	pos.x += velocity_.x * speed_;
+	pos.y += velocity_.y * speed_;
+	pos.z += velocity_.z * speed_;
+
+	// 被弾ノックバック
+	if (hitMotionTimer_ > 0.0f) {
+		float t = hitMotionTimer_ / kHitMotionDuration;
+		pos.x += hitDir_.x * kHitKnockback * t;
+		pos.y += hitDir_.y * kHitKnockback * t;
+		pos.z += hitDir_.z * kHitKnockback * t;
+		worldTransform_.rotation_.z = hitBaseRollZ_ + kHitRollRad * t;
+	}
+
+	worldTransform_.translation_ = pos;
+
+	// 見た目用回転
+	worldTransform_.rotation_.y += kYawRotateSpeed * dt;
+	worldTransform_.UpdateMatrix();
+	SyncCollider_();
+}
+
+// ヒットストップ状態の挙動を更新する
+void SeekerEnemy::UpdateHitStopMotion_(float dt) {
+	hitStopTimer_ -= dt;
+
+	Vector3 pos = hitBasePos_;
+	if (hitMotionTimer_ > 0.0f) {
+		float t = hitMotionTimer_ / kHitMotionDuration;
+		pos.x += hitDir_.x * kHitKnockback * t;
+		pos.y += hitDir_.y * kHitKnockback * t;
+		pos.z += hitDir_.z * kHitKnockback * t;
+		worldTransform_.rotation_.z = hitBaseRollZ_ + kHitRollRad * t;
+	}
+	else {
+		worldTransform_.rotation_.z = hitBaseRollZ_;
+	}
+
+	worldTransform_.translation_ = pos;
+	worldTransform_.UpdateMatrix();
+	SyncCollider_();
+
+	if (hitStopTimer_ <= 0.0f) {
+		hitStopTimer_ = 0.0f;
+		if (pendingExplode_) {
+			isDead_ = true;
+		}
+		else {
+			RequestStateChange_(std::make_unique<SeekerEnemyActiveState>());
+		}
+	}
+}
+
+// コライダー位置を現在のワールド座標へ同期する
+void SeekerEnemy::SyncCollider_() {
+	if (collider_) {
+		collider_->SetTranslate(GetWorldTranslation());
+		collider_->Update();
+	}
+}
+
+// State Pattern の状態を即時切り替えする
+void SeekerEnemy::ChangeState_(std::unique_ptr<SeekerEnemyStateBase> nextState) {
+	if (state_) {
+		state_->Exit(*this);
+	}
+	state_ = std::move(nextState);
+	if (state_) {
+		state_->Enter(*this);
+	}
+}
+
+// State 更新中でも安全に切り替えられるよう、次の状態を予約する
+void SeekerEnemy::RequestStateChange_(std::unique_ptr<SeekerEnemyStateBase> nextState) {
+	pendingState_ = std::move(nextState);
+}
+
+// 予約済みの State を反映する
+void SeekerEnemy::ApplyPendingStateChange_() {
+	if (pendingState_) {
+		ChangeState_(std::move(pendingState_));
 	}
 }
