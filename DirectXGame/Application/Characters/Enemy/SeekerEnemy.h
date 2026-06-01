@@ -17,7 +17,7 @@
 class SeekerEnemyStateBase;
 class SeekerEnemyActiveState;
 class SeekerEnemyHitStopState;
-　
+
 class SeekerEnemy : public CharacterBase {
 public:
 	/// <summary>
