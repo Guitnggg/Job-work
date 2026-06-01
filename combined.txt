@@ -540,6 +540,9 @@ using namespace KamataEngine;
 
 // キャラクター共通のワールド座標と球体コライダーを初期化する
 void CharacterBase::Initialize() {
+	// 
+	lastDamageSource_ = DamageSource::Unknown;
+
 	// --- ワールド変換初期化 ---
 	worldTransform_.Initialize();
 
@@ -596,6 +599,18 @@ File Path: DirectXGame/Application/Characters/CharacterBase.h
 /// プレイヤーや敵に共通する最低限の振る舞いを提供する。
 /// </summary>
 class CharacterBase {
+public:
+	/// <summary>
+	/// 最後に受けたダメージソース
+	/// </summary>
+	enum class DamageSource {
+		Unknown,
+		Bullet,
+		Laser,
+		HomingMissile,
+		Collision
+	};
+
 public:
 	/// <summary>
 	/// 仮想デストラクタ
@@ -672,6 +687,11 @@ public: /// === Getters === ///
 	/// </summary>
 	int32_t GetMaxHP() const { return maxHp_; }
 
+	/// <summary>
+	/// 最後に受けたダメージソースを取得する
+	/// </summary>
+	DamageSource GetLastDamageSource() const { return lastDamageSource_; }
+
 public: /// === Setters === ///
 	/// <summary>
 	/// 親の設定（RailCamera など）
@@ -698,6 +718,11 @@ public: /// === Setters === ///
 	/// </summary>
 	void SetHP(int32_t hp) { hp_ = hp; }
 
+	/// <summary>
+	/// 最後に受けたダメージソースを記録する
+	/// </summary>
+	void SetLastDamageSource(DamageSource source) { lastDamageSource_ = source; }
+
 protected:
 	// ワールド変換情報
 	KamataEngine::WorldTransform worldTransform_;
@@ -713,6 +738,9 @@ protected:
 
 	// 最大体力
 	int32_t maxHp_ = 0;
+
+	// 
+	DamageSource lastDamageSource_ = DamageSource::Unknown;
 };
 
 
@@ -4321,9 +4349,11 @@ void PauseMenu::Initialize() {
 		texHandles[i] = TextureManager::Load(kMenuTexPaths[i]);
 	}
 
-	const uint32_t resumeTex = texHandles[static_cast<int>(MenuTex::HowTo)];
+	const uint32_t resumeTex = texHandles[static_cast<int>(MenuTex::Resume)];
+	const uint32_t howToTex = texHandles[static_cast<int>(MenuTex::HowTo)];
 	const uint32_t restartTex = texHandles[static_cast<int>(MenuTex::Restart)];
 	const uint32_t titleTex = texHandles[static_cast<int>(MenuTex::ToTitle)];
+	const uint32_t howToPlayTex = texHandles[static_cast<int>(MenuTex::HowToPlay)];
 	const uint32_t whiteTex = texHandles[static_cast<int>(MenuTex::White)];
 
 	// --- 背景 ---
@@ -4333,7 +4363,7 @@ void PauseMenu::Initialize() {
 	// --- メニュー ---
 	menuSprites_.resize(kMenuCount);
 
-	const uint32_t menuTex[kMenuCount] = {resumeTex, restartTex, titleTex};
+	const uint32_t menuTex[kMenuCount] = {resumeTex, howToTex, restartTex, titleTex};
 
 	for (int i = 0; i < kMenuCount; ++i) {
 		Vector2 pos = basePos_;
@@ -4346,6 +4376,10 @@ void PauseMenu::Initialize() {
 	// --- カーソル ---
 	cursorSprite_.reset(Sprite::Create(whiteTex, basePos_, {1, 1, 0, 1}));
 	cursorSprite_->SetSize(kCursorBaseSize);
+
+	howToSprite_.reset(Sprite::Create(howToPlayTex, {kScreenWidth * 0.5f, kScreenHeight * 0.5f}, {1, 1, 1, 1}));
+	howToSprite_->SetAnchorPoint({0.5f, 0.5f});
+	howToSprite_->SetSize(kHowToSize);
 }
 
 // =========================
@@ -4356,12 +4390,14 @@ void PauseMenu::StartOpenAnimation() {
 	scale_ = kStartScale;
 	isOpening_ = true;
 	isClosing_ = false;
+	isHowToOpen_ = false;
 }
 
 void PauseMenu::StartCloseAnimation() {
 	animTimer_ = 0.0f;
 	isClosing_ = true;
 	isOpening_ = false;
+	isHowToOpen_ = false;
 }
 
 // =========================
@@ -4398,6 +4434,13 @@ void PauseMenu::Update() {
 		return;
 	}
 
+	if (isHowToOpen_) {
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_ESCAPE)) {
+			isHowToOpen_ = false;
+		}
+		return;
+	}
+
 	MoveCursor();
 
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
@@ -4406,9 +4449,12 @@ void PauseMenu::Update() {
 			result_ = Result::Resume;
 			break;
 		case 1:
-			result_ = Result::Retry;
+			isHowToOpen_ = true;
 			break;
 		case 2:
+			result_ = Result::Retry;
+			break;
+		case 3:
 			result_ = Result::ToTitle;
 			break;
 		}
@@ -4420,11 +4466,11 @@ void PauseMenu::Update() {
 // =========================
 void PauseMenu::MoveCursor() {
 
-	if (Input::GetInstance()->TriggerKey(DIK_UP)) {
+	if (Input::GetInstance()->TriggerKey(DIK_W)) {
 		selectIndex_ = (selectIndex_ + kMenuCount - 1) % kMenuCount;
 	}
 
-	if (Input::GetInstance()->TriggerKey(DIK_DOWN)) {
+	if (Input::GetInstance()->TriggerKey(DIK_S)) {
 		selectIndex_ = (selectIndex_ + 1) % kMenuCount;
 	}
 
@@ -4449,6 +4495,10 @@ void PauseMenu::Draw() {
 
 	cursorSprite_->SetSize({kCursorBaseSize.x * scale_, kCursorBaseSize.y * scale_});
 	cursorSprite_->Draw();
+
+	if (isHowToOpen_ && howToSprite_) {
+		howToSprite_->Draw();
+	}
 }
 
 
@@ -4504,6 +4554,8 @@ public:
 	/// </summary>
 	Result GetResult() const { return result_; }
 
+	bool IsHowToOpen() const { return isHowToOpen_; }
+
 	/// <summary>
 	/// 選択結果を見決定状態に戻す
 	/// </summary>
@@ -4527,23 +4579,25 @@ private:
 
 private:
 	// ===== テクスチャ =====
-	enum class MenuTex { HowTo, Restart, ToTitle, White, Count };
+	enum class MenuTex { Resume, HowTo, Restart, ToTitle, HowToPlay, White, Count };
 
-	static constexpr const char* kMenuTexPaths[static_cast<int>(MenuTex::Count)] = {"./Resources/UI/HowTo.png", "./Resources/UI/Restart.png", "./Resources/UI/ToTitle.png", "./Resources/White1x1.png"};
+	static constexpr const char* kMenuTexPaths[static_cast<int>(MenuTex::Count)] = {
+	    "./Resources/UI/HowTo.png", "./Resources/UI/HowToMenu.png", "./Resources/UI/Restart.png", "./Resources/UI/Totitle.png", "./Resources/UI/HowToPlay.png", "./Resources/White1x1.png"};
 
 	// ===== 画面・UI定数 =====
 	static constexpr float kScreenWidth = 1280.0f;
 	static constexpr float kScreenHeight = 720.0f;
 
-	static constexpr KamataEngine::Vector2 kMenuBaseSize = {360.0f, 64.0f};
+	static constexpr KamataEngine::Vector2 kMenuBaseSize = {300.0f, 40.0f};
 	static constexpr KamataEngine::Vector2 kCursorBaseSize = {20.0f, 20.0f};
+	static constexpr KamataEngine::Vector2 kHowToSize = {960.0f, 540.0f};
 
 	static constexpr float kMenuSpacing = 72.0f;
 	static constexpr float kCursorOffsetX = 40.0f;
 
 	static constexpr float kBackgroundAlpha = 0.6f;
 
-	static constexpr int kMenuCount = 3;
+	static constexpr int kMenuCount = 4;
 
 	// ===== アニメーション定数 =====
 	static constexpr float kAnimDuration = 0.25f;
@@ -4561,13 +4615,17 @@ private:
 	float animTimer_ = 0.0f; // アニメーションの経過時間
 	float scale_ = 1.0f;     // メニュー全体の表示スケール
 
+	bool isHowToOpen_ = false;
+
 	KamataEngine::Vector2 basePos_ = {kScreenWidth * 0.5f, kScreenHeight * 0.45f};
 
 	// ===== スプライト =====
 	std::unique_ptr<KamataEngine::Sprite> bgSprite_;                 // 半透明の背景
 	std::vector<std::unique_ptr<KamataEngine::Sprite>> menuSprites_; // メニュー項目画像
 	std::unique_ptr<KamataEngine::Sprite> cursorSprite_;             // 選択位置を示すカーソル
+	std::unique_ptr<KamataEngine::Sprite> howToSprite_;
 };
+
 
 ============================================================
 File Path: DirectXGame/Application/UI/Score/Score.cpp
@@ -6234,6 +6292,8 @@ void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<
 
 		// 半径の合計より近ければ衝突
 		if (dist2 <= r * r) {
+			player->SetLastDamageSource(CharacterBase::DamageSource::Collision);
+			e->SetLastDamageSource(CharacterBase::DamageSource::Collision);
 			player->OnCollision(e.get());
 			e->OnCollision(player);
 		}
@@ -6288,6 +6348,7 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
 
 			if (dist2 <= rr * rr) {
 				// 相互通知：敵は死に、弾は消える
+				e->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
 				e->OnCollision(b.get());
 				b->OnCollision(e.get());
 				// 1発で1体想定
@@ -6338,6 +6399,7 @@ void CollisionManager::ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<L
 
 			if (dist2 <= rsum * rsum) {
 				// 相互通知：敵側がダメージ処理、レーザー側は「消える/貫通」どちらでもOK
+				e->SetLastDamageSource(CharacterBase::DamageSource::Laser);
 				e->OnCollision(r.get());
 				r->OnCollision(e.get());
 
@@ -6386,6 +6448,7 @@ void CollisionManager::ResolveHomingMissileEnemyCollisions(std::vector<std::uniq
 			const float rr = mr + er;
 
 			if (dist2 <= rr * rr) {
+				e->SetLastDamageSource(CharacterBase::DamageSource::HomingMissile);
 				e->OnCollision(m.get());
 				m->OnCollision(e.get());
 				break;
@@ -6433,6 +6496,7 @@ void CollisionManager::ResolvePlayerTurretBulletCollisions(Player* player, std::
 			const float rr = pr + br;
 
 			if (dist2 <= rr * rr) {
+				player->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
 				player->OnCollision(tb.get());
 				tb->OnCollision(player);
 			}
@@ -8035,35 +8099,37 @@ void GameScene::Draw() {
 	}
 
 	// 操作UI
-	if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
-		const bool isWPressed = input_->PushKey(DIK_W);
-		const bool isAPressed = input_->PushKey(DIK_A);
-		const bool isSPressed = input_->PushKey(DIK_S);
-		const bool isDPressed = input_->PushKey(DIK_D);
-		const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
+	if (!isPaused_) {
+		if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
+			const bool isWPressed = input_->PushKey(DIK_W);
+			const bool isAPressed = input_->PushKey(DIK_A);
+			const bool isSPressed = input_->PushKey(DIK_S);
+			const bool isDPressed = input_->PushKey(DIK_D);
+			const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
 
-		ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}, keySize, isWPressed);
-		ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isAPressed);
-		ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isSPressed);
-		ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isDPressed);
+			ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}, keySize, isWPressed);
+			ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isAPressed);
+			ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isSPressed);
+			ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isDPressed);
 
-		wasdWSprite_->Draw();
-		wasdASprite_->Draw();
-		wasdSSprite_->Draw();
-		wasdDSprite_->Draw();
-	}
+			wasdWSprite_->Draw();
+			wasdASprite_->Draw();
+			wasdSSprite_->Draw();
+			wasdDSprite_->Draw();
+		}
 
-	if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
-		const bool isLeftPressed = input_->IsPressMouse(0);
-		const bool isRightPressed = input_->IsPressMouse(1);
-		const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
+		if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
+			const bool isLeftPressed = input_->IsPressMouse(0);
+			const bool isRightPressed = input_->IsPressMouse(1);
+			const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
 
-		ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX_, kMouseBaseY_}, mouseButtonSize, isLeftPressed);
-		ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}, mouseButtonSize, isRightPressed);
+			ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX_, kMouseBaseY_}, mouseButtonSize, isLeftPressed);
+			ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}, mouseButtonSize, isRightPressed);
 
-		mouseBaseSprite_->Draw();
-		mouseLeftSprite_->Draw();
-		mouseRightSprite_->Draw();
+			mouseBaseSprite_->Draw();
+			mouseLeftSprite_->Draw();
+			mouseRightSprite_->Draw();
+		}
 	}
 
 	// Pauseガイド
@@ -8393,6 +8459,9 @@ File Path: DirectXGame/Scenes/InGame/GameSceneUpdateExecutor.cpp
 
 using namespace KamataEngine;
 
+// 各種 GPU パーティクルで使う色定義。
+// Emit 呼び出し側では「発生時の色」と「寿命切れ時の色」を渡すため、
+// エンジン煙・ミサイル噴射・被弾火花・爆発煙ごとに用途が分かる名前にしている。
 namespace {
 constexpr Vector4 kEngineCoreColor{0.35f, 0.85f, 1.0f, 0.72f};
 constexpr Vector4 kEngineFadeColor{0.02f, 0.10f, 0.28f, 0.0f};
@@ -8409,14 +8478,22 @@ constexpr Vector4 kSmokeEndColor{0.03f, 0.03f, 0.04f, 0.0f};
 } // namespace
 
 void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
+	// ヒットストップは複数箇所から要求されるため、現在の残りフレームより長い要求だけを採用する
 	if (gameScene.hitStopRequestFrames_ > gameScene.hitStopFrames_) {
 		gameScene.hitStopFrames_ = gameScene.hitStopRequestFrames_;
 		gameScene.hitStopRequestFrames_ = 0;
 	}
 
+	// timeScale_ はカウントダウン直後・クリア/失敗演出でスローを掛けるため、以降の更新処理にはスケール済みの固定デルタを渡す
 	const float dt = gameScene.kFixedDeltaTime_ * gameScene.timeScale_;
 
+	// ESC でポーズを開閉する。HowTo 表示中だけは ESC をポーズ解除に使わず、メニュー側へ処理を渡す
 	if (gameScene.input_->TriggerKey(DIK_ESCAPE) && gameScene.state_ == GameState::Playing) {
+		if (gameScene.isPaused_ && gameScene.pauseMenu_->IsHowToOpen()) {
+			gameScene.pauseMenu_->Update();
+			return;
+		}
+
 		gameScene.isPaused_ = !gameScene.isPaused_;
 
 		if (gameScene.isPaused_) {
@@ -8427,6 +8504,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		}
 	}
 
+	// ポーズ中はゲーム本体を進めず、メニュー操作の結果だけを監視する
 	if (gameScene.isPaused_) {
 		gameScene.pauseMenu_->Update();
 
@@ -8453,9 +8531,12 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	}
 
 	if (gameScene.state_ == GameState::Playing) {
+		// デバック停止中は演出も含めたゲーム更新を完全に止める
 		if (gameScene.isDebugUpdatePaused_) {
 			return;
 		}
+
+		// ヒットストップ中は戦闘・演出を止め、ロックオン/UI/カメらだけ最低限更新して表示崩れを防ぐ
 		if (gameScene.result_ == GameResult::None && gameScene.hitStopFrames_ > 0) {
 			--gameScene.hitStopFrames_;
 			UpdateLockOnMarkers(gameScene);
@@ -8580,22 +8661,28 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 				}
 				if (nowHp < prevHp && e->IsDead()) {
 					const Vector3 deadPos = e->GetWorldTranslation();
-					for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_; ++i) {
+					const bool killedByMissile = e->GetLastDamageSource() == CharacterBase::DamageSource::HomingMissile;
+					const float killEffectScale = killedByMissile ? 2.0f : 1.0f;
+					const int fireBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_ * killEffectScale);
+					const int smokeBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * killEffectScale);
+					for (int i = 0; i < fireBurstCount; ++i) {
 						Vector3 v = {
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.6f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.6f),
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 1.3f)};
+							  randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale),
+							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.3f * killEffectScale) };
 						gameScene.damageSmokeEmitter_->Emit(
-						    deadPos, v, gameScene.kDamageGpuLife_ * 1.0f, gameScene.kDamageGpuStartScale_ * 1.2f, gameScene.kDamageGpuEndScale_ * 1.8f, kExplosionHotColor, kExplosionFireColor);
+							deadPos, v, gameScene.kDamageGpuLife_ * 1.0f, gameScene.kDamageGpuStartScale_ * 1.2f * killEffectScale, gameScene.kDamageGpuEndScale_ * 1.8f * killEffectScale,
+							kExplosionHotColor, kExplosionFireColor);
 					}
-					for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
+					for (int i = 0; i < smokeBurstCount; ++i) {
 						Vector3 v = {
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.75f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.75f),
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.55f)};
+						   randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.75f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.75f * killEffectScale),
+							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.55f * killEffectScale) };
 						gameScene.damageSmokeEmitter_->Emit(
-						    deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f, gameScene.kDamageGpuEndScale_ * 3.0f, kSmokeStartColor, kSmokeEndColor);
+							deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f * killEffectScale, gameScene.kDamageGpuEndScale_ * 3.0f * killEffectScale,
+							kSmokeStartColor, kSmokeEndColor);
 					}
 					if (gameScene.railCamera_) {
-						gameScene.railCamera_->AddShake({randDist(enemyHitRng), randDist(enemyHitRng), 0.0f}, 0.7f);
+						gameScene.railCamera_->AddShake({ randDist(enemyHitRng), randDist(enemyHitRng), 0.0f }, 0.7f * killEffectScale);
 					}
 					gameScene.hitStopRequestFrames_ = (std::max)(gameScene.hitStopRequestFrames_, gameScene.kEnemyHitStopFrames_);
 
