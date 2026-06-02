@@ -55,7 +55,9 @@ public:
 	bool IsDead() const override { return isDead_ || hp_ <= 0; }
 
 public: // ==== 外部設定パラメータ ====
-	/// <summary>ターゲットの設定（プレイヤー位置など）</summary>
+	/// <summary>
+	/// ターゲットの設定（プレイヤー位置など）
+	/// </summary>
 	void SetTarget(const KamataEngine::Vector3& worldTarget) {
 		targetPos_ = worldTarget;
 		hasTarget_ = true;
