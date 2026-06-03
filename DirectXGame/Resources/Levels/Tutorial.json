@@ -1,31 +1,31 @@
 {
   "randomAreas": [
     {
-      "count": 6,
-      "timeMin": 5.0,
-      "timeMax": 18.0,
+      "count": 4,
+      "timeMin": 3.0,
+      "timeMax": 9.0,
       "posCenter": [ 0.0, 0.0, 200.0 ],
-      "posRange": [ 18.0, 5.0, 55.0 ],
-      "speed": 0.5,
-      "speedRange": 0.15,
-      "turnRate": 0.08,
+      "posRange": [ 16.0, 4.0, 45.0 ],
+      "speed": 0.45,
+      "speedRange": 0.10,
+      "turnRate": 0.07,
       "hp": 1,
       "radius": 1.5,
-      "lifeTime": 20.0,
+      "lifeTime": 24.0,
       "type": "seeker"
     },
     {
       "count": 8,
-      "timeMin": 20.0,
-      "timeMax": 40.0,
+      "timeMin": 10.0,
+      "timeMax": 28.0,
       "posCenter": [ 0.0, 0.0, 215.0 ],
-      "posRange": [ 20.0, 6.0, 65.0 ],
-      "speed": 0.6,
-      "speedRange": 0.2,
-      "turnRate": 0.1,
+      "posRange": [ 18.0, 5.0, 55.0 ],
+      "speed": 0.52,
+      "speedRange": 0.12,
+      "turnRate": 0.09,
       "hp": 1,
       "radius": 1.5,
-      "lifeTime": 22.0,
+      "lifeTime": 24.0,
       "type": "seeker"
     }
   ]

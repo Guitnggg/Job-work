@@ -1,87 +1,55 @@
 {
   "randomAreas": [
     {
-      "count": 12,
+      "count": 14,
       "timeMin": 4.0,
-      "timeMax": 20.0,
-      "posCenter": [
-        0.0,
-        0.0,
-        200.0
-      ],
-      "posRange": [
-        18.0,
-        5.0,
-        55.0
-      ],
-      "speed": 0.7,
-      "speedRange": 0.25,
-      "turnRate": 0.15,
-      "hp": 1,
-      "radius": 1.5,
-      "lifeTime": 20.0,
-      "type": "seeker"
-    },
-    {
-      "type": "turret",
-      "count": 4,
-      "timeMin": 10.0,
-      "timeMax": 26.0,
-      "posCenter": [
-        0.0,
-        0.0,
-        205.0
-      ],
-      "posRange": [
-        14.0,
-        4.0,
-        30.0
-      ],
-      "hp": 2,
-      "radius": 1.3,
-      "shootIntervalFrames": 75,
-      "bulletSpeed": 2.6,
-      "bulletLifeTime": 2.5
-    },
-    {
-      "count": 18,
-      "timeMin": 18.0,
-      "timeMax": 34.0,
-      "posCenter": [
-        0.0,
-        0.0,
-        215.0
-      ],
-      "posRange": [
-        20.0,
-        6.0,
-        65.0
-      ],
-      "speed": 0.85,
-      "speedRange": 0.3,
-      "turnRate": 0.18,
+      "timeMax": 18.0,
+      "posCenter": [ 0.0, 0.0, 200.0 ],
+      "posRange": [ 18.0, 5.0, 55.0 ],
+      "speed": 0.70,
+      "speedRange": 0.20,
+      "turnRate": 0.14,
       "hp": 1,
       "radius": 1.5,
       "lifeTime": 22.0,
       "type": "seeker"
     },
     {
-      "count": 24,
-      "timeMin": 34.0,
-      "timeMax": 55.0,
-      "posCenter": [
-        0.0,
-        0.0,
-        235.0
-      ],
-      "posRange": [
-        24.0,
-        7.0,
-        75.0
-      ],
-      "speed": 0.95,
-      "speedRange": 0.35,
-      "turnRate": 0.22,
+      "type": "turret",
+      "count": 5,
+      "timeMin": 12.0,
+      "timeMax": 32.0,
+      "posCenter": [ 0.0, 0.0, 208.0 ],
+      "posRange": [ 14.0, 4.0, 32.0 ],
+      "hp": 2,
+      "radius": 1.3,
+      "shootIntervalFrames": 82,
+      "bulletSpeed": 2.5,
+      "bulletLifeTime": 2.5
+    },
+    {
+      "count": 18,
+      "timeMin": 18.0,
+      "timeMax": 38.0,
+      "posCenter": [ 0.0, 0.0, 218.0 ],
+      "posRange": [ 20.0, 6.0, 65.0 ],
+      "speed": 0.82,
+      "speedRange": 0.24,
+      "turnRate": 0.17,
+      "hp": 1,
+      "radius": 1.55,
+      "lifeTime": 23.0,
+      "type": "seeker"
+    },
+    {
+      "count": 22,
+      "timeMin": 38.0,
+      "timeMax": 62.0,
+      "posCenter": [ 0.0, 0.0, 235.0 ],
+      "posRange": [ 24.0, 7.0, 75.0 ],
+      "speed": 0.92,
+      "speedRange": 0.28,
+      "turnRate": 0.20,
       "hp": 1,
       "radius": 1.6,
       "lifeTime": 24.0,
@@ -89,88 +57,56 @@
     },
     {
       "type": "turret",
-      "count": 3,
-      "timeMin": 38.0,
-      "timeMax": 58.0,
-      "posCenter": [
-        0.0,
-        0.0,
-        235.0
-      ],
-      "posRange": [
-        18.0,
-        5.0,
-        40.0
-      ],
+      "count": 8,
+      "timeMin": 48.0,
+      "timeMax": 78.0,
+      "posCenter": [ 0.0, 0.0, 238.0 ],
+      "posRange": [ 18.0, 5.0, 44.0 ],
       "hp": 2,
       "radius": 1.35,
-      "shootIntervalFrames": 60,
-      "bulletSpeed": 2.9,
+      "shootIntervalFrames": 68,
+      "bulletSpeed": 2.8,
       "bulletLifeTime": 2.7
     },
     {
-      "count": 16,
-      "timeMin": 55.0,
-      "timeMax": 70.0,
-      "posCenter": [
-        0.0,
-        0.5,
-        245.0
-      ],
-      "posRange": [
-        22.0,
-        7.0,
-        70.0
-      ],
-      "speed": 1.05,
-      "speedRange": 0.35,
-      "turnRate": 0.25,
-      "hp": 2,
-      "radius": 1.7,
-      "lifeTime": 26.0,
+      "count": 24,
+      "timeMin": 62.0,
+      "timeMax": 88.0,
+      "posCenter": [ 0.0, 0.5, 248.0 ],
+      "posRange": [ 24.0, 7.0, 78.0 ],
+      "speed": 1.00,
+      "speedRange": 0.30,
+      "turnRate": 0.23,
+      "hp": 1,
+      "radius": 1.65,
+      "lifeTime": 25.0,
       "type": "seeker"
     },
     {
-      "count": 18,
-      "timeMin": 70.0,
-      "timeMax": 90.0,
-      "posCenter": [
-        0.0,
-        0.0,
-        260.0
-      ],
-      "posRange": [
-        26.0,
-        8.0,
-        85.0
-      ],
-      "speed": 1.1,
-      "speedRange": 0.4,
-      "turnRate": 0.28,
-      "hp": 2,
+      "count": 24,
+      "timeMin": 88.0,
+      "timeMax": 118.0,
+      "posCenter": [ 0.0, 0.0, 260.0 ],
+      "posRange": [ 28.0, 8.0, 88.0 ],
+      "speed": 1.08,
+      "speedRange": 0.34,
+      "turnRate": 0.26,
+      "hp": 1,
       "radius": 1.7,
-      "lifeTime": 28.0,
+      "lifeTime": 27.0,
       "type": "seeker"
     },
     {
       "type": "turret",
-      "count": 4,
-      "timeMin": 72.0,
-      "timeMax": 88.0,
-      "posCenter": [
-        0.0,
-        0.0,
-        265.0
-      ],
-      "posRange": [
-        22.0,
-        6.0,
-        55.0
-      ],
-      "hp": 3,
+      "count": 10,
+      "timeMin": 86.0,
+      "timeMax": 120.0,
+      "posCenter": [ 0.0, 0.0, 265.0 ],
+      "posRange": [ 22.0, 6.0, 58.0 ],
+      "hp": 2,
       "radius": 1.4,
-      "shootIntervalFrames": 45,
-      "bulletSpeed": 3.2,
+      "shootIntervalFrames": 58,
+      "bulletSpeed": 3.0,
       "bulletLifeTime": 3.0
     }
   ]

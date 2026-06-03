@@ -176,13 +176,13 @@ void GameScene::Initialize() {
 	enemyManager_.Initialize();
 	enemyManager_.LoadEnemyCsv(levelJsonPath_);
 	if (levelJsonPath_.find("Tutorial.json") != std::string::npos) {
-		kClearScore_ = 1200;
+		kClearScore_ = 1000;
 	} else if (levelJsonPath_.find("Easy.json") != std::string::npos) {
-		kClearScore_ = 1200;
+		kClearScore_ = 5000;
 	} else if (levelJsonPath_.find("Hard.json") != std::string::npos) {
-		kClearScore_ = 2200;
+		kClearScore_ = 15000;
 	} else {
-		kClearScore_ = 5000; // Normalの既定値
+		kClearScore_ = 10000; // Normalの既定値
 	}
 
 	// ===== 開始 =====
