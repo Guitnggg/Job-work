@@ -223,6 +223,7 @@ private:
 
 	int kScorePerEnemy_ = 100;
 	int kClearScore_ = 5000;
+	bool isTutorialLevel_ = false;
 
 	// ========== ポーズ ==========
 	bool isPaused_ = false;

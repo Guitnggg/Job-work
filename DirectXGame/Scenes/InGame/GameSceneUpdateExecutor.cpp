@@ -219,11 +219,11 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
 }
 
 void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
-	if (gameScene.result_ == GameResult::None) {
+	if (gameScene.result_ == GameResult::None && !gameScene.player_->IsExploding()) {
 		gameScene.bulletManager_.Update(gameScene.input_, gameScene.player_.get(), gameScene.countDown_, gameScene.shootDirection_, &gameScene.enemyManager_);
 	}
 
-	if (!gameScene.countDown_.IsInputLocked() && gameScene.result_ == GameResult::None) {
+	if (!gameScene.countDown_.IsInputLocked() && gameScene.result_ == GameResult::None && !gameScene.player_->IsExploding()) {
 		gameScene.enemyManager_.Update(dt, gameScene.player_->GetWorldTranslation());
 
 		CollisionManager::ResolveBulletEnemyCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
@@ -232,27 +232,21 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 		CollisionManager::ResolvePlayerBulletTurretBulletCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		CollisionManager::ResolvePlayerTurretBulletCollisions(gameScene.player_.get(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 
-		int deadCount = 0;
-		for (auto& e : gameScene.enemyManager_.GetEnemies()) {
-			if (e && e->IsDead()) {
-				deadCount++;
+		int earnedScoreTotal = 0;
+		static std::mt19937 enemyHitRng{(std::random_device{}())};
+		std::uniform_real_distribution<float> randDist(-1.0f, 1.0f);
+		auto& enemies = gameScene.enemyManager_.GetEnemies();
+		for (auto& e : enemies) {
+			if (!e) {
+				continue;
 			}
-		}
-
-		if (gameScene.damageSmokeEmitter_) {
-			static std::mt19937 enemyHitRng{(std::random_device{}())};
-			std::uniform_real_distribution<float> randDist(-1.0f, 1.0f);
-			auto& enemies = gameScene.enemyManager_.GetEnemies();
-			for (auto& e : enemies) {
-				if (!e) {
-					continue;
-				}
-				CharacterBase* key = e.get();
-				const int32_t nowHp = e->GetHP();
-				auto it = gameScene.prevEnemyHpMap_.find(key);
-				const int32_t prevHp = (it != gameScene.prevEnemyHpMap_.end()) ? it->second : nowHp;
-				if (nowHp < prevHp && !e->IsDead()) {
-					const Vector3 hitPos = e->GetWorldTranslation();
+			CharacterBase* key = e.get();
+			const int32_t nowHp = e->GetHP();
+			auto it = gameScene.prevEnemyHpMap_.find(key);
+			const int32_t prevHp = (it != gameScene.prevEnemyHpMap_.end()) ? it->second : nowHp;
+			if (nowHp < prevHp && !e->IsDead()) {
+				const Vector3 hitPos = e->GetWorldTranslation();
+				if (gameScene.damageSmokeEmitter_) {
 					for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyHitBurstScale_; ++i) {
 						Vector3 v = {
 						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f),
@@ -260,16 +254,18 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 						gameScene.damageSmokeEmitter_->Emit(
 						    hitPos, v, gameScene.kDamageGpuLife_ * 0.6f, gameScene.kDamageGpuStartScale_ * 0.5f, gameScene.kDamageGpuEndScale_ * 0.5f, kSparkStartColor, kSparkEndColor);
 					}
-					if (gameScene.audio_ && gameScene.seEnemyHitHandle_ != 0u) {
-						gameScene.audio_->PlayWave(gameScene.seEnemyHitHandle_, false, 0.25f);
-					}
 				}
-				if (nowHp < prevHp && e->IsDead()) {
-					const Vector3 deadPos = e->GetWorldTranslation();
-					const bool killedByMissile = e->GetLastDamageSource() == CharacterBase::DamageSource::HomingMissile;
-					const float killEffectScale = killedByMissile ? 2.0f : 1.0f;
-					const int fireBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_ * killEffectScale);
-					const int smokeBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * killEffectScale);
+				if (gameScene.audio_ && gameScene.seEnemyHitHandle_ != 0u) {
+					gameScene.audio_->PlayWave(gameScene.seEnemyHitHandle_, false, 0.25f);
+				}
+			}
+			if (nowHp < prevHp && e->IsDead()) {
+				const Vector3 deadPos = e->GetWorldTranslation();
+				const bool killedByMissile = e->GetLastDamageSource() == CharacterBase::DamageSource::HomingMissile;
+				const float killEffectScale = killedByMissile ? 2.0f : 1.0f;
+				const int fireBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_ * killEffectScale);
+				const int smokeBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * killEffectScale);
+				if (gameScene.damageSmokeEmitter_) {
 					for (int i = 0; i < fireBurstCount; ++i) {
 						Vector3 v = {
 							  randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale),
@@ -286,23 +282,25 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 							deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f * killEffectScale, gameScene.kDamageGpuEndScale_ * 3.0f * killEffectScale,
 							kSmokeStartColor, kSmokeEndColor);
 					}
-					if (gameScene.railCamera_) {
-						gameScene.railCamera_->AddShake({ randDist(enemyHitRng), randDist(enemyHitRng), 0.0f }, 0.7f * killEffectScale);
-					}
-					gameScene.hitStopRequestFrames_ = (std::max)(gameScene.hitStopRequestFrames_, gameScene.kEnemyHitStopFrames_);
-
-					if (gameScene.audio_ && gameScene.seEnemyKillHandle_ != 0u) {
-						gameScene.audio_->PlayWave(gameScene.seEnemyKillHandle_, false, 0.55f);
-					}
-
-					gameScene.scorePopups_.push_back({deadPos, gameScene.kScorePerEnemy_, 0.6f, 0.6f, 1.8f});
 				}
-				gameScene.prevEnemyHpMap_[key] = nowHp;
+				if (gameScene.railCamera_) {
+					gameScene.railCamera_->AddShake({ randDist(enemyHitRng), randDist(enemyHitRng), 0.0f }, 0.7f * killEffectScale);
+				}
+				gameScene.hitStopRequestFrames_ = (std::max)(gameScene.hitStopRequestFrames_, gameScene.kEnemyHitStopFrames_);
+
+				if (gameScene.audio_ && gameScene.seEnemyKillHandle_ != 0u) {
+					gameScene.audio_->PlayWave(gameScene.seEnemyKillHandle_, false, 0.55f);
+				}
+
+				const int earnedScore = dynamic_cast<TurretEnemy*>(e.get()) ? 300 : gameScene.kScorePerEnemy_;
+				earnedScoreTotal += earnedScore;
+				gameScene.scorePopups_.push_back({deadPos, earnedScore, 0.6f, 0.6f, 1.8f});
 			}
+			gameScene.prevEnemyHpMap_[key] = nowHp;
 		}
 
-		if (deadCount > 0) {
-			gameScene.uiManager_.GetScore()->Add(deadCount * gameScene.kScorePerEnemy_);
+		if (earnedScoreTotal > 0) {
+			gameScene.uiManager_.GetScore()->Add(earnedScoreTotal);
 		}
 
 		gameScene.enemyManager_.RemoveDeadEnemies();
@@ -546,22 +544,26 @@ void GameSceneUpdateExecutor::SpeedLineUpdate(GameScene& gameScene, float dt) {
 
 void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	if (gameScene.result_ == GameResult::None) {
-		if (gameScene.player_->IsExplosionFinished()) {
-			gameScene.result_ = GameResult::Fail;
-			gameScene.transitionPhase_ = SceneTransitionPhase::FailCinematic;
-			gameScene.transitionTimer_ = 0.0f;
-			gameScene.timeScale_ = 0.35f;
-			StartExplosionAtPlayer(gameScene, 2.3f);
-		} else if (gameScene.uiManager_.GetScore()->GetScore() >= gameScene.kClearScore_) {
+		const int currentScore = gameScene.uiManager_.GetScore()->GetScore();
+		if (gameScene.isTutorialLevel_ && currentScore >= gameScene.kClearScore_) {
 			gameScene.result_ = GameResult::Clear;
-			gameScene.clearScore_ = gameScene.uiManager_.GetScore()->GetScore();
-			gameScene.isClearAnimating_ = true;
-			gameScene.clearAnimTimer_ = 0.0f;
-			gameScene.transitionPhase_ = SceneTransitionPhase::ClearCinematic;
-			gameScene.transitionTimer_ = 0.0f;
-			gameScene.timeScale_ = 0.45f;
-			gameScene.transitionScoreBonus_ = 300;
-			gameScene.uiManager_.GetScore()->Add(gameScene.transitionScoreBonus_);
+			gameScene.clearScore_ = currentScore;
+			gameScene.isEnd_ = true;
+			return;
+		}
+
+		if (gameScene.player_->IsExplosionFinished()) {
+			if (currentScore >= gameScene.kClearScore_) {
+				gameScene.result_ = GameResult::Clear;
+				gameScene.clearScore_ = currentScore;
+				gameScene.isEnd_ = true;
+			} else {
+				gameScene.result_ = GameResult::Fail;
+				gameScene.transitionPhase_ = SceneTransitionPhase::FailCinematic;
+				gameScene.transitionTimer_ = 0.0f;
+				gameScene.timeScale_ = 0.35f;
+				StartExplosionAtPlayer(gameScene, 2.3f);
+			}
 		}
 	}
 }

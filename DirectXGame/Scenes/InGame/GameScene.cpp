@@ -1,7 +1,10 @@
 #include "GameScene.h"
 
 #include <cmath>
+#include <fstream>
 #include <utility>
+
+#include <json.hpp>
 
 #ifdef USE_IMGUI
 #include <imgui.h>
@@ -13,8 +16,20 @@
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
+using json = nlohmann::json;
 
 namespace {
+int LoadClearScoreFromLevelJson(const std::string& path, int fallbackScore) {
+	std::ifstream ifs(path);
+	if (!ifs) {
+		return fallbackScore;
+	}
+
+	json root;
+	ifs >> root;
+	return root.value("clearScore", fallbackScore);
+}
+
 void ApplyPressedSpriteState(Sprite* sprite, const Vector2& basePosition, const Vector2& baseSize, bool isPressed) {
 	if (!sprite) {
 		return;
@@ -175,17 +190,18 @@ void GameScene::Initialize() {
 	bulletManager_.Initialize();
 	enemyManager_.Initialize();
 	enemyManager_.LoadEnemyCsv(levelJsonPath_);
-	if (levelJsonPath_.find("Tutorial.json") != std::string::npos) {
-		kClearScore_ = 1000;
+	int defaultClearScore = 10000;
+	isTutorialLevel_ = levelJsonPath_.find("Tutorial.json") != std::string::npos;
+	if (isTutorialLevel_) {
+		defaultClearScore = 1000;
 	} else if (levelJsonPath_.find("Easy.json") != std::string::npos) {
-		kClearScore_ = 5000;
+		defaultClearScore = 5000;
 	} else if (levelJsonPath_.find("Hard.json") != std::string::npos) {
-		kClearScore_ = 15000;
-	} else {
-		kClearScore_ = 10000; // Normalの既定値
+		defaultClearScore = 15000;
 	}
 
 	// ===== 開始 =====
+	kClearScore_ = LoadClearScoreFromLevelJson(levelJsonPath_, defaultClearScore);
 	countDown_.Start();
 
 	// 開始　３カウントから
