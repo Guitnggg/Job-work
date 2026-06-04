@@ -7,9 +7,7 @@
 
 using namespace KamataEngine;
 
-// 各種 GPU パーティクルで使う色定義。
-// Emit 呼び出し側では「発生時の色」と「寿命切れ時の色」を渡すため、
-// エンジン煙・ミサイル噴射・被弾火花・爆発煙ごとに用途が分かる名前にしている。
+// GPU パーティクル用の色定義。
 namespace {
 constexpr Vector4 kEngineCoreColor{0.35f, 0.85f, 1.0f, 0.72f};
 constexpr Vector4 kEngineFadeColor{0.02f, 0.10f, 0.28f, 0.0f};
@@ -28,9 +26,7 @@ class IPauseMenuCommand {
 public:
 	virtual ~IPauseMenuCommand() = default;
 
-	// Command Pattern:
-	// ポーズメニューで選ばれた処理を Execute() に閉じ込める。
-	// 呼び出し側は具体的な処理内容を知らずにコマンドを実行できる。
+	// メニュー処理を Execute() に閉じ込める。
 	virtual void Execute(GameScene& gameScene) = 0;
 };
 
@@ -59,8 +55,7 @@ public:
 };
 
 std::unique_ptr<IPauseMenuCommand> CreatePauseMenuCommand(PauseMenu::Result result) {
-	// Command Pattern: each menu decision is encapsulated as an executable command.
-	// PauseMenu は「何が選ばれたか」だけを返し、実際の処理は対応する Command に任せる。
+	// 選択結果に対応する Command を作る。
 	switch (result) {
 	case PauseMenu::Result::Resume:
 		return std::make_unique<ResumeCommand>();
@@ -75,38 +70,37 @@ std::unique_ptr<IPauseMenuCommand> CreatePauseMenuCommand(PauseMenu::Result resu
 } // namespace
 
 void GameSceneUpdateExecutor::ExecuteResumeCommand(GameScene& gameScene) {
-	// Command Pattern:
-	// ResumeCommand の実処理。GameScene の private メンバー更新は friend である Executor が担当する。
+	// ポーズ解除処理。
 	gameScene.pauseMenu_->StartCloseAnimation();
 	gameScene.isPaused_ = false;
 }
 
 void GameSceneUpdateExecutor::ExecuteRetryCommand(GameScene& gameScene) {
-	// Command Pattern:
-	// RetryCommand の実処理。次のシーン生成時にリトライとして扱われるフラグを立てる。
+	// リトライ遷移を要求する。
 	gameScene.requestRetry_ = true;
 	gameScene.isEnd_ = true;
 }
 
 void GameSceneUpdateExecutor::ExecuteToTitleCommand(GameScene& gameScene) {
-	// Command Pattern:
-	// ToTitleCommand の実処理。タイトルへ戻る遷移要求を立てる。
+	// タイトル遷移を要求する。
 	gameScene.requestToTitle_ = true;
 	gameScene.isEnd_ = true;
 }
 
+// 1 フレームの更新入口。
 void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
-	// ヒットストップは複数箇所から要求されるため、現在の残りフレームより長い要求だけを採用する
+	// 長いヒットストップ要求を優先する。
 	if (gameScene.hitStopRequestFrames_ > gameScene.hitStopFrames_) {
 		gameScene.hitStopFrames_ = gameScene.hitStopRequestFrames_;
 		gameScene.hitStopRequestFrames_ = 0;
 	}
 
-	// timeScale_ はカウントダウン直後・クリア/失敗演出でスローを掛けるため、以降の更新処理にはスケール済みの固定デルタを渡す
+	// 演出スローを反映した dt を作る。
 	const float dt = gameScene.kFixedDeltaTime_ * gameScene.timeScale_;
 
-	// ESC でポーズを開閉する。HowTo 表示中だけは ESC をポーズ解除に使わず、メニュー側へ処理を渡す
+	// ESC でポーズを開閉する。
 	if (gameScene.input_->TriggerKey(DIK_ESCAPE) && gameScene.state_ == GameState::Playing) {
+		// HowTo 表示中はメニューに操作を渡す。
 		if (gameScene.isPaused_ && gameScene.pauseMenu_->IsHowToOpen()) {
 			gameScene.pauseMenu_->Update();
 			return;
@@ -122,13 +116,11 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		}
 	}
 
-	// ポーズ中はゲーム本体を進めず、メニュー操作の結果だけを監視する
+	// ポーズ中はメニューだけ更新する。
 	if (gameScene.isPaused_) {
 		gameScene.pauseMenu_->Update();
 
-		// Command Pattern:
-		// 選択結果から Command を作成し、Execute() だけを呼ぶ。
-		// メニュー項目を増やす場合は Command クラスを追加すれば分岐の肥大化を抑えられる。
+		// 選択結果を Command に変換する。
 		if (auto command = CreatePauseMenuCommand(gameScene.pauseMenu_->GetResult())) {
 			command->Execute(gameScene);
 		}
@@ -136,12 +128,12 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	}
 
 	if (gameScene.state_ == GameState::Playing) {
-		// デバック停止中は演出も含めたゲーム更新を完全に止める
+		// デバッグ停止中は全更新を止める。
 		if (gameScene.isDebugUpdatePaused_) {
 			return;
 		}
 
-		// ヒットストップ中は戦闘・演出を止め、ロックオン/UI/カメらだけ最低限更新して表示崩れを防ぐ
+		// ヒットストップ中は表示系だけ保つ。
 		if (gameScene.result_ == GameResult::None && gameScene.hitStopFrames_ > 0) {
 			--gameScene.hitStopFrames_;
 			UpdateLockOnMarkers(gameScene);
@@ -151,11 +143,14 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		}
 	}
 
+	// 背景は常に更新する。
 	BackgroundUpdate(gameScene);
 
 	switch (gameScene.state_) {
 	case GameState::CountDown:
+		// カウントダウンを進める。
 		CountDownUpdate(gameScene, dt);
+		// 入力解放でプレイ開始。
 		if (!gameScene.countDown_.IsInputLocked()) {
 			gameScene.state_ = GameState::Playing;
 			gameScene.transitionPhase_ = SceneTransitionPhase::IntroCinematic;
@@ -165,6 +160,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		break;
 
 	case GameState::Playing:
+		// プレイ中の更新を順番に実行。
 		UpdateAimAndReticle(gameScene);
 		PlayerUpdate(gameScene);
 		SpawnDamageParticles(gameScene);
@@ -185,23 +181,29 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	CameraUpdate(gameScene);
 }
 
+// カウントダウンを進める。
 void GameSceneUpdateExecutor::CountDownUpdate(GameScene& gameScene, float dt) { gameScene.countDown_.Update(dt); }
 
+// 背景を更新する。
 void GameSceneUpdateExecutor::BackgroundUpdate(GameScene& gameScene) { gameScene.skydome_->Update(); }
 
+// プレイヤー操作を更新する。
 void GameSceneUpdateExecutor::PlayerUpdate(GameScene& gameScene) {
 	if (!gameScene.countDown_.IsInputLocked()) {
+		// クリア演出中は専用処理に任せる。
 		if (!(gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_)) {
 			gameScene.player_->Update();
 		}
 	}
 }
 
+// プレイヤー被弾演出を出す。
 void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
 	if (!gameScene.player_->ConsumeTookDamageEvent()) {
 		return;
 	}
 
+	// 被弾時のカメラ揺れ。
 	float sx = (rand() % 200 - 100) / 100.0f;
 	float sy = (rand() % 200 - 100) / 100.0f;
 	gameScene.railCamera_->AddShake({sx, sy, 0.0f}, 1.0f);
@@ -210,6 +212,7 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
 	static std::mt19937 rng{(std::random_device{}())};
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
+	// 被弾火花をばらまく。
 	if (gameScene.damageSmokeEmitter_) {
 		for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
 			Vector3 v = {dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_ * 0.6f};
@@ -218,23 +221,30 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
 	}
 }
 
+// 戦闘処理を更新する。
 void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
+	// 弾の移動と発射を更新する。
 	if (gameScene.result_ == GameResult::None && !gameScene.player_->IsExploding()) {
 		gameScene.bulletManager_.Update(gameScene.input_, gameScene.player_.get(), gameScene.countDown_, gameScene.shootDirection_, &gameScene.enemyManager_);
 	}
 
+	// 入力ロック解除後だけ敵と衝突を動かす。
 	if (!gameScene.countDown_.IsInputLocked() && gameScene.result_ == GameResult::None && !gameScene.player_->IsExploding()) {
 		gameScene.enemyManager_.Update(dt, gameScene.player_->GetWorldTranslation());
 
+		// プレイヤー攻撃と敵の衝突。
 		CollisionManager::ResolveBulletEnemyCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		CollisionManager::ResolveLaserEnemyCollisions(gameScene.bulletManager_.GetLasers(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		CollisionManager::ResolveHomingMissileEnemyCollisions(gameScene.bulletManager_.GetHomingMissiles(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
+		// 敵弾とプレイヤー側の衝突。
 		CollisionManager::ResolvePlayerBulletTurretBulletCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		CollisionManager::ResolvePlayerTurretBulletCollisions(gameScene.player_.get(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 
+		// HP 差分で被弾/撃破を検出する。
 		int earnedScoreTotal = 0;
 		static std::mt19937 enemyHitRng{(std::random_device{}())};
 		std::uniform_real_distribution<float> randDist(-1.0f, 1.0f);
+		// 敵一覧を走査する。
 		auto& enemies = gameScene.enemyManager_.GetEnemies();
 		for (auto& e : enemies) {
 			if (!e) {
@@ -244,6 +254,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 			const int32_t nowHp = e->GetHP();
 			auto it = gameScene.prevEnemyHpMap_.find(key);
 			const int32_t prevHp = (it != gameScene.prevEnemyHpMap_.end()) ? it->second : nowHp;
+			// 生存中の被弾演出。
 			if (nowHp < prevHp && !e->IsDead()) {
 				const Vector3 hitPos = e->GetWorldTranslation();
 				if (gameScene.damageSmokeEmitter_) {
@@ -259,6 +270,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 					gameScene.audio_->PlayWave(gameScene.seEnemyHitHandle_, false, 0.25f);
 				}
 			}
+			// 撃破演出とスコア加算。
 			if (nowHp < prevHp && e->IsDead()) {
 				const Vector3 deadPos = e->GetWorldTranslation();
 				const bool killedByMissile = e->GetLastDamageSource() == CharacterBase::DamageSource::HomingMissile;
@@ -299,21 +311,25 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 			gameScene.prevEnemyHpMap_[key] = nowHp;
 		}
 
+		// フレーム内の得点をまとめて反映。
 		if (earnedScoreTotal > 0) {
 			gameScene.uiManager_.GetScore()->Add(earnedScoreTotal);
 		}
 
+		// 撃破済みの敵を整理する。
 		gameScene.enemyManager_.RemoveDeadEnemies();
 		CollisionManager::ResolvePlayerEnemyCollisions(gameScene.player_.get(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		gameScene.enemyManager_.RemoveDeadEnemies();
 	}
 }
 
+// 狙い方向を更新する。
 void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 	if (!gameScene.input_ || !gameScene.player_) {
 		return;
 	}
 
+	// マウス位置を画面内へ収める。
 	const Vector2 mouse = gameScene.input_->GetMousePosition();
 	gameScene.reticlePos_.x = std::clamp(mouse.x, 0.0f, gameScene.kScreenWidth_);
 	gameScene.reticlePos_.y = std::clamp(mouse.y, 0.0f, gameScene.kScreenHeight_);
@@ -321,6 +337,7 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 		gameScene.reticleSprite_->SetPosition(gameScene.reticlePos_);
 	}
 
+	// 現在の描画カメラを使う。
 	const Camera* cam = gameScene.railCamera_ ? gameScene.railCamera_->GetCamera() : &gameScene.camera_;
 	if (!cam) {
 		return;
@@ -329,6 +346,7 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 	const float ndcX = (gameScene.reticlePos_.x / gameScene.kScreenWidth_) * 2.0f - 1.0f;
 	const float ndcY = 1.0f - (gameScene.reticlePos_.y / gameScene.kScreenHeight_) * 2.0f;
 
+	// レティクルをワールドへ逆投影する。
 	const Matrix4x4 viewProj = MyMath::Multiply(cam->matView, cam->matProjection);
 	const Matrix4x4 invViewProj = MyMath::Inverse(viewProj);
 
@@ -340,6 +358,7 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 		rayDir = {0.0f, 0.0f, 1.0f};
 	}
 
+	// プレイヤー前方の仮想平面を狙う。
 	const Vector3 playerPos = gameScene.player_->GetWorldTranslation();
 	const float targetZ = playerPos.z + 120.0f;
 	const float t = (targetZ - nearPoint.z) / rayDir.z;
@@ -354,12 +373,14 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 	gameScene.player_->SetAimDirection(gameScene.shootDirection_);
 }
 
+// UI 表示を更新する。
 void GameSceneUpdateExecutor::UIUpdate(GameScene& gameScene) {
 	gameScene.uiManager_.SetHomingCooldownRate(gameScene.bulletManager_.GetHomingCooldownRate());
 	gameScene.uiManager_.SetHomingLockInfo(gameScene.bulletManager_.GetCurrentLockCount(), gameScene.bulletManager_.GetMaxLockCount(), gameScene.bulletManager_.IsHomingLocking());
 	gameScene.uiManager_.Update();
 }
 
+// ロックオンマーカーを更新する。
 void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 	gameScene.lockOnMarkers_.clear();
 
@@ -372,6 +393,7 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 		return;
 	}
 
+	// ロック対象を画面座標へ変換する。
 	const Matrix4x4 viewProj = MyMath::Multiply(cam->matView, cam->matProjection);
 	const auto& targets = gameScene.bulletManager_.GetLockedTargets();
 	for (CharacterBase* target : targets) {
@@ -389,6 +411,7 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 			continue;
 		}
 
+		// 画面内の対象だけマーカーを作る。
 		auto sprite = std::unique_ptr<Sprite>(Sprite::Create(gameScene.lockOnTexHandle_, screenPos));
 		if (!sprite) {
 			continue;
@@ -403,14 +426,17 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 	}
 }
 
+// ダメージ演出状態を更新する。
 void GameSceneUpdateExecutor::DamageGpuParticlesUpdate(GameScene& gameScene, float dt) {
 	if (gameScene.damageSmokeEmitter_) {
 		gameScene.damageSmokeEmitter_->Update(dt);
 	}
 
+	// HP 差分用の前回値を更新する。
 	const int32_t currentHp = gameScene.player_ ? gameScene.player_->GetHP() : gameScene.prevPlayerHp_;
 	gameScene.prevPlayerHp_ = currentHp;
 
+	// 消えた敵の HP 記録を掃除する。
 	auto& enemies = gameScene.enemyManager_.GetEnemies();
 	for (auto it = gameScene.prevEnemyHpMap_.begin(); it != gameScene.prevEnemyHpMap_.end();) {
 		const bool exists = std::any_of(enemies.begin(), enemies.end(), [it](const std::unique_ptr<CharacterBase>& e) { return e && e.get() == it->first; });
@@ -421,6 +447,7 @@ void GameSceneUpdateExecutor::DamageGpuParticlesUpdate(GameScene& gameScene, flo
 		}
 	}
 
+	// スコアポップアップを浮かせる。
 	for (auto& popup : gameScene.scorePopups_) {
 		popup.life -= dt;
 		popup.worldPos.y += popup.riseSpeed * dt;
@@ -429,11 +456,13 @@ void GameSceneUpdateExecutor::DamageGpuParticlesUpdate(GameScene& gameScene, flo
 	    std::remove_if(gameScene.scorePopups_.begin(), gameScene.scorePopups_.end(), [](const GameScene::ScorePopup& p) { return p.life <= 0.0f; }), gameScene.scorePopups_.end());
 }
 
+// エンジン煙を更新する。
 void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt) {
 	if (gameScene.result_ == GameResult::None && gameScene.countDown_.IsInputLocked()) {
 		return;
 	}
 
+	// 通常時とクリア加速時だけ出す。
 	const bool canEmit = (gameScene.result_ == GameResult::None) || (gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_);
 	if (!canEmit) {
 		return;
@@ -446,9 +475,11 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 	std::uniform_real_distribution<float> xyDist(-gameScene.kSmokeRandXY_, gameScene.kSmokeRandXY_);
 	std::uniform_real_distribution<float> zDist(-gameScene.kSmokeRandZ_, gameScene.kSmokeRandZ_);
 
+	// 蓄積タイマーで発生間隔を保つ。
 	while (gameScene.smokeEmitTimer_ >= params.emitInterval) {
 		gameScene.smokeEmitTimer_ -= params.emitInterval;
 
+		// 機体後方を発生位置にする。
 		const Vector3 playerPos = gameScene.player_->GetWorldTranslation();
 		const auto& playerWt = gameScene.player_->GetWorldTransform();
 		const Matrix4x4 playerRotateMatrix = MyMath::MakeAffineMatrix({1.0f, 1.0f, 1.0f}, playerWt.rotation_, {0.0f, 0.0f, 0.0f});
@@ -457,6 +488,7 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 		const Vector3 offset = MyMath::TransformNormal(localOffset, playerRotateMatrix);
 		const Vector3 spawnPos = MyMath::Add(playerPos, offset);
 
+		// 煙をまとめて発生させる。
 		for (int i = 0; i < params.burstCount; ++i) {
 			const Vector3 localVel = {xyDist(rng), xyDist(rng), params.baseZSpeed + zDist(rng)};
 			const Vector3 vel = MyMath::TransformNormal(localVel, playerRotateMatrix);
@@ -476,6 +508,7 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 	}
 }
 
+// ミサイル噴射を更新する。
 void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, float dt) {
 	if (!gameScene.missileAfterburnerEmitter_) {
 		return;
@@ -484,11 +517,13 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 	static std::mt19937 rng{std::random_device{}()};
 	std::uniform_real_distribution<float> randDist(-gameScene.kMissileAfterburnerRand_, gameScene.kMissileAfterburnerRand_);
 
+	// 各ミサイルの後方に噴射を出す。
 	for (const auto& missile : gameScene.bulletManager_.GetHomingMissiles()) {
 		if (!missile || missile->IsDead()) {
 			continue;
 		}
 
+		// 速度方向を噴射方向に使う。
 		Vector3 vel = missile->GetVelocity();
 		const float lenSq = vel.x * vel.x + vel.y * vel.y + vel.z * vel.z;
 		if (lenSq < 0.000001f) {
@@ -506,6 +541,7 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 		gameScene.missileAfterburnerEmitter_->Emit(
 		    spawnPos, emitVel, gameScene.kMissileAfterburnerLife_, gameScene.kMissileAfterburnerStartScale_, gameScene.kMissileAfterburnerEndScale_, kAfterburnerCoreColor, kAfterburnerOuterColor);
 
+		// 追加の火の粉。
 		Vector3 emberVel = emitVel;
 		emberVel.x += randDist(rng) * 0.8f;
 		emberVel.y += randDist(rng) * 0.8f;
@@ -517,8 +553,10 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 	gameScene.missileAfterburnerEmitter_->Update(dt);
 }
 
+// カメラを更新する。
 void GameSceneUpdateExecutor::CameraUpdate(GameScene& gameScene) {
 	if (gameScene.isRailCameraActive_) {
+		// 横移動量をレールカメラへ渡す。
 		Vector3 now = gameScene.player_->GetWorldTranslation();
 		float deltaX = now.x - gameScene.previousPlayerPos_.x;
 		float inputX = MyMath::Clamp(deltaX * 40.0f, -1.0f, 1.0f);
@@ -526,6 +564,7 @@ void GameSceneUpdateExecutor::CameraUpdate(GameScene& gameScene) {
 		gameScene.railCamera_->SetMoveInput(inputX);
 		gameScene.railCamera_->Update();
 
+		// レールカメラ行列を描画カメラへ同期。
 		gameScene.camera_.matView = gameScene.railCamera_->GetCamera()->matView;
 		gameScene.camera_.matProjection = gameScene.railCamera_->GetCamera()->matProjection;
 		gameScene.camera_.TransferMatrix();
@@ -536,15 +575,18 @@ void GameSceneUpdateExecutor::CameraUpdate(GameScene& gameScene) {
 	}
 }
 
+// スピードラインを更新する。
 void GameSceneUpdateExecutor::SpeedLineUpdate(GameScene& gameScene, float dt) {
 	if (gameScene.isRailCameraActive_) {
 		gameScene.speedLine_.Update(dt, gameScene.railCamera_->GetWorldTransform().translation_);
 	}
 }
 
+// リザルトを判定する。
 void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	if (gameScene.result_ == GameResult::None) {
 		const int currentScore = gameScene.uiManager_.GetScore()->GetScore();
+		// チュートリアルは目標到達で即クリア。
 		if (gameScene.isTutorialLevel_ && currentScore >= gameScene.kClearScore_) {
 			gameScene.result_ = GameResult::Clear;
 			gameScene.clearScore_ = currentScore;
@@ -552,6 +594,7 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 			return;
 		}
 
+		// 通常ステージは撃墜後に成否判定。
 		if (gameScene.player_->IsExplosionFinished()) {
 			if (currentScore >= gameScene.kClearScore_) {
 				gameScene.result_ = GameResult::Clear;
@@ -568,15 +611,18 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	}
 }
 
+// クリア離脱演出を更新する。
 void GameSceneUpdateExecutor::ClearAnimationUpdate(GameScene& gameScene, float dt) {
 	if (gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_) {
 		gameScene.clearAnimTimer_ += dt;
 		auto& wt = gameScene.player_->GetWorldTransform();
 
+		// 前上方へ飛び去らせる。
 		wt.translation_.z += gameScene.kClearBoostSpeedZ_ * dt;
 		wt.translation_.y += gameScene.kClearBoostSpeedY_ * dt;
 		wt.rotation_.x -= gameScene.kClearRotateSpeedX_ * dt;
 
+		// 後半は縮小させる。
 		if (gameScene.clearAnimTimer_ > gameScene.kClearShrinkStart_) {
 			float shrink = gameScene.clearAnimTimer_ - gameScene.kClearShrinkStart_;
 			float scale = (std::max)(0.0f, 1.0f - shrink * gameScene.kClearShrinkSpeed_);
@@ -592,6 +638,7 @@ void GameSceneUpdateExecutor::ClearAnimationUpdate(GameScene& gameScene, float d
 	}
 }
 
+// シネマティック遷移を更新する。
 void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, float dt) {
 	if (gameScene.transitionPhase_ == SceneTransitionPhase::None) {
 		return;
@@ -599,6 +646,7 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 
 	gameScene.transitionTimer_ += dt;
 
+	// 開始演出。
 	if (gameScene.transitionPhase_ == SceneTransitionPhase::IntroCinematic) {
 		gameScene.railCamera_->SetCinematicZoom(-10.0f);
 		if (gameScene.transitionTimer_ >= 0.8f) {
@@ -607,11 +655,13 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 			gameScene.railCamera_->SetCinematicZoom(0.0f);
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::ClearCinematic) {
+		// クリア演出。
 		gameScene.railCamera_->SetCinematicZoom(-18.0f);
 		if (gameScene.transitionTimer_ >= 0.55f) {
 			gameScene.timeScale_ = 1.0f;
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::FailCinematic) {
+		// 失敗演出。
 		gameScene.railCamera_->SetCinematicZoom(-24.0f);
 		if (gameScene.transitionTimer_ >= 0.40f && !gameScene.failSecondExplosionDone_) {
 			StartExplosionAtPlayer(gameScene, 1.4f);
@@ -624,6 +674,7 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 	}
 }
 
+// プレイヤー位置に爆発を出す。
 void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float scale) {
 	if (gameScene.audio_ && gameScene.seExplosionHandle_ != 0u) {
 		gameScene.audio_->PlayWave(gameScene.seExplosionHandle_, false, 0.7f);
@@ -633,6 +684,7 @@ void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float
 	static std::mt19937 rng{(std::random_device{}())};
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
+	// 火花パーティクル。
 	const int count = static_cast<int>(gameScene.kDamageGpuBurst_ * scale);
 	for (int i = 0; i < count; i++) {
 		if (gameScene.damageSmokeEmitter_) {
@@ -641,6 +693,7 @@ void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float
 			    pos, vel, gameScene.kDamageGpuLife_ * 1.3f, gameScene.kDamageGpuStartScale_ * scale, gameScene.kDamageGpuEndScale_ * scale, kExplosionHotColor, kExplosionFireColor);
 		}
 	}
+	// 煙パーティクル。
 	for (int i = 0; i < count / 2; i++) {
 		if (gameScene.damageSmokeEmitter_) {
 			Vector3 vel = {
