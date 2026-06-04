@@ -9259,7 +9259,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 
 				const int earnedScore = dynamic_cast<TurretEnemy*>(e.get()) ? 300 : gameScene.kScorePerEnemy_;
 				earnedScoreTotal += earnedScore;
-				gameScene.scorePopups_.push_back({deadPos, earnedScore, 0.6f, 0.6f, 1.8f});
+				//gameScene.scorePopups_.push_back({deadPos, earnedScore, 0.6f, 0.6f, 1.8f});
 			}
 			gameScene.prevEnemyHpMap_[key] = nowHp;
 		}
