@@ -22,6 +22,7 @@
 #include "Application/UI/Score/Score.h"
 
 #include "Managers/BulletManager/BulletManager.h"
+#include "Managers/BossManager/BossManager.h"
 #include "Managers/CollisionManager/CollisionManager.h"
 #include "Managers/EnemyManager/EnemyManager.h"
 #include "Managers/UIManager/UIManager.h"
@@ -48,6 +49,8 @@ enum class SceneTransitionPhase {
 	IntroCinematic,
 	ClearCinematic,
 	FailCinematic,
+	BossIntroCinematic,
+	BossClearCinematic,
 };
 
 /// <summary>
@@ -151,9 +154,12 @@ private:
 	// ========== レベルデータ ==========
 	std::string levelJsonPath_;
 
-	// ========== 敵・弾管理 ==========
+	// ========== 敵・弾・ボス管理 ==========
 	EnemyManager enemyManager_;
 	BulletManager bulletManager_;
+	BossManager bossManager_;
+	bool isBossStageEnabled_ = false;
+	bool hasBossBattleStarted_ = false;
 
 	// ========== スピードライン ==========
 	SpeedLine speedLine_;

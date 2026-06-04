@@ -189,6 +189,7 @@ void GameScene::Initialize() {
 	// ===== 弾・敵 =====
 	bulletManager_.Initialize();
 	enemyManager_.Initialize();
+	bossManager_.Initialize();
 	enemyManager_.LoadEnemyCsv(levelJsonPath_);
 	int defaultClearScore = 10000;
 	isTutorialLevel_ = levelJsonPath_.find("Tutorial.json") != std::string::npos;
@@ -199,6 +200,8 @@ void GameScene::Initialize() {
 	} else if (levelJsonPath_.find("Hard.json") != std::string::npos) {
 		defaultClearScore = 15000;
 	}
+	isBossStageEnabled_ = (levelJsonPath_.find("Normal.json") != std::string::npos) || (levelJsonPath_.find("Hard.json") != std::string::npos);
+	hasBossBattleStarted_ = false;
 
 	// ===== 開始 =====
 	kClearScore_ = LoadClearScoreFromLevelJson(levelJsonPath_, defaultClearScore);
@@ -282,8 +285,9 @@ void GameScene::Draw() {
 		// スピードライン
 		speedLine_.Draw();
 
-		// 敵・弾
+		// 敵・弾・ボス
 		enemyManager_.Draw(cam);
+		bossManager_.Draw(cam);
 		bulletManager_.Draw(cam);
 	}
 
@@ -317,6 +321,7 @@ void GameScene::Draw() {
 	// UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
 	if (state_ == GameState::Playing) {
 		uiManager_.Draw();
+		bossManager_.DrawUI();
 
 		if (reticleSprite_ && result_ == GameResult::None) {
 			reticleSprite_->Draw();
