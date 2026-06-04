@@ -155,6 +155,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application\Cameras\RailCamera\CameraShake.cpp" />
+    <ClCompile Include="Application\Characters\Boss\Boss.cpp" />
+    <ClCompile Include="Application\Characters\Boss\BossAttackController.cpp" />
+    <ClCompile Include="Application\Characters\Boss\BossPart.cpp" />
     <ClCompile Include="Application\Characters\Enemy\TurretEnemy.cpp" />
     <ClCompile Include="Application\Characters\Player\Laser.cpp" />
     <ClCompile Include="Application\Effects\Smoke\GpuSmokeEmitter.cpp" />
@@ -169,6 +172,8 @@
     <ClCompile Include="Application\Characters\Player\Bullet.cpp" />
     <ClCompile Include="Application\UI\PauseMenu\PauseMenu.cpp" />
     <ClCompile Include="Application\Characters\Player\HomingMissile.cpp" />
+    <ClCompile Include="Managers\BossManager\BossManager.cpp" />
+    <ClCompile Include="Managers\BossManager\BossUIManager.cpp" />
     <ClCompile Include="Scenes\InGame\GameSceneUpdateExecutor.cpp" />
     <ClCompile Include="Managers\BulletManager\BulletManager.cpp" />
     <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
@@ -304,6 +309,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Cameras\RailCamera\CameraShake.h" />
+    <ClInclude Include="Application\Characters\Boss\Boss.h" />
+    <ClInclude Include="Application\Characters\Boss\BossAttackController.h" />
+    <ClInclude Include="Application\Characters\Boss\BossPart.h" />
     <ClInclude Include="Application\Characters\Enemy\TurretEnemy.h" />
     <ClInclude Include="Application\Characters\Player\Laser.h" />
     <ClInclude Include="Application\Effects\Smoke\GpuSmokeEmitter.h" />
@@ -318,6 +326,8 @@
     <ClInclude Include="Application\Characters\Player\Bullet.h" />
     <ClInclude Include="Application\UI\PauseMenu\PauseMenu.h" />
     <ClInclude Include="Application\Characters\Player\HomingMissile.h" />
+    <ClInclude Include="Managers\BossManager\BossManager.h" />
+    <ClInclude Include="Managers\BossManager\BossUIManager.h" />
     <ClInclude Include="Scenes\InGame\GameSceneUpdateExecutor.h" />
     <ClInclude Include="Managers\BulletManager\BulletManager.h" />
     <ClInclude Include="Scenes\Clear\ClearScene.h" />
