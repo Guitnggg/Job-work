@@ -105,58 +105,6 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
 	}
 }
 
-void CollisionManager::ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
-	// カウントダウン中は衝突無効
-	if (countDown.IsInputLocked()) {
-		return;
-	}
-
-	// レーザー×敵
-	for (auto& r : lasers) {
-		if (!r || r->IsDead()) {
-			continue;
-		}
-
-		Collider* laserCollider = r->GetCollider();
-		if (!laserCollider) {
-			continue;
-		}
-
-		const auto rp = laserCollider->GetTranslate();
-		const float rr = laserCollider->GetRadius();
-
-		for (auto& e : enemies) {
-			if (!e || e->IsDead()) {
-				continue;
-			}
-
-			Collider* enemyCollider = e->GetCollider();
-			if (!enemyCollider) {
-				continue;
-			}
-
-			const auto ep = enemyCollider->GetTranslate();
-			const float er = enemyCollider->GetRadius();
-
-			const float dx = rp.x - ep.x;
-			const float dy = rp.y - ep.y;
-			const float dz = rp.z - ep.z;
-			const float dist2 = dx * dx + dy * dy + dz * dz;
-			const float rsum = rr + er;
-
-			if (dist2 <= rsum * rsum) {
-				// 相互通知：敵側がダメージ処理、レーザー側は「消える/貫通」どちらでもOK
-				e->SetLastDamageSource(CharacterBase::DamageSource::Laser);
-				e->OnCollision(r.get());
-				r->OnCollision(e.get());
-
-				// 1発で1体想定（貫通レーザーにしたいなら break を外す）
-				break;
-			}
-		}
-	}
-}
-
 void CollisionManager::ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
 	if (countDown.IsInputLocked()) {
 		return;

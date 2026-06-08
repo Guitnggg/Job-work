@@ -6,14 +6,13 @@
 
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/HomingMissile.h"
-#include "Application/Characters/Player/Laser.h"
 #include "Application/Characters/Player/Player.h"
 #include "UI/CountDown/CountDown.h"
 
 class EnemyManager;
 
 /// <summary>
-/// プレイヤーの通常弾、レーザー、ホーミングミサイル、ロックオン状態を管理する。
+/// プレイヤーの通常弾、ホーミングミサイル、ロックオン状態を管理する。
 /// </summary>
 class BulletManager {
 public:
@@ -46,12 +45,6 @@ public:
 	/// </summary>
 	/// <returns>蠑ｾ縺ｮ繧ｳ繝ｳ繝・リ(std::vector&lt;unique_ptr&lt;Bullet&gt;&gt;)</returns>
 	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
-
-	/// <summary>
-	/// 迴ｾ蝨ｨ鬟幄｡御ｸｭ縺ｮ繝ｬ繝ｼ繧ｶ繝ｼ(Laser)縺ｮ繧ｳ繝ｳ繝・リ繧貞盾辣ｧ縺ｧ霑斐☆縲・
-	/// 螟夜Κ縺ｧ繝ｬ繝ｼ繧ｶ繝ｼ縺ｨ縺ｮ蠖薙◆繧雁愛螳壹ｒ陦後≧逕ｨ騾斐〒菴ｿ逕ｨ縺吶ｋ縲・
-	/// </summary>
-	std::vector<std::unique_ptr<Laser>>& GetLasers() { return lasers_; }
 
 	/// <summary>
 	///
@@ -98,7 +91,6 @@ private:
 
 private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
-	std::vector<std::unique_ptr<Laser>> lasers_;
 	std::vector<std::unique_ptr<HomingMissile>> homingMissiles_;
 
 	// 繧ｯ繝ｼ繝ｫ繝繧ｦ繝ｳ

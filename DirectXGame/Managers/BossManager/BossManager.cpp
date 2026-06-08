@@ -5,15 +5,11 @@
 
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/HomingMissile.h"
-#include "Application/Characters/Player/Laser.h"
 
 using namespace KamataEngine;
 
 namespace {
 CharacterBase::DamageSource GetProjectileDamageSource(CharacterBase* projectile) {
-	if (dynamic_cast<Laser*>(projectile)) {
-		return CharacterBase::DamageSource::Laser;
-	}
 	if (dynamic_cast<HomingMissile*>(projectile)) {
 		return CharacterBase::DamageSource::HomingMissile;
 	}
@@ -104,12 +100,11 @@ void BossManager::Draw(const Camera* camera) {
 
 void BossManager::DrawUI() { uiManager_.Draw(); }
 
-void BossManager::ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<HomingMissile>>& missiles) {
+void BossManager::ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<HomingMissile>>& missiles) {
 	if (state_ != State::Battle || !boss_) {
 		return;
 	}
 	ResolveProjectileCollisions_(bullets);
-	ResolveProjectileCollisions_(lasers);
 	ResolveProjectileCollisions_(missiles);
 }
 

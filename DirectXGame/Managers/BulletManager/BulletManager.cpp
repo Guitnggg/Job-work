@@ -16,7 +16,6 @@ void BulletManager::Initialize() {
 	missileSeHandle_ = audio_ ? audio_->LoadWave("./Resources/SE/missile.wav") : 0;
 
 	bullets_.clear();
-	lasers_.clear();
 	homingMissiles_.clear();
 	lockedTargets_.clear();
 
@@ -183,13 +182,6 @@ void BulletManager::UpdateBullets_(EnemyManager* enemyManager) {
 		}
 	}
 
-	// レーザー更新
-	for (auto& r : lasers_) {
-		if (r) {
-			r->Update();
-		}
-	}
-
 	// ホーミング対象の安全性を事前確認
 	ValidateHomingTargets_(enemyManager);
 
@@ -208,8 +200,6 @@ void BulletManager::RemoveDeadBullets_() {
 	// Object Pool Pattern:
 	// 通常弾は死んでも vector から削除しない。isDead_ == true の弾として残し、
 	// 次の発射時に AcquireBullet_() で再利用する。
-
-	lasers_.erase(std::remove_if(lasers_.begin(), lasers_.end(), [](const std::unique_ptr<Laser>& r) { return !r || r->IsDead(); }), lasers_.end());
 
 	homingMissiles_.erase(std::remove_if(homingMissiles_.begin(), homingMissiles_.end(), [](const std::unique_ptr<HomingMissile>& m) { return !m || m->IsDead(); }), homingMissiles_.end());
 }
@@ -242,11 +232,6 @@ void BulletManager::Draw(const Camera* camera) {
 	// 通常弾
 	for (auto& b : bullets_) {
 		b->Draw(camera);
-	}
-
-	// レーザー
-	for (auto& r : lasers_) {
-		r->Draw(camera);
 	}
 
 	// ホーミングミサイル

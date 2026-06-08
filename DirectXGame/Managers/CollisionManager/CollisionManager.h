@@ -8,13 +8,12 @@
 #include "Application/Characters/Enemy/TurretEnemy.h"
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/HomingMissile.h"
-#include "Application/Characters/Player/Laser.h"
 #include "Application/Characters/Player/Player.h"
 
 #include "UI/CountDown/CountDown.h"
 
 /// <summary>
-/// プレイヤー、敵、弾、レーザー、ミサイルの当たり判定をまとめる。
+/// プレイヤー、敵、弾、ミサイルの当たり判定をまとめる。
 /// 各オブジェクトへの通知だけを行い、HPやスコアの処理は個別クラスへ任せる。
 /// </summary>
 class CollisionManager {
@@ -36,15 +35,6 @@ public:
 	/// <param name="enemies">陦晉ｪ∝ｯｾ雎｡縺ｮ謨ｵ縺ｮ繝ｪ繧ｹ繝・/param>
 	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ陦晉ｪ√ｒ辟｡蜉ｹ縺ｫ縺吶ｋ縺溘ａ菴ｿ逕ｨ</param>
 	static void ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
-
-	/// <summary>
-	/// 繝ｬ繝ｼ繧ｶ繝ｼ(Laser)縺ｨ隍・焚縺ｮ謨ｵ縺ｨ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧縲・
-	/// 陦晉ｪ√′逋ｺ逕溘＠縺溷ｴ蜷医∵雰縺ｫ OnCollision縲√Ξ繝ｼ繧ｶ繝ｼ縺ｫ OnCollision 繧帝夂衍縺吶ｋ縲・
-	/// </summary>
-	/// <param name="lasers">陦晉ｪ∝ｯｾ雎｡縺ｮ繝ｬ繝ｼ繧ｶ繝ｼ縺ｮ繝ｪ繧ｹ繝・/param>
-	/// <param name="enemies">陦晉ｪ∝ｯｾ雎｡縺ｮ謨ｵ縺ｮ繝ｪ繧ｹ繝・/param>
-	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ陦晉ｪ√ｒ辟｡蜉ｹ縺ｫ縺吶ｋ縺溘ａ菴ｿ逕ｨ</param>
-	static void ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
 	/// <summary>
 	///

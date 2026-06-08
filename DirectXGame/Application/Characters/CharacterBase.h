@@ -20,7 +20,6 @@ public:
 	enum class DamageSource {
 		Unknown,
 		Bullet,
-		Laser,
 		HomingMissile,
 		Collision
 	};

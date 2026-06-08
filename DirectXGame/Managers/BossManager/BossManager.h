@@ -11,7 +11,6 @@
 
 class Bullet;
 class HomingMissile;
-class Laser;
 class Player;
 
 /// <summary>
@@ -32,7 +31,7 @@ public:
 	void Draw(const KamataEngine::Camera* camera);
 	void DrawUI();
 
-	void ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<HomingMissile>>& missiles);
+	void ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<HomingMissile>>& missiles);
 
 	bool IsActive() const { return state_ != State::Inactive; }
 	bool IsBattle() const { return state_ == State::Battle; }

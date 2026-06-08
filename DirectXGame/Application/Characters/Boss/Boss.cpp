@@ -79,9 +79,7 @@ void Boss::ApplyPartDamage(BossPart& part, DamageSource source) {
 	}
 
 	int32_t damage = 5;
-	if (source == DamageSource::Laser) {
-		damage = 20;
-	} else if (source == DamageSource::HomingMissile) {
+	if (source == DamageSource::HomingMissile) {
 		damage = 15;
 	}
 

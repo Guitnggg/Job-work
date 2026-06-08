@@ -240,7 +240,6 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 
 		// プレイヤー攻撃と敵の衝突。
 		CollisionManager::ResolveBulletEnemyCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
-		CollisionManager::ResolveLaserEnemyCollisions(gameScene.bulletManager_.GetLasers(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		CollisionManager::ResolveHomingMissileEnemyCollisions(gameScene.bulletManager_.GetHomingMissiles(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		// 敵弾とプレイヤー側の衝突。
 		CollisionManager::ResolvePlayerBulletTurretBulletCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
@@ -329,7 +328,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 	}
 
 	if (!gameScene.countDown_.IsInputLocked() && gameScene.result_ == GameResult::None && gameScene.bossManager_.IsBattle()) {
-		gameScene.bossManager_.ResolvePlayerAttackCollisions(gameScene.bulletManager_.GetBullets(), gameScene.bulletManager_.GetLasers(), gameScene.bulletManager_.GetHomingMissiles());
+		gameScene.bossManager_.ResolvePlayerAttackCollisions(gameScene.bulletManager_.GetBullets(), gameScene.bulletManager_.GetHomingMissiles());
 	}
 }
 
