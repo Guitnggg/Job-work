@@ -163,7 +163,6 @@
     <ClCompile Include="Application\Effects\Smoke\GpuSmokeEmitter.cpp" />
     <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp" />
     <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp" />
-    <ClCompile Include="Application\Effects\Smoke\Smoke.cpp" />
     <ClCompile Include="Application\Objects\Asteroid\AsteroidField.cpp" />
     <ClCompile Include="Application\UI\CountDown\CountDown.cpp" />
     <ClCompile Include="Application\Characters\CharacterBase.cpp" />
@@ -317,7 +316,6 @@
     <ClInclude Include="Application\Effects\Smoke\GpuSmokeEmitter.h" />
     <ClInclude Include="Application\Objects\Asteroid\Asteroid.h" />
     <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h" />
-    <ClInclude Include="Application\Effects\Smoke\Smoke.h" />
     <ClInclude Include="Application\Objects\Asteroid\AsteroidField.h" />
     <ClInclude Include="Application\UI\CountDown\CountDown.h" />
     <ClInclude Include="Application\Characters\CharacterBase.h" />
