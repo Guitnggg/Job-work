@@ -27,7 +27,7 @@ public:
 	};
 
 	void Initialize();
-	void StartBossBattle(const KamataEngine::Vector3& playerPos);
+	void StartBossBattle(const KamataEngine::Vector3& playerPos, KamataEngine::WorldTransform* parent);
 	void Update(float dt);
 	void Draw(const KamataEngine::Camera* camera);
 	void DrawUI();

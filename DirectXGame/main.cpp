@@ -12,7 +12,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
     KamataEngine::Initialize(L"LE4C_06_タカキ_ケンゴ_AstroWing");
     {
         // ゲームプレイ中はOSカーソルを非表示にする
-        //while (ShowCursor(FALSE) >= 0) {}
+        while (ShowCursor(FALSE) >= 0) {}
 
         // 描画開始/終了を行うDirectX共通クラス
         KamataEngine::DirectXCommon* dxCommon = KamataEngine::DirectXCommon::GetInstance();

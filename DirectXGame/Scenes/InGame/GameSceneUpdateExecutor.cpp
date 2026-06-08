@@ -736,7 +736,7 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 			gameScene.transitionTimer_ = 0.0f;
 			gameScene.timeScale_ = 0.65f;
 			gameScene.railCamera_->SetCinematicZoom(0.0f);
-			gameScene.bossManager_.StartBossBattle(gameScene.player_->GetWorldTranslation());
+			gameScene.bossManager_.StartBossBattle(gameScene.player_->GetTranslation(), &gameScene.railCamera_->GetWorldTransform());
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossIntroCinematic) {
 		gameScene.railCamera_->SetCinematicZoom(-26.0f);

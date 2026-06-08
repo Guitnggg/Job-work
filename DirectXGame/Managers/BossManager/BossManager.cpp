@@ -45,9 +45,11 @@ void BossManager::Initialize() {
 	uiManager_.Initialize();
 }
 
-void BossManager::StartBossBattle(const Vector3& playerPos) {
+void BossManager::StartBossBattle(const Vector3& playerPos, WorldTransform* parent) {
 	boss_ = std::make_unique<Boss>();
 	boss_->Initialize({playerPos.x, playerPos.y + 0.8f, playerPos.z + 55.0f});
+	boss_->SetParent(parent);
+	boss_->Update();
 	attackController_.Initialize(boss_.get());
 	state_ = State::Intro;
 	introTimer_ = 0.0f;

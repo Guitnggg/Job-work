@@ -212,7 +212,7 @@ void GameScene::Initialize() {
 
 	// ===== 照準 =====
 	reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
-	lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png"); // ロックオン演出
+	lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png");
 	reticleSprite_.reset(Sprite::Create(reticleTexHandle_, reticlePos_));
 	if (reticleSprite_) {
 		reticleSprite_->SetAnchorPoint({0.5f, 0.5f});
