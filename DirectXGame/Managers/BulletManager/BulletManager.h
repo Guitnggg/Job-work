@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <KamataEngine.h>
 #include <memory>
@@ -20,72 +20,95 @@ public:
 	~BulletManager() = default;
 
 	/// <summary>
-	/// 蛻晄悄蛹門・逅・
+	/// 初期化処理
 	/// </summary>
 	void Initialize();
 
 	/// <summary>
-	/// 譖ｴ譁ｰ蜃ｦ逅・
-	/// 蜈･蜉帛愛螳壺・蠑ｾ縺ｮ逋ｺ蟆・・蠑ｾ縺ｮ譖ｴ譁ｰ竊呈ｭｻ莠｡蠑ｾ縺ｮ蜑企勁
+	/// 更新処理
 	/// </summary>
-	/// <param name="input">蜈･蜉帛・逅・ｒ蜿ら・縺吶ｋ轤ｺ縺ｮ繝昴う繝ｳ繧ｿ</param>
-	/// <param name="player">蠑ｾ縺ｮ逋ｺ蟆・ｽ咲ｽｮ蜿門ｾ励↓菴ｿ縺・・繝ｬ繧､繝､繝ｼ</param>
-	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ逋ｺ蟆・桃菴懊ｒ辟｡蜉ｹ縺ｫ縺吶ｋ轤ｺ縺ｮ蜿ら・</param>
+	/// <param name="input">入力情報</param>
+	/// <param name="player">プレイヤー情報</param>
+	/// <param name="countDown">カウントダウン情報</param>
 	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 謠冗判蜃ｦ逅・
+	/// 描画処理
 	/// </summary>
-	/// <param name="camera">謠冗判縺ｫ菴ｿ逕ｨ縺吶ｋ繧ｫ繝｡繝ｩ</param>
+	/// <param name="camera">描画に使用するカメラ</param>
 	void Draw(const KamataEngine::Camera* camera);
 
 	/// <summary>
-	/// 迴ｾ蝨ｨ鬟幄｡御ｸｭ縺ｮ蠑ｾ縺ｮ繧ｳ繝ｳ繝・リ繧貞盾辣ｧ縺ｧ霑斐☆縲・
-	/// 螟夜Κ縺ｧ蠑ｾ縺ｨ縺ｮ蠖薙◆繧雁愛螳壹ｒ陦後≧逕ｨ騾斐〒菴ｿ逕ｨ縺吶ｋ縲・
+	/// 現在管理している通常団のコンテナを参照で返す
+	/// CollisionManagerなど、外部で当たり判定を行う用途で使用する
 	/// </summary>
-	/// <returns>蠑ｾ縺ｮ繧ｳ繝ｳ繝・リ(std::vector&lt;unique_ptr&lt;Bullet&gt;&gt;)</returns>
+	/// <returns>通常弾のコンテナ</returns>
 	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
 
 	/// <summary>
-	///
+	/// 現在管理しているホーミングミサイルのコンテナを参照で返す
+	/// CollisionManagerなど、外部で当たり判定を行う用途で使用する
 	/// </summary>
+	/// <returns>ホーミングミサイルのコンテナ</returns>
 	std::vector<std::unique_ptr<HomingMissile>>& GetHomingMissiles() { return homingMissiles_; }
 
+	/// <summary>
+	/// ホーミングロックのクールダウン率（0.0～1.0）を返す
+	/// </summary>
 	float GetHomingCooldownRate() const;
+
+	/// <summary>
+	/// 現在ロックしている敵の数を返す
+	/// </summary>
+	/// <returns>現在ロックしている敵の数</returns>
 	int32_t GetCurrentLockCount() const { return static_cast<int32_t>(lockedTargets_.size()); }
+
+	/// <summary>
+	/// 最大ロック可能な敵の数を返す
+	/// </summary>
+	/// <returns>最大ロック可能な敵の数</returns>
 	int32_t GetMaxLockCount() const { return kHomingMaxLockCount; }
+
+	/// <summary>
+	/// ホーミングロック中かどうかを返す
+	/// </summary>
+	/// <returns>ホーミングロック中かどうか</returns>
 	bool IsHomingLocking() const { return isHomingLocking_; }
+
+	/// <summary>
+	/// 現在ロックしている敵のリストを返す
+	/// </summary>
+	/// <returns>現在ロックしている敵のリスト</returns>
 	const std::vector<CharacterBase*>& GetLockedTargets() const { return lockedTargets_; }
 
 private:
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ蜈･蜉帙↓蠢懊§縺ｦ蠑ｾ逋ｺ蟆・・逅・ｒ陦後≧縲・
-	/// 繧ｯ繝ｼ繝ｫ繝繧ｦ繝ｳ蛻ｶ蠕｡繧ゅ％縺薙〒陦後≧縲・
+	/// プレイヤーの入力に応じて通常弾を発射する処理 
 	/// </summary>
 	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
 
 	/// <summary>
-	///
+	/// プレイヤーの入力に応じてホーミングミサイルを発射する処理
 	/// </summary>
 	void HandleHomingMissile_(KamataEngine::Input* input, Player* player, const CountDown& countDown, EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 蜈ｨ鬟幄｡悟ｼｾ縺ｮ譖ｴ譁ｰ蜃ｦ逅・ｒ陦後≧縲・
+	/// 通常弾の位置更新と寿命管理
 	/// </summary>
 	void UpdateBullets_(EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 繝帙・繝溘Φ繧ｰ蟇ｾ雎｡縺梧里縺ｫ蜑企勁貂医∩縺ｮ繝溘し繧､繝ｫ縺九ｉ繧ｿ繝ｼ繧ｲ繝・ヨ蜿ら・繧貞､悶☆
+	/// ホーミングミサイルの位置更新と寿命管理
 	/// </summary>
 	void ValidateHomingTargets_(EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 豁ｻ莠｡迥ｶ諷具ｼ亥ｯｿ蜻ｽ蛻・ｌ・剰｡晉ｪ・ｼ剰ｷ晞屬蛻ｶ髯撰ｼ峨・蠑ｾ繧偵さ繝ｳ繝・リ縺九ｉ蜑企勁縺吶ｋ縲・
+	/// 寿命が尽きた通常弾をリストから削除する処理
 	/// </summary>
 	void RemoveDeadBullets_();
 
 	/// <summary>
-	/// Object Pool Pattern: returns an inactive bullet from the pool, or grows the pool.
+	/// 寿命が尽きたホーミングミサイルをリストから削除する処理
 	/// </summary>
 	Bullet* AcquireBullet_();
 
@@ -97,8 +120,8 @@ private:
 	int32_t fireCooldownFrames_ = 0;
 	int32_t burstShotsRemaining_ = 0;
 	static constexpr int32_t kBurstShotCount = 3;
-	static constexpr int32_t kBurstIntervalFrames = 3;  // 繝舌・繧ｹ繝亥・縺ｮ逋ｺ蟆・俣髫・邏・.05遘叩60fps)
-	static constexpr int32_t kBurstCooldownFrames = 18; // 繝舌・繧ｹ繝亥ｾ後・蠕・ｩ滓凾髢・邏・.3遘叩60fps)
+	static constexpr int32_t kBurstIntervalFrames = 3;  // バースト内の連射間隔
+	static constexpr int32_t kBurstCooldownFrames = 18; // バースト終了後のクールダウン
 	static constexpr int32_t kInitialBulletPoolSize = 64;
 
 	bool isHomingLocking_ = false;

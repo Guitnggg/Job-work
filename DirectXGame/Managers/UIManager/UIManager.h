@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <KamataEngine.h>
 #include <algorithm>
@@ -17,44 +17,44 @@ public:
 	~UIManager() = default;
 
 	/// <summary>
-	/// 蛻晄悄蛹・
+	/// 初期化処理
 	/// </summary>
-	/// <param name="player">HP蜿ら・逕ｨ縺ｮ繝励Ξ繧､繝､繝ｼ・域園譛峨＠縺ｪ縺・ｼ・/param>
+	/// <param name="player">HPバーの対象となるプレイヤー</param>
 	void Initialize(Player* player);
 
 	/// <summary>
-	/// 譖ｴ譁ｰ蜃ｦ逅・ｼ・P繝舌・縲√せ繧ｳ繧｢縺ｪ縺ｩ・・
+	/// 更新処理
 	/// </summary>
 	void Update();
 
 	/// <summary>
-	/// 謠冗判蜃ｦ逅・
+	/// 描画処理	
 	/// </summary>
 	void Draw();
 
 	/// <summary>
-	/// 繧ｹ繧ｳ繧｢繧ｪ繝悶ず繧ｧ繧ｯ繝医∈縺ｮ繧｢繧ｯ繧ｻ繧ｹ・亥ｿ・ｦ√↑繧会ｼ・
+	/// スコア情報を取得する
 	/// </summary>
 	Score* GetScore() { return score_.get(); }
 
 	/// <summary>
-	///
+	/// ホーミングミサイルのクールダウン率を設定する
 	/// </summary>
 	void SetHomingCooldownRate(float rate) { homingCooldownRate_ = std::clamp(rate, 0.0f, 1.0f); }
 
 	/// <summary>
-	///
+	/// ホーミングミサイルのロックオン数と情報を設定する。
 	/// </summary>
 	void SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking);
 
 private:
-	// HP蜿ら・逕ｨ・域園譛画ｨｩ縺ｪ縺暦ｼ・
+	// HP参照用。所有権は持たない
 	Player* player_ = nullptr;
 
-	// HP繝舌・
+	// HPバー
 	std::unique_ptr<Graph> graph_;
 
-	// 繧ｹ繧ｳ繧｢
+	// スコア
 	std::unique_ptr<Score> score_;
 
 	std::unique_ptr<KamataEngine::Sprite> homingCooldownBack_;

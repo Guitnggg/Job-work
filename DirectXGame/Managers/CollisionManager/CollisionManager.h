@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -19,44 +19,45 @@
 class CollisionManager {
 public:
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ縺ｨ隍・焚縺ｮ謨ｵ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧縲・
-	/// 陦晉ｪ√′逋ｺ逕溘＠縺溷ｴ蜷医∽ｸ｡閠・・ OnCollision 繧貞他縺ｳ蜃ｺ縺吶・
+	/// プレイヤーと複数の敵の衝突判定を行う
+	/// 衝突が発生した場合、双方の OnCollision を呼び出す
 	/// </summary>
-	/// <param name="player">陦晉ｪ∝ｯｾ雎｡縺ｮ繝励Ξ繧､繝､繝ｼ</param>
-	/// <param name="enemies">陦晉ｪ∝ｯｾ雎｡縺ｮ謨ｵ繝ｪ繧ｹ繝・/param>
-	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ陦晉ｪ√ｒ辟｡蜉ｹ縺ｫ縺吶ｋ縺溘ａ菴ｿ逕ｨ</param>
+	/// <param name="player">衝突対象のプレイヤー</param>
+	/// <param name="enemies">衝突対象の敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
 	static void ResolvePlayerEnemyCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
-	/// 蠑ｾ縺ｨ隍・焚縺ｮ謨ｵ縺ｨ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧縲・
-	/// 陦晉ｪ√′逋ｺ逕溘＠縺溷ｴ蜷医∵雰縺ｫ OnCollision縲∝ｼｾ縺ｫ OnCollision 繧帝夂衍縺励・
-	/// 1逋ｺ縺ｮ蠑ｾ縺ｫ縺､縺・菴薙・謨ｵ縺ｸ蜻ｽ荳ｭ縺吶ｋ縺薙→繧呈Φ螳壹＠縺ｦ蜃ｦ逅・ｒ荳ｭ譁ｭ縺吶ｋ縲・
+	/// <summary>
+	/// 通常弾と複数の敵との衝突判定を行う。
+	/// 衝突が発生した場合、敵に OnCollision、弾に OnCollision を通知する。
+	/// 1発の弾が複数の敵へ同時に命中しないよう、命中後は処理を中断する。
 	/// </summary>
-	/// <param name="bullets">陦晉ｪ∝ｯｾ雎｡縺ｮ蠑ｾ縺ｮ繝ｪ繧ｹ繝・/param>
-	/// <param name="enemies">陦晉ｪ∝ｯｾ雎｡縺ｮ謨ｵ縺ｮ繝ｪ繧ｹ繝・/param>
-	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ陦晉ｪ√ｒ辟｡蜉ｹ縺ｫ縺吶ｋ縺溘ａ菴ｿ逕ｨ</param>
+	/// <param name="bullets">衝突対象の通常弾リスト。</param>
+	/// <param name="enemies">衝突対象の敵リスト。</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する。</param>
 	static void ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
 	/// <summary>
-	///
+	/// ホーミングミサイルと複数の敵との衝突判定を行う
 	/// </summary>
-	/// <param name="missiles"></param>
-	/// <param name="enemies"></param>
-	/// <param name="countDown"></param>
+	/// <param name="missiles">衝突対象のホーミングミサイルリスト</param>
+	/// <param name="enemies">衝突対象の敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
 	static void ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ縺ｨ繧ｿ繝ｼ繝ｬ繝・ヨ縺ｮ蠑ｾ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧
+	/// プレイヤーとターレット弾の衝突判定を行う
 	/// </summary>
-	/// <param name="player"></param>
-	/// <param name="enemies"></param>
-	/// <param name="countDown"></param>
+	/// <param name="player">衝突対象のプレイヤー</param>
+	/// <param name="enemies">ターレットを含む敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
 	static void ResolvePlayerTurretBulletCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ蠑ｾ縺ｨ繧ｿ繝ｼ繝ｬ繝・ヨ蠑ｾ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧
+	/// プレイヤー弾とターレット弾の衝突判定を行う
 	/// </summary>
-	/// <param name="playerBullets"></param>
-	/// <param name="enemies"></param>
-	/// <param name="countDown"></param>
+	/// <param name="playerBullets">プレイヤーの通常弾リスト</param>
+	/// <param name="enemies">ターレットを含む敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
 	static void ResolvePlayerBulletTurretBulletCollisions(std::vector<std::unique_ptr<Bullet>>& playerBullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 };
