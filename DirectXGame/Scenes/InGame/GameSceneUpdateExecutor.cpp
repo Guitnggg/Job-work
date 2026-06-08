@@ -191,8 +191,8 @@ void GameSceneUpdateExecutor::BackgroundUpdate(GameScene& gameScene) { gameScene
 // プレイヤー操作を更新する。
 void GameSceneUpdateExecutor::PlayerUpdate(GameScene& gameScene) {
 	if (!gameScene.countDown_.IsInputLocked()) {
-		// クリア演出中は専用処理に任せる。
-		if (!(gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_)) {
+		// クリア演出・Bossステージ遷移演出中は専用処理に任せる。
+		if (!(gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_) && !gameScene.isBossTransitionAnimating_) {
 			gameScene.player_->Update();
 		}
 	}
@@ -224,6 +224,11 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
 
 // 戦闘処理を更新する。
 void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
+	// Bossステージへの切り替え演出中は通常戦闘を停止する。
+	if (gameScene.isBossTransitionAnimating_) {
+		return;
+	}
+
 	// 弾の移動と発射を更新する。
 	if (gameScene.result_ == GameResult::None && !gameScene.player_->IsExploding()) {
 		gameScene.bulletManager_.Update(gameScene.input_, gameScene.player_.get(), gameScene.countDown_, gameScene.shootDirection_, &gameScene.enemyManager_);
@@ -595,7 +600,6 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 
 	const int currentScore = gameScene.uiManager_.GetScore()->GetScore();
 	const bool reachedClearScore = currentScore >= gameScene.kClearScore_;
-	const bool fieldCleared = gameScene.enemyManager_.IsAllEnemyDestroyed();
 
 	// チュートリアルは従来通り、目標到達で即クリア。
 	if (gameScene.isTutorialLevel_ && reachedClearScore) {
@@ -605,13 +609,24 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 		return;
 	}
 
-	// Normal / Hard はスコア到達かつフィールド掃討後に Boss 戦へ遷移する。
-	if (gameScene.isBossStageEnabled_ && reachedClearScore && fieldCleared && !gameScene.hasBossBattleStarted_) {
+	// Normal / Hard は目標スコア到達直後に、クリア離脱演出を経て Boss ステージへ切り替える。
+	if (gameScene.isBossStageEnabled_ && reachedClearScore && !gameScene.hasBossBattleStarted_) {
 		gameScene.hasBossBattleStarted_ = true;
-		gameScene.bossManager_.StartBossBattle(gameScene.player_->GetWorldTranslation());
-		gameScene.transitionPhase_ = SceneTransitionPhase::BossIntroCinematic;
+		gameScene.isBossTransitionAnimating_ = true;
+		gameScene.clearAnimTimer_ = 0.0f;
+
+		auto& wt = gameScene.player_->GetWorldTransform();
+		gameScene.bossTransitionStartPosition_ = wt.translation_;
+		gameScene.bossTransitionStartRotation_ = wt.rotation_;
+		gameScene.bossTransitionStartScale_ = wt.scale_;
+
+		// Boss戦に通常敵や通常戦の弾を持ち越さない。
+		gameScene.enemyManager_.ClearAllEnemies();
+		gameScene.bulletManager_.Initialize();
+
+		gameScene.transitionPhase_ = SceneTransitionPhase::BossExitCinematic;
 		gameScene.transitionTimer_ = 0.0f;
-		gameScene.timeScale_ = 0.65f;
+		gameScene.timeScale_ = 0.5f;
 		return;
 	}
 
@@ -627,6 +642,7 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	}
 
 	// Easy など Boss 非対応ステージは、目標到達かつフィールド掃討後にクリア演出へ入る。
+	const bool fieldCleared = gameScene.enemyManager_.IsAllEnemyDestroyed();
 	if (!gameScene.isBossStageEnabled_ && reachedClearScore && fieldCleared) {
 		gameScene.result_ = GameResult::Clear;
 		gameScene.clearScore_ = currentScore;
@@ -649,7 +665,9 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 
 // クリア離脱演出を更新する。
 void GameSceneUpdateExecutor::ClearAnimationUpdate(GameScene& gameScene, float dt) {
-	if (gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_) {
+	const bool isResultClearAnimating = gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_;
+	const bool isBossExitAnimating = gameScene.isBossTransitionAnimating_ && gameScene.transitionPhase_ == SceneTransitionPhase::BossExitCinematic;
+	if (isResultClearAnimating || isBossExitAnimating) {
 		gameScene.clearAnimTimer_ += dt;
 		auto& wt = gameScene.player_->GetWorldTransform();
 
@@ -668,8 +686,21 @@ void GameSceneUpdateExecutor::ClearAnimationUpdate(GameScene& gameScene, float d
 		wt.UpdateMatrix();
 
 		if (gameScene.clearAnimTimer_ >= gameScene.kClearAnimEndTime_) {
-			gameScene.isEnd_ = true;
-			gameScene.isClearAnimating_ = false;
+			if (isBossExitAnimating) {
+				// 離脱前の姿勢へ戻し、カウントダウンなしの開始演出へつなぐ。
+				wt.translation_ = gameScene.bossTransitionStartPosition_;
+				wt.rotation_ = gameScene.bossTransitionStartRotation_;
+				wt.scale_ = gameScene.bossTransitionStartScale_;
+				wt.UpdateMatrix();
+				gameScene.previousPlayerPos_ = wt.translation_;
+
+				gameScene.transitionPhase_ = SceneTransitionPhase::BossStartCinematic;
+				gameScene.transitionTimer_ = 0.0f;
+				gameScene.timeScale_ = 0.55f;
+			} else {
+				gameScene.isEnd_ = true;
+				gameScene.isClearAnimating_ = false;
+			}
 		}
 	}
 }
@@ -695,6 +726,17 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 		gameScene.railCamera_->SetCinematicZoom(-18.0f);
 		if (gameScene.transitionTimer_ >= 0.55f) {
 			gameScene.timeScale_ = 1.0f;
+		}
+	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossStartCinematic) {
+		// ゲーム開始時と同じカメラ演出。カウントダウンは再生しない。
+		gameScene.railCamera_->SetCinematicZoom(-10.0f);
+		if (gameScene.transitionTimer_ >= 0.8f) {
+			gameScene.isBossTransitionAnimating_ = false;
+			gameScene.transitionPhase_ = SceneTransitionPhase::BossIntroCinematic;
+			gameScene.transitionTimer_ = 0.0f;
+			gameScene.timeScale_ = 0.65f;
+			gameScene.railCamera_->SetCinematicZoom(0.0f);
+			gameScene.bossManager_.StartBossBattle(gameScene.player_->GetWorldTranslation());
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossIntroCinematic) {
 		gameScene.railCamera_->SetCinematicZoom(-26.0f);

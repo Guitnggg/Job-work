@@ -49,6 +49,8 @@ enum class SceneTransitionPhase {
 	IntroCinematic,
 	ClearCinematic,
 	FailCinematic,
+	BossExitCinematic,
+	BossStartCinematic,
 	BossIntroCinematic,
 	BossClearCinematic,
 };
@@ -249,7 +251,11 @@ private:
 
 	// ========== クリアアニメーション ==========
 	bool isClearAnimating_ = false;
+	bool isBossTransitionAnimating_ = false;
 	float clearAnimTimer_ = 0.0f;
+	KamataEngine::Vector3 bossTransitionStartPosition_{};
+	KamataEngine::Vector3 bossTransitionStartRotation_{};
+	KamataEngine::Vector3 bossTransitionStartScale_{1.0f, 1.0f, 1.0f};
 
 	float kClearBoostSpeedZ_ = 1.0f;
 	float kClearBoostSpeedY_ = 5.0f;

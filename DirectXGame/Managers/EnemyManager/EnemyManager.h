@@ -79,6 +79,9 @@ public:
 	/// <summary>出現待ちを含めて敵が残っていないかを返す。</summary>
 	bool IsAllEnemyDestroyed() const { return enemies_.empty() && enemySpawnList_.empty(); }
 
+	/// <summary>Boss戦への切り替え時に、出現中・出現待ちの通常敵をすべて破棄する。</summary>
+	void ClearAllEnemies();
+
 private:
 	/// <summary>
 	/// 蜃ｺ迴ｾ譎る俣縺ｫ驕斐＠縺滓雰繧堤函謌舌☆繧・

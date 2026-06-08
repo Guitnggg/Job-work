@@ -81,6 +81,11 @@ void EnemyManager::Initialize() {
 	enemySpawnTimer_ = 0.0f;
 }
 
+void EnemyManager::ClearAllEnemies() {
+	enemies_.clear();
+	enemySpawnList_.clear();
+}
+
 void EnemyManager::LoadEnemyCsv(const std::string& path) {
 	enemySpawnList_.clear();
 

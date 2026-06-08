@@ -239,6 +239,7 @@ void GameScene::Initialize() {
 	clearScore_ = 0;
 
 	isClearAnimating_ = false;
+	isBossTransitionAnimating_ = false;
 	clearAnimTimer_ = 0.0f;
 
 	transitionPhase_ = SceneTransitionPhase::None;
