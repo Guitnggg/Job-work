@@ -276,6 +276,7 @@ private:
 	static constexpr float kCameraShakeMax_ = 1.0f;
 	static constexpr float kCameraShakeDuration_ = 1.0f;
 	static constexpr float kCameraInputScale_ = 40.0f;
+	static constexpr float kBossStartCinematicDuration_ = 1.5f;
 
 	// ========== シーン遷移 ==========
 	SceneTransitionPhase transitionPhase_ = SceneTransitionPhase::None;

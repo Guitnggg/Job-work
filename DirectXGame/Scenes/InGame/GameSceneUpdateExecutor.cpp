@@ -716,7 +716,7 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 	// 開始演出。
 	if (gameScene.transitionPhase_ == SceneTransitionPhase::IntroCinematic) {
 		gameScene.railCamera_->SetCinematicZoom(-10.0f);
-		if (gameScene.transitionTimer_ >= 0.8f) {
+		if (gameScene.transitionTimer_ >= gameScene.kBossStartCinematicDuration_) {
 			gameScene.transitionPhase_ = SceneTransitionPhase::None;
 			gameScene.timeScale_ = 1.0f;
 			gameScene.railCamera_->SetCinematicZoom(0.0f);
