@@ -116,7 +116,7 @@ private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
 	std::vector<std::unique_ptr<HomingMissile>> homingMissiles_;
 
-	// 繧ｯ繝ｼ繝ｫ繝繧ｦ繝ｳ
+	// 通常弾の発射管理
 	int32_t fireCooldownFrames_ = 0;
 	int32_t burstShotsRemaining_ = 0;
 	static constexpr int32_t kBurstShotCount = 3;
