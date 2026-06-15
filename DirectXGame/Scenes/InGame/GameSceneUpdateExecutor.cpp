@@ -96,7 +96,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	}
 
 	// 演出スローを反映した dt を作る。
-	const float dt = gameScene.kFixedDeltaTime_ * gameScene.timeScale_;
+	const float dt = gameScene.kFixedDeltaTime * gameScene.timeScale_;
 
 	// ESC でポーズを開閉する。
 	if (gameScene.input_->TriggerKey(DIK_ESCAPE) && gameScene.state_ == GameState::Playing) {
@@ -215,9 +215,9 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
 
 	// 被弾火花をばらまく。
 	if (gameScene.damageSmokeEmitter_) {
-		for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
-			Vector3 v = {dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_ * 0.6f};
-			gameScene.damageSmokeEmitter_->Emit(pos, v, gameScene.kDamageGpuLife_, gameScene.kDamageGpuStartScale_, gameScene.kDamageGpuEndScale_, kSparkStartColor, kSparkEndColor);
+		for (int i = 0; i < gameScene.kDamageGpuBurst; ++i) {
+			Vector3 v = {dist(rng) * gameScene.kDamageGpuSpeed, dist(rng) * gameScene.kDamageGpuSpeed, dist(rng) * gameScene.kDamageGpuSpeed * 0.6f};
+			gameScene.damageSmokeEmitter_->Emit(pos, v, gameScene.kDamageGpuLife, gameScene.kDamageGpuStartScale, gameScene.kDamageGpuEndScale, kSparkStartColor, kSparkEndColor);
 		}
 	}
 }
@@ -263,12 +263,12 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 			if (nowHp < prevHp && !e->IsDead()) {
 				const Vector3 hitPos = e->GetWorldTranslation();
 				if (gameScene.damageSmokeEmitter_) {
-					for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyHitBurstScale_; ++i) {
+					for (int i = 0; i < gameScene.kDamageGpuBurst * gameScene.kEnemyHitBurstScale; ++i) {
 						Vector3 v = {
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f),
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.45f)};
+						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed * 0.85f),
+						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed * 0.45f)};
 						gameScene.damageSmokeEmitter_->Emit(
-						    hitPos, v, gameScene.kDamageGpuLife_ * 0.6f, gameScene.kDamageGpuStartScale_ * 0.5f, gameScene.kDamageGpuEndScale_ * 0.5f, kSparkStartColor, kSparkEndColor);
+						    hitPos, v, gameScene.kDamageGpuLife * 0.6f, gameScene.kDamageGpuStartScale * 0.5f, gameScene.kDamageGpuEndScale * 0.5f, kSparkStartColor, kSparkEndColor);
 					}
 				}
 				if (gameScene.audio_ && gameScene.seEnemyHitHandle_ != 0u) {
@@ -280,36 +280,36 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 				const Vector3 deadPos = e->GetWorldTranslation();
 				const bool killedByMissile = e->GetLastDamageSource() == CharacterBase::DamageSource::HomingMissile;
 				const float killEffectScale = killedByMissile ? 2.0f : 1.0f;
-				const int fireBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_ * killEffectScale);
-				const int smokeBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * killEffectScale);
+				const int fireBurstCount = static_cast<int>(gameScene.kDamageGpuBurst * gameScene.kEnemyKillBurstScale * killEffectScale);
+				const int smokeBurstCount = static_cast<int>(gameScene.kDamageGpuBurst * killEffectScale);
 				if (gameScene.damageSmokeEmitter_) {
 					for (int i = 0; i < fireBurstCount; ++i) {
 						Vector3 v = {
-							  randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale),
-							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.3f * killEffectScale) };
+							  randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 1.6f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 1.6f * killEffectScale),
+							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 1.3f * killEffectScale) };
 						gameScene.damageSmokeEmitter_->Emit(
-							deadPos, v, gameScene.kDamageGpuLife_ * 1.0f, gameScene.kDamageGpuStartScale_ * 1.2f * killEffectScale, gameScene.kDamageGpuEndScale_ * 1.8f * killEffectScale,
+							deadPos, v, gameScene.kDamageGpuLife * 1.0f, gameScene.kDamageGpuStartScale * 1.2f * killEffectScale, gameScene.kDamageGpuEndScale * 1.8f * killEffectScale,
 							kExplosionHotColor, kExplosionFireColor);
 					}
 					for (int i = 0; i < smokeBurstCount; ++i) {
 						Vector3 v = {
-						   randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.75f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.75f * killEffectScale),
-							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.55f * killEffectScale) };
+						   randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 0.75f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 0.75f * killEffectScale),
+							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 0.55f * killEffectScale) };
 						gameScene.damageSmokeEmitter_->Emit(
-							deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f * killEffectScale, gameScene.kDamageGpuEndScale_ * 3.0f * killEffectScale,
+							deadPos, v, gameScene.kDamageGpuLife * 2.5f, gameScene.kDamageGpuStartScale * 1.6f * killEffectScale, gameScene.kDamageGpuEndScale * 3.0f * killEffectScale,
 							kSmokeStartColor, kSmokeEndColor);
 					}
 				}
 				if (gameScene.railCamera_) {
 					gameScene.railCamera_->AddShake({ randDist(enemyHitRng), randDist(enemyHitRng), 0.0f }, 0.7f * killEffectScale);
 				}
-				gameScene.hitStopRequestFrames_ = (std::max)(gameScene.hitStopRequestFrames_, gameScene.kEnemyHitStopFrames_);
+				gameScene.hitStopRequestFrames_ = (std::max)(gameScene.hitStopRequestFrames_, gameScene.kEnemyHitStopFrames);
 
 				if (gameScene.audio_ && gameScene.seEnemyKillHandle_ != 0u) {
 					gameScene.audio_->PlayWave(gameScene.seEnemyKillHandle_, false, 0.55f);
 				}
 
-				const int earnedScore = dynamic_cast<TurretEnemy*>(e.get()) ? 300 : gameScene.kScorePerEnemy_;
+				const int earnedScore = dynamic_cast<TurretEnemy*>(e.get()) ? 300 : gameScene.kScorePerEnemy;
 				earnedScoreTotal += earnedScore;
 				//gameScene.scorePopups_.push_back({deadPos, earnedScore, 0.6f, 0.6f, 1.8f});
 			}
@@ -340,8 +340,8 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 
 	// マウス位置を画面内へ収める。
 	const Vector2 mouse = gameScene.input_->GetMousePosition();
-	gameScene.reticlePos_.x = std::clamp(mouse.x, 0.0f, gameScene.kScreenWidth_);
-	gameScene.reticlePos_.y = std::clamp(mouse.y, 0.0f, gameScene.kScreenHeight_);
+	gameScene.reticlePos_.x = std::clamp(mouse.x, 0.0f, gameScene.kScreenWidth);
+	gameScene.reticlePos_.y = std::clamp(mouse.y, 0.0f, gameScene.kScreenHeight);
 	if (gameScene.reticleSprite_) {
 		gameScene.reticleSprite_->SetPosition(gameScene.reticlePos_);
 	}
@@ -352,8 +352,8 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 		return;
 	}
 
-	const float ndcX = (gameScene.reticlePos_.x / gameScene.kScreenWidth_) * 2.0f - 1.0f;
-	const float ndcY = 1.0f - (gameScene.reticlePos_.y / gameScene.kScreenHeight_) * 2.0f;
+	const float ndcX = (gameScene.reticlePos_.x / gameScene.kScreenWidth) * 2.0f - 1.0f;
+	const float ndcY = 1.0f - (gameScene.reticlePos_.y / gameScene.kScreenHeight) * 2.0f;
 
 	// レティクルをワールドへ逆投影する。
 	const Matrix4x4 viewProj = MyMath::Multiply(cam->matView, cam->matProjection);
@@ -415,8 +415,8 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 			continue;
 		}
 
-		const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * gameScene.kScreenWidth_, (-clip.y * 0.5f + 0.5f) * gameScene.kScreenHeight_};
-		if (screenPos.x < 0.0f || screenPos.x > gameScene.kScreenWidth_ || screenPos.y < 0.0f || screenPos.y > gameScene.kScreenHeight_) {
+		const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * gameScene.kScreenWidth, (-clip.y * 0.5f + 0.5f) * gameScene.kScreenHeight};
+		if (screenPos.x < 0.0f || screenPos.x > gameScene.kScreenWidth || screenPos.y < 0.0f || screenPos.y > gameScene.kScreenHeight) {
 			continue;
 		}
 
@@ -481,8 +481,8 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 	const GameScene::SmokeParams& params = (gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_) ? gameScene.boostSmokeParams_ : gameScene.normalSmokeParams_;
 
 	static std::mt19937 rng{std::random_device{}()};
-	std::uniform_real_distribution<float> xyDist(-gameScene.kSmokeRandXY_, gameScene.kSmokeRandXY_);
-	std::uniform_real_distribution<float> zDist(-gameScene.kSmokeRandZ_, gameScene.kSmokeRandZ_);
+	std::uniform_real_distribution<float> xyDist(-gameScene.kSmokeRandXY, gameScene.kSmokeRandXY);
+	std::uniform_real_distribution<float> zDist(-gameScene.kSmokeRandZ, gameScene.kSmokeRandZ);
 
 	// 蓄積タイマーで発生間隔を保つ。
 	while (gameScene.smokeEmitTimer_ >= params.emitInterval) {
@@ -493,7 +493,7 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 		const auto& playerWt = gameScene.player_->GetWorldTransform();
 		const Matrix4x4 playerRotateMatrix = MyMath::MakeAffineMatrix({1.0f, 1.0f, 1.0f}, playerWt.rotation_, {0.0f, 0.0f, 0.0f});
 
-		const Vector3 localOffset = {0.0f, gameScene.kSmokeOffsetY_, gameScene.kSmokeOffsetZ_};
+		const Vector3 localOffset = {0.0f, gameScene.kSmokeOffsetY, gameScene.kSmokeOffsetZ};
 		const Vector3 offset = MyMath::TransformNormal(localOffset, playerRotateMatrix);
 		const Vector3 spawnPos = MyMath::Add(playerPos, offset);
 
@@ -524,7 +524,7 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 	}
 
 	static std::mt19937 rng{std::random_device{}()};
-	std::uniform_real_distribution<float> randDist(-gameScene.kMissileAfterburnerRand_, gameScene.kMissileAfterburnerRand_);
+	std::uniform_real_distribution<float> randDist(-gameScene.kMissileAfterburnerRand, gameScene.kMissileAfterburnerRand);
 
 	// 各ミサイルの後方に噴射を出す。
 	for (const auto& missile : gameScene.bulletManager_.GetHomingMissiles()) {
@@ -542,13 +542,13 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 		}
 
 		const Vector3 pos = missile->GetWorldTranslation();
-		const Vector3 spawnPos = MyMath::Add(pos, MyMath::Multiply(vel, gameScene.kMissileAfterburnerOffsetZ_));
-		Vector3 emitVel = MyMath::Multiply(vel, gameScene.kMissileAfterburnerSpeed_);
+		const Vector3 spawnPos = MyMath::Add(pos, MyMath::Multiply(vel, gameScene.kMissileAfterburnerOffsetZ));
+		Vector3 emitVel = MyMath::Multiply(vel, gameScene.kMissileAfterburnerSpeed);
 		emitVel.x += randDist(rng);
 		emitVel.y += randDist(rng);
 		emitVel.z += randDist(rng);
 		gameScene.missileAfterburnerEmitter_->Emit(
-		    spawnPos, emitVel, gameScene.kMissileAfterburnerLife_, gameScene.kMissileAfterburnerStartScale_, gameScene.kMissileAfterburnerEndScale_, kAfterburnerCoreColor, kAfterburnerOuterColor);
+		    spawnPos, emitVel, gameScene.kMissileAfterburnerLife, gameScene.kMissileAfterburnerStartScale, gameScene.kMissileAfterburnerEndScale, kAfterburnerCoreColor, kAfterburnerOuterColor);
 
 		// 追加の火の粉。
 		Vector3 emberVel = emitVel;
@@ -556,7 +556,7 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 		emberVel.y += randDist(rng) * 0.8f;
 		emberVel.z += randDist(rng) * 0.8f;
 		gameScene.missileAfterburnerEmitter_->Emit(
-		    spawnPos, emberVel, gameScene.kMissileAfterburnerLife_ * 0.65f, gameScene.kMissileAfterburnerStartScale_ * 0.6f, 0.0f, kBoostOuterColor, kExplosionFireColor);
+		    spawnPos, emberVel, gameScene.kMissileAfterburnerLife * 0.65f, gameScene.kMissileAfterburnerStartScale * 0.6f, 0.0f, kBoostOuterColor, kExplosionFireColor);
 	}
 
 	gameScene.missileAfterburnerEmitter_->Update(dt);
@@ -598,7 +598,7 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	}
 
 	const int currentScore = gameScene.uiManager_.GetScore()->GetScore();
-	const bool reachedClearScore = currentScore >= gameScene.kClearScore_;
+	const bool reachedClearScore = currentScore >= gameScene.requiredClearScore_;
 
 	// チュートリアルは従来通り、目標到達で即クリア。
 	if (gameScene.isTutorialLevel_ && reachedClearScore) {
@@ -671,20 +671,20 @@ void GameSceneUpdateExecutor::ClearAnimationUpdate(GameScene& gameScene, float d
 		auto& wt = gameScene.player_->GetWorldTransform();
 
 		// 前上方へ飛び去らせる。
-		wt.translation_.z += gameScene.kClearBoostSpeedZ_ * dt;
-		wt.translation_.y += gameScene.kClearBoostSpeedY_ * dt;
-		wt.rotation_.x -= gameScene.kClearRotateSpeedX_ * dt;
+		wt.translation_.z += gameScene.kClearBoostSpeedZ * dt;
+		wt.translation_.y += gameScene.kClearBoostSpeedY * dt;
+		wt.rotation_.x -= gameScene.kClearRotateSpeedX * dt;
 
 		// 後半は縮小させる。
-		if (gameScene.clearAnimTimer_ > gameScene.kClearShrinkStart_) {
-			float shrink = gameScene.clearAnimTimer_ - gameScene.kClearShrinkStart_;
-			float scale = (std::max)(0.0f, 1.0f - shrink * gameScene.kClearShrinkSpeed_);
+		if (gameScene.clearAnimTimer_ > gameScene.kClearShrinkStart) {
+			float shrink = gameScene.clearAnimTimer_ - gameScene.kClearShrinkStart;
+			float scale = (std::max)(0.0f, 1.0f - shrink * gameScene.kClearShrinkSpeed);
 			wt.scale_ = {scale, scale, scale};
 		}
 
 		wt.UpdateMatrix();
 
-		if (gameScene.clearAnimTimer_ >= gameScene.kClearAnimEndTime_) {
+		if (gameScene.clearAnimTimer_ >= gameScene.kClearAnimEndTime) {
 			if (isBossExitAnimating) {
 				// 離脱前の姿勢へ戻し、カウントダウンなしの開始演出へつなぐ。
 				wt.translation_ = gameScene.bossTransitionStartPosition_;
@@ -715,7 +715,7 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 	// 開始演出。
 	if (gameScene.transitionPhase_ == SceneTransitionPhase::IntroCinematic) {
 		gameScene.railCamera_->SetCinematicZoom(-10.0f);
-		if (gameScene.transitionTimer_ >= gameScene.kBossStartCinematicDuration_) {
+		if (gameScene.transitionTimer_ >= gameScene.kBossStartCinematicDuration) {
 			gameScene.transitionPhase_ = SceneTransitionPhase::None;
 			gameScene.timeScale_ = 1.0f;
 			gameScene.railCamera_->SetCinematicZoom(0.0f);
@@ -774,21 +774,21 @@ void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
 	// 火花パーティクル。
-	const int count = static_cast<int>(gameScene.kDamageGpuBurst_ * scale);
+	const int count = static_cast<int>(gameScene.kDamageGpuBurst * scale);
 	for (int i = 0; i < count; i++) {
 		if (gameScene.damageSmokeEmitter_) {
-			Vector3 vel = {dist(rng) * (gameScene.kDamageGpuSpeed_ * scale), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale)};
+			Vector3 vel = {dist(rng) * (gameScene.kDamageGpuSpeed * scale), dist(rng) * (gameScene.kDamageGpuSpeed * scale), dist(rng) * (gameScene.kDamageGpuSpeed * scale)};
 			gameScene.damageSmokeEmitter_->Emit(
-			    pos, vel, gameScene.kDamageGpuLife_ * 1.3f, gameScene.kDamageGpuStartScale_ * scale, gameScene.kDamageGpuEndScale_ * scale, kExplosionHotColor, kExplosionFireColor);
+			    pos, vel, gameScene.kDamageGpuLife * 1.3f, gameScene.kDamageGpuStartScale * scale, gameScene.kDamageGpuEndScale * scale, kExplosionHotColor, kExplosionFireColor);
 		}
 	}
 	// 煙パーティクル。
 	for (int i = 0; i < count / 2; i++) {
 		if (gameScene.damageSmokeEmitter_) {
 			Vector3 vel = {
-			    dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f)};
+			    dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f)};
 			gameScene.damageSmokeEmitter_->Emit(
-			    pos, vel, gameScene.kDamageGpuLife_ * 3.2f, gameScene.kDamageGpuStartScale_ * scale * 1.2f, gameScene.kDamageGpuEndScale_ * scale * 2.4f, kSmokeStartColor, kSmokeEndColor);
+			    pos, vel, gameScene.kDamageGpuLife * 3.2f, gameScene.kDamageGpuStartScale * scale * 1.2f, gameScene.kDamageGpuEndScale * scale * 2.4f, kSmokeStartColor, kSmokeEndColor);
 		}
 	}
 	if (gameScene.railCamera_) {

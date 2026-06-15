@@ -103,12 +103,12 @@ void GameScene::Initialize() {
 
 	// ===== 操作UI =====
 	wasdTextureHandle_ = TextureManager::Load("./Resources/InGame/WASD.png");
-	const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
+	const Vector2 keySize = {kWasdKeySize, kWasdKeySize};
 	const Vector2 keyUvSize = {96.0f, 96.0f};
-	wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}));
-	wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}));
-	wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}));
-	wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}));
+	wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY}));
+	wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing)}));
+	wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing)}));
+	wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing)}));
 	if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
 		wasdWSprite_->SetAnchorPoint({0.0f, 0.0f});
 		wasdASprite_->SetAnchorPoint({0.0f, 0.0f});
@@ -125,12 +125,12 @@ void GameScene::Initialize() {
 	}
 
 	mouseTextureHandle_ = TextureManager::Load("./Resources/InGame/Mouse.png");
-	const Vector2 mouseSize = {kMouseSize_, kMouseSize_};
+	const Vector2 mouseSize = {kMouseSize, kMouseSize};
 	const Vector2 mouseButtonUvSize = {320.0f, 270.0f};
-	const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
-	mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_, kMouseBaseY_}, {1.0f, 1.0f, 1.0f, 0.55f}));
-	mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_, kMouseBaseY_}));
-	mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}));
+	const Vector2 mouseButtonSize = {kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f};
+	mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX, kMouseBaseY}, {1.0f, 1.0f, 1.0f, 0.55f}));
+	mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX, kMouseBaseY}));
+	mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX + mouseButtonSize.x, kMouseBaseY}));
 	if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
 		mouseBaseSprite_->SetAnchorPoint({0.0f, 0.0f});
 		mouseLeftSprite_->SetAnchorPoint({0.0f, 0.0f});
@@ -144,7 +144,7 @@ void GameScene::Initialize() {
 	}
 
 	// ===== スピードライン初期化 =====
-	speedLine_.Initialize(&camera_, kSpeedLineCount_);
+	speedLine_.Initialize(&camera_, kSpeedLineCount);
 
 	// ===== エンジンスモーク初期化 =====
 	engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
@@ -177,9 +177,9 @@ void GameScene::Initialize() {
 
 	// ===== カウントダウン =====
 	countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/GO.png");
-	countDown_.SetTimings(kCountDownStartDelay_, kCountDownNumberDuration_, kCountDownGoDuration_);
-	countDown_.SetScaleRange(kCountDownScaleStart_, kCountDownScaleEnd_);
-	countDown_.SetBackOvershoot(kCountDownBackOvershoot_);
+	countDown_.SetTimings(kCountDownStartDelay, kCountDownNumberDuration, kCountDownGoDuration);
+	countDown_.SetScaleRange(kCountDownScaleStart, kCountDownScaleEnd);
+	countDown_.SetBackOvershoot(kCountDownBackOvershoot);
 
 	countDown_.SetAudio(audio_->LoadWave("./Resources/SE/CountBeep.wav"), audio_->LoadWave("./Resources/SE/Start.wav"));
 
@@ -204,7 +204,7 @@ void GameScene::Initialize() {
 	hasBossBattleStarted_ = false;
 
 	// ===== 開始 =====
-	kClearScore_ = LoadClearScoreFromLevelJson(levelJsonPath_, defaultClearScore);
+	requiredClearScore_ = LoadClearScoreFromLevelJson(levelJsonPath_, defaultClearScore);
 	countDown_.Start();
 
 	// 開始　３カウントから
@@ -223,7 +223,7 @@ void GameScene::Initialize() {
 	pauseMenu_ = std::make_unique<PauseMenu>();
 	pauseMenu_->Initialize();
 	pauseTitleTexHandle_ = TextureManager::Load("./Resources/InGame/Pause.png");
-	pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, {kPauseTitlePosX_, kPauseTitlePosY_}));
+	pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, {kPauseTitlePosX, kPauseTitlePosY}));
 	pauseTitleSprite_->SetAnchorPoint({0.0f, 0.0f});
 	const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
 	pauseTitleSprite_->SetSize({pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f});
@@ -343,7 +343,7 @@ void GameScene::Draw() {
 				if (clip.z < 0.0f || clip.z > 1.0f) {
 					continue;
 				}
-				const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * kScreenWidth_, (-clip.y * 0.5f + 0.5f) * kScreenHeight_};
+				const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight};
 				const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
 				const float scale = 0.85f + 0.35f * (1.0f - t);
 				const float alpha = (std::max)(0.0f, 1.0f - t);
@@ -364,12 +364,12 @@ void GameScene::Draw() {
 			const bool isAPressed = input_->PushKey(DIK_A);
 			const bool isSPressed = input_->PushKey(DIK_S);
 			const bool isDPressed = input_->PushKey(DIK_D);
-			const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
+			const Vector2 keySize = {kWasdKeySize, kWasdKeySize};
 
-			ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}, keySize, isWPressed);
-			ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isAPressed);
-			ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isSPressed);
-			ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isDPressed);
+			ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY}, keySize, isWPressed);
+			ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isAPressed);
+			ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isSPressed);
+			ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isDPressed);
 
 			wasdWSprite_->Draw();
 			wasdASprite_->Draw();
@@ -380,10 +380,10 @@ void GameScene::Draw() {
 		if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
 			const bool isLeftPressed = input_->IsPressMouse(0);
 			const bool isRightPressed = input_->IsPressMouse(1);
-			const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
+			const Vector2 mouseButtonSize = {kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f};
 
-			ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX_, kMouseBaseY_}, mouseButtonSize, isLeftPressed);
-			ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}, mouseButtonSize, isRightPressed);
+			ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX, kMouseBaseY}, mouseButtonSize, isLeftPressed);
+			ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX + mouseButtonSize.x, kMouseBaseY}, mouseButtonSize, isRightPressed);
 
 			mouseBaseSprite_->Draw();
 			mouseLeftSprite_->Draw();

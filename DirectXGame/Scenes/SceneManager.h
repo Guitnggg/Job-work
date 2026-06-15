@@ -87,7 +87,7 @@ private:
 	/// Title → Introduction : 黒フェード
 	/// Introduction → InGame : 白フラッシュ
 	/// </summary>
-	bool ShouldUseWhiteFlash(SceneName form, SceneName to) const;
+	bool ShouldUseWhiteFlash(SceneName from, SceneName to) const;
 
 private:
 	std::unique_ptr<IScene> currentScene_ = nullptr; // 現在実行中のシーン

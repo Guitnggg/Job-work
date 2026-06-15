@@ -109,8 +109,8 @@ void CountDown::Draw() {
 		return;
 	}
 
-	float duraction = CurrentPhaseDuration();
-	float t01 = (duraction > 0.0f) ? std::clamp(phaseTimer_ / duraction, 0.0f, 1.0f) : 1.0f;
+	float duration = CurrentPhaseDuration();
+	float t01 = (duration > 0.0f) ? std::clamp(phaseTimer_ / duration, 0.0f, 1.0f) : 1.0f;
 
 	// 現在フェーズ用スプライト取得
 	if (auto* spr = CurrentPhaseSprite()) {
