@@ -129,8 +129,6 @@ private:
 
 private:
 	// ===== 定数 =====
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// 初期姿勢
 	static constexpr KamataEngine::Vector3 kInitialPos{0.0f, -2.0f, 20.0f};
 	static constexpr KamataEngine::Vector3 kInitialRot{0.0f, 0.0f, 0.0f};

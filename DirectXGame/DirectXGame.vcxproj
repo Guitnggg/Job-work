@@ -307,6 +307,7 @@
     <None Include="Resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application\Utility\GameTime.h" />
     <ClInclude Include="Application\Cameras\RailCamera\CameraShake.h" />
     <ClInclude Include="Application\Characters\Boss\Boss.h" />
     <ClInclude Include="Application\Characters\Boss\BossAttackController.h" />

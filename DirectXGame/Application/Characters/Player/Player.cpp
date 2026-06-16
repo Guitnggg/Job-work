@@ -1,5 +1,7 @@
 #include "Player.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -36,7 +38,7 @@ public:
 		player.worldTransform_.rotation_.z -= player.lastHitRollOffset_;
 		player.lastHitRollOffset_ = 0.0f;
 
-		player.UpdateMoveAndBank_(Player::kFixedDeltaTime);
+		player.UpdateMoveAndBank_(GameTime::kDeltaTime);
 
 		float rollOffset = 0.0f;
 		if (player.hitFlashFrames_ > 0) {

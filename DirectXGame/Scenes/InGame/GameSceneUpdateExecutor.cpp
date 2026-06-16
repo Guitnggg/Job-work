@@ -1,6 +1,8 @@
 #include "GameSceneUpdateExecutor.h"
 #include "GameScene.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -96,7 +98,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	}
 
 	// 演出スローを反映した dt を作る。
-	const float dt = gameScene.kFixedDeltaTime * gameScene.timeScale_;
+	const float dt = GameTime::kDeltaTime * gameScene.timeScale_;
 
 	// ESC でポーズを開閉する。
 	if (gameScene.input_->TriggerKey(DIK_ESCAPE) && gameScene.state_ == GameState::Playing) {

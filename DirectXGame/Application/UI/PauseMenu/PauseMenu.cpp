@@ -1,5 +1,6 @@
 #include "PauseMenu.h"
 
+#include "Application/Utility/GameTime.h"
 #include "base/TextureManager.h"
 
 using namespace KamataEngine;
@@ -88,7 +89,7 @@ void PauseMenu::Update() {
 
 	// --- 開く ---
 	if (isOpening_) {
-		animTimer_ += kDeltaTime;
+		animTimer_ += GameTime::kDeltaTime;
 		float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
 		scale_ = kStartScale + (1.0f - kStartScale) * EaseOutBack(t);
 
@@ -100,7 +101,7 @@ void PauseMenu::Update() {
 
 	// --- 閉じる ---
 	if (isClosing_) {
-		animTimer_ += kDeltaTime;
+		animTimer_ += GameTime::kDeltaTime;
 		float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
 		scale_ = 1.0f - (1.0f - kStartScale) * EaseInBack(t);
 

@@ -112,8 +112,6 @@ private:
 	// 固定Δtを使用する理由：
 	// 敵AI挙動をフレームレート差の影響から切り離し、
 	// 追尾挙動を安定させるため
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// 強制消滅範囲
 	static constexpr float kKillZ = -40.0f;
 	static constexpr float kKillXY = 220.0f;

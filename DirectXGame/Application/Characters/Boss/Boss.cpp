@@ -1,5 +1,7 @@
 #include "Boss.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -30,7 +32,7 @@ void Boss::Initialize(const Vector3& position) {
 }
 
 void Boss::Update() {
-	hoverTimer_ += 1.0f / 60.0f;
+	hoverTimer_ += GameTime::kDeltaTime;
 	worldTransform_.translation_ = basePosition_;
 	worldTransform_.translation_.y += std::sin(hoverTimer_ * 1.8f) * 0.35f;
 	CharacterBase::Update();

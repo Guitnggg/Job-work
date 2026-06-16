@@ -1,5 +1,7 @@
 #include "SceneManager.h"
 
+#include "Application/Utility/GameTime.h"
+
 SceneManager::SceneManager() {
 	// BGM
 	audio_ = KamataEngine::Audio::GetInstance();
@@ -116,7 +118,7 @@ void SceneManager::Update() {
 	// 白フラッシュ
 	// ===============
 	case SceneTransitionState::FlashOut: {
-		flashTimer_ += 1.0f / 60.0f;
+		flashTimer_ += GameTime::kDeltaTime;
 		float t = std::clamp(flashTimer_ / flashTime_, 0.0f, 1.0f);
 		float alpha = (t < 0.5f) ? (t * 2.0f) : (2.0f - t * 2.0f);
 		flashSprite_->SetColor({1.0f, 1.0f, 1.0f, alpha});

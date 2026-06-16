@@ -1,5 +1,6 @@
 #include "TurretEnemy.h"
 
+#include "Application/Utility/GameTime.h"
 #include "base/TextureManager.h"
 #include <algorithm>
 #include <cmath>
@@ -106,7 +107,7 @@ void TurretEnemy::Update() {
 		return;
 	}
 
-	const float dt = 1.0f / 60.0f;
+	const float dt = GameTime::kDeltaTime;
 	UpdateBodyFeedback_(dt);
 
 	if (!state_) {

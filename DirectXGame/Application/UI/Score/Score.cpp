@@ -1,5 +1,7 @@
 #include "Score.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <algorithm>
 
 void Score::Initialize() {
@@ -24,7 +26,7 @@ void Score::Update() {
 	const float follow = 0.22f;
 	displayedScore_ += (static_cast<float>(score_) - displayedScore_) * follow;
 	if (scorePopTimer_ > 0.0f) {
-		scorePopTimer_ = (std::max)(0.0f, scorePopTimer_ - (1.0f / 60.0f));
+		scorePopTimer_ = (std::max)(0.0f, scorePopTimer_ - GameTime::kDeltaTime);
 		const float pulse = 1.0f + (scorePopTimer_ / 0.18f) * 0.35f;
 		for (int i = 0; i < kDigitCount; ++i) {
 			digitSprites_[i]->SetSize({size_.x * pulse, size_.y * pulse});

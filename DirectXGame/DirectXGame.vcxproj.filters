@@ -281,6 +281,9 @@
     <ClInclude Include="Application\Utility\MyMath\MyMath.h">
       <Filter>Application\Utility\MyMath</Filter>
     </ClInclude>
+    <ClInclude Include="Application\Utility\GameTime.h">
+      <Filter>Application\Utility</Filter>
+    </ClInclude>
     <ClInclude Include="Application\Characters\Player\Player.h">
       <Filter>Application\Characters\Player</Filter>
     </ClInclude>

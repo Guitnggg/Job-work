@@ -95,7 +95,6 @@ private:
 	// ===== アニメーション定数 =====
 	static constexpr float kAnimDuration = 0.25f;
 	static constexpr float kStartScale = 0.8f;
-	static constexpr float kDeltaTime = 1.0f / 60.0f;
 
 private:
 	// ===== 状態 =====

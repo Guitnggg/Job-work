@@ -1,5 +1,7 @@
 #include "AsteroidField.h"
 
+#include "Application/Utility/GameTime.h"
+
 using namespace KamataEngine;
 
 void AsteroidField::Initialize(const AsteroidFieldConfig& config) {
@@ -16,7 +18,7 @@ void AsteroidField::Initialize(const AsteroidFieldConfig& config) {
 }
 
 void AsteroidField::Update() {
-	spawnTimer_ += kFixedDeltaTime;
+	spawnTimer_ += GameTime::kDeltaTime;
 
 	for (auto& asteroid : asteroids_) {
 		asteroid->Update();

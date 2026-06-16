@@ -1,4 +1,7 @@
 #include "SeekerEnemy.h"
+
+#include "Application/Utility/GameTime.h"
+
 #include <cmath>
 
 using namespace KamataEngine;
@@ -91,7 +94,7 @@ void SeekerEnemy::Update() {
 		return;
 	}
 
-	const float dt = kFixedDeltaTime;
+	const float dt = GameTime::kDeltaTime;
 	timeSec_ += dt;
 
 	// --- 寿命・範囲チェック ---

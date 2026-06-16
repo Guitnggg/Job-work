@@ -1,11 +1,11 @@
 #include "ClearScene.h"
 
+#include "Application/Utility/GameTime.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
 
 namespace {
-constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 constexpr float kScreenWidth = 1280.0f;
 constexpr float kScreenHeight = 720.0f;
 constexpr float kScoreDigitWidth = 32.0f;
@@ -98,7 +98,7 @@ void ClearScene::Update() {
 	skydome_->Update();
 
 	// 小惑星生成間隔の更新
-	const float dt = kFixedDeltaTime;
+	const float dt = GameTime::kDeltaTime;
 	asteroidField_.Update();
 
 	// ===== クリア演出フェーズ制御 =====

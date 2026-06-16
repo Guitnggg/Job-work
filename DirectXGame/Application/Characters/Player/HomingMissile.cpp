@@ -1,5 +1,6 @@
 #include "HomingMissile.h"
 
+#include "Application/Utility/GameTime.h"
 #include "Application/Utility/MyMath/MyMath.h"
 #include "base/TextureManager.h"
 
@@ -51,7 +52,7 @@ void HomingMissile::Update() {
 		return;
 	}
 
-	elapsedTimeSec_ += kFixedDeltaTime;
+	elapsedTimeSec_ += GameTime::kDeltaTime;
 	if (elapsedTimeSec_ >= kLifeTimeSec) {
 		isDead_ = true;
 		return;

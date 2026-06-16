@@ -1,11 +1,11 @@
 #include "FinishScene.h"
 
+#include "Application/Utility/GameTime.h"
 #include "TitleScene.h"
 
 using namespace KamataEngine;
 
 namespace {
-constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 constexpr float kTwoPi = 6.28318530717958647692f;
 
 constexpr int kAsteroidCount = 10;
@@ -73,7 +73,7 @@ void FinishScene::Update() {
 	asteroidField_.Update();
 
 	// 点滅演出更新
-	blinkTimer_ += kFixedDeltaTime;
+	blinkTimer_ += GameTime::kDeltaTime;
 
 	if (blinkTimer_ >= blinkInterval_) {
 		blinkTimer_ -= blinkInterval_;

@@ -98,8 +98,6 @@ private:
 	std::unique_ptr<KamataEngine::Model> model_;
 	KamataEngine::Camera camera_;
 
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// ========== ゲーム状態 ==========
 	GameState state_ = GameState::CountDown;
 

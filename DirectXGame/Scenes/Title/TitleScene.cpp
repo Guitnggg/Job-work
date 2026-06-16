@@ -1,5 +1,6 @@
 #include "TitleScene.h"
 
+#include "Application/Utility/GameTime.h"
 #include "Scenes/Introduction/IntroductionScene.h"
 
 using namespace KamataEngine;
@@ -7,7 +8,6 @@ using namespace KamataEngine;
 // ===== TitleScene.cpp 内部定数（演出・時間）=====
 namespace {
 // フレーム
-constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 constexpr float kTwoPi = 6.28318530717958647692f;
 
 // タイトル落下演出
@@ -97,7 +97,7 @@ void TitleScene::Update() {
 
 	// Start点滅
 	if (isTitleFallFinished_) {
-		blinkTimer_ += kFixedDeltaTime;
+		blinkTimer_ += GameTime::kDeltaTime;
 		if (blinkTimer_ >= blinkInterval_) {
 			blinkTimer_ -= blinkInterval_;
 		}

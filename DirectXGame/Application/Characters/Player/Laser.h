@@ -63,8 +63,6 @@ public:
 
 private:
 	// ===== 定数 =====
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// 見た目
 	static constexpr KamataEngine::Vector3 kLaserScale{1.0f, 1.0f, 10.0f};
 	static constexpr KamataEngine::Vector3 kZeroRotation{0.0f, 0.0f, 0.0f};

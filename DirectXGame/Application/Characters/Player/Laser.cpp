@@ -1,5 +1,7 @@
 #include "Laser.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <cmath>
 
 using namespace KamataEngine;
@@ -58,7 +60,7 @@ void Laser::Update() {
 	}
 
 	// 固定Δt
-	elapsedTimeSec_ += kFixedDeltaTime;
+	elapsedTimeSec_ += GameTime::kDeltaTime;
 
 	// 前進
 	worldTransform_.translation_.x += dir_.x * speed_;
