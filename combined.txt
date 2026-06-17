@@ -13,6 +13,13 @@
 └── └── └──     ├── RailCamera.cpp
 └── └── └──     └── RailCamera.h
 └── └── ├── Characters/
+└── └── └── ├── Boss/
+└── └── └── └── ├── Boss.cpp
+└── └── └── └── ├── Boss.h
+└── └── └── └── ├── BossAttackController.cpp
+└── └── └── └── ├── BossAttackController.h
+└── └── └── └── ├── BossPart.cpp
+└── └── └── └── └── BossPart.h
 └── └── └── ├── CharacterBase.cpp
 └── └── └── ├── CharacterBase.h
 └── └── └── ├── Collider.cpp
@@ -34,9 +41,7 @@
 └── └── ├── Effects/
 └── └── └── ├── Smoke/
 └── └── └── └── ├── GpuSmokeEmitter.cpp
-└── └── └── └── ├── GpuSmokeEmitter.h
-└── └── └── └── ├── Smoke.cpp
-└── └── └── └── └── Smoke.h
+└── └── └── └── └── GpuSmokeEmitter.h
 └── └── └── └── SpeedLine/
 └── └── └──     ├── SpeedLine.cpp
 └── └── └──     └── SpeedLine.h
@@ -60,6 +65,7 @@
 └── └── └──     ├── Score.cpp
 └── └── └──     └── Score.h
 └── └── └── Utility/
+└── └──     ├── GameTime.h
 └── └──     └── MyMath/
 └── └──         ├── MyMath.cpp
 └── └──         ├── MyMath.h
@@ -67,6 +73,11 @@
 └── ├── DirectXGame.vcxproj
 └── ├── DirectXGame.vcxproj.filters
 └── ├── Managers/
+└── └── ├── BossManager/
+└── └── └── ├── BossManager.cpp
+└── └── └── ├── BossManager.h
+└── └── └── ├── BossUIManager.cpp
+└── └── └── └── BossUIManager.h
 └── └── ├── BulletManager/
 └── └── └── ├── BulletManager.cpp
 └── └── └── └── BulletManager.h
@@ -532,6 +543,335 @@ private:
 };
 
 ============================================================
+File Path: DirectXGame/Application/Characters/Boss/Boss.cpp
+============================================================
+#include "Boss.h"
+
+#include "Application/Utility/GameTime.h"
+
+#include <algorithm>
+#include <cmath>
+
+using namespace KamataEngine;
+
+void Boss::Initialize(const Vector3& position) {
+	CharacterBase::Initialize();
+	basePosition_ = position;
+	worldTransform_.translation_ = position;
+	worldTransform_.scale_ = {4.8f, 2.1f, 2.8f};
+	worldTransform_.rotation_ = {0.0f, 3.14159f, 0.0f};
+
+	model_.reset(Model::CreateSphere());
+	objectColor_.Initialize();
+	objectColor_.SetColor({0.28f, 0.30f, 0.36f, 1.0f});
+
+	coreParts_[0] = std::make_unique<BossPart>();
+	coreParts_[0]->Initialize(this, BossPart::Type::LeftCore, {-3.4f, 0.0f, -0.4f}, kCoreHp, 0.85f, {1.0f, 0.28f, 0.08f, 1.0f});
+	coreParts_[1] = std::make_unique<BossPart>();
+	coreParts_[1]->Initialize(this, BossPart::Type::RightCore, {3.4f, 0.0f, -0.4f}, kCoreHp, 0.85f, {0.35f, 1.0f, 0.22f, 1.0f});
+	bodyPart_ = std::make_unique<BossPart>();
+	bodyPart_->Initialize(this, BossPart::Type::Body, {0.0f, 0.0f, 0.0f}, kBodyHp, 2.4f, {1.0f, 0.12f, 0.08f, 0.95f});
+	bodyPart_->SetVisible(false);
+
+	hp_ = kBodyHp;
+	maxHp_ = kBodyHp;
+	Update();
+}
+
+void Boss::Update() {
+	hoverTimer_ += GameTime::kDeltaTime;
+	worldTransform_.translation_ = basePosition_;
+	worldTransform_.translation_.y += std::sin(hoverTimer_ * 1.8f) * 0.35f;
+	CharacterBase::Update();
+
+	const bool bodyVisible = AreCoresDestroyed();
+	if (bodyPart_) {
+		bodyPart_->SetVisible(bodyVisible);
+	}
+	for (auto& core : coreParts_) {
+		if (core) {
+			core->Update();
+		}
+	}
+	if (bodyPart_) {
+		bodyPart_->Update();
+		hp_ = bodyPart_->GetHP();
+	}
+}
+
+void Boss::Draw(const Camera* camera) {
+	if (!camera || IsDead()) {
+		return;
+	}
+	if (model_) {
+		model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
+	}
+	for (auto& core : coreParts_) {
+		if (core) {
+			core->Draw(camera);
+		}
+	}
+	if (bodyPart_) {
+		bodyPart_->Draw(camera);
+	}
+}
+
+void Boss::OnCollision(CharacterBase* /*other*/) {}
+
+bool Boss::AreCoresDestroyed() const {
+	return std::all_of(coreParts_.begin(), coreParts_.end(), [](const std::unique_ptr<BossPart>& part) { return !part || part->IsDead(); });
+}
+
+void Boss::ApplyPartDamage(BossPart& part, DamageSource source) {
+	if (!part.IsCollidable()) {
+		return;
+	}
+
+	int32_t damage = 5;
+	if (source == DamageSource::HomingMissile) {
+		damage = 15;
+	}
+
+	part.SetHP((std::max)(0, part.GetHP() - damage));
+	if (&part == bodyPart_.get()) {
+		hp_ = part.GetHP();
+	}
+}
+
+float Boss::GetHpRate() const {
+	const int32_t maxHp = GetBodyMaxHP();
+	if (maxHp <= 0) {
+		return 0.0f;
+	}
+	return std::clamp(static_cast<float>(GetBodyHP()) / static_cast<float>(maxHp), 0.0f, 1.0f);
+}
+
+std::vector<BossPart*> Boss::GetCollisionParts() {
+	std::vector<BossPart*> parts;
+	for (auto& core : coreParts_) {
+		if (core && core->IsCollidable()) {
+			parts.push_back(core.get());
+		}
+	}
+	if (bodyPart_ && bodyPart_->IsCollidable()) {
+		parts.push_back(bodyPart_.get());
+	}
+	return parts;
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Characters/Boss/Boss.h
+============================================================
+#pragma once
+
+#include <array>
+#include <memory>
+#include <vector>
+
+#include "3d/Camera.h"
+#include "3d/Model.h"
+#include "3d/ObjectColor.h"
+
+#include "Application/Characters/Boss/BossPart.h"
+#include "Application/Characters/CharacterBase.h"
+
+/// <summary>
+/// Boss ステージ用の大型敵。左右コアを破壊した後、本体へダメージが通る。
+/// 攻撃パターンは後続実装に備えて別クラスから呼び出せる形にしている。
+/// </summary>
+class Boss : public CharacterBase {
+public:
+	void Initialize(const KamataEngine::Vector3& position);
+	void Update() override;
+	void Draw(const KamataEngine::Camera* camera) override;
+	void OnCollision(CharacterBase* other) override;
+
+	bool IsDead() const override { return bodyPart_ && bodyPart_->IsDead(); }
+	bool AreCoresDestroyed() const;
+	bool CanDamageBody() const { return AreCoresDestroyed(); }
+
+	void ApplyPartDamage(BossPart& part, CharacterBase::DamageSource source);
+	int32_t GetBodyHP() const { return bodyPart_ ? bodyPart_->GetHP() : 0; }
+	int32_t GetBodyMaxHP() const { return bodyPart_ ? bodyPart_->GetMaxHP() : 1; }
+	float GetHpRate() const;
+
+	std::vector<BossPart*> GetCollisionParts();
+
+private:
+	std::unique_ptr<KamataEngine::Model> model_;
+	KamataEngine::ObjectColor objectColor_;
+	uint32_t textureHandle_ = 0u;
+
+	std::array<std::unique_ptr<BossPart>, 2> coreParts_;
+	std::unique_ptr<BossPart> bodyPart_;
+
+	float hoverTimer_ = 0.0f;
+	KamataEngine::Vector3 basePosition_{0.0f, 0.0f, 0.0f};
+
+	static constexpr int32_t kBodyHp = 100;
+	static constexpr int32_t kCoreHp = 20;
+};
+
+
+============================================================
+File Path: DirectXGame/Application/Characters/Boss/BossAttackController.cpp
+============================================================
+#include "BossAttackController.h"
+
+void BossAttackController::Initialize(Boss* boss) {
+	boss_ = boss;
+	timer_ = 0.0f;
+}
+
+void BossAttackController::Update(float dt) {
+	if (!boss_) {
+		return;
+	}
+
+	// 攻撃パターンは後続実装で追加する。
+	timer_ += dt;
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Characters/Boss/BossAttackController.h
+============================================================
+#pragma once
+
+class Boss;
+
+/// <summary>
+/// ボス攻撃パターン追加用の差し込み口。
+/// 現仕様では攻撃は未実装のため、状態更新のみ受け取る。
+/// </summary>
+class BossAttackController {
+public:
+	void Initialize(Boss* boss);
+	void Update(float dt);
+
+private:
+	Boss* boss_ = nullptr;
+	float timer_ = 0.0f;
+};
+
+
+============================================================
+File Path: DirectXGame/Application/Characters/Boss/BossPart.cpp
+============================================================
+#include "BossPart.h"
+
+#include "Application/Characters/Boss/Boss.h"
+
+using namespace KamataEngine;
+
+void BossPart::Initialize(Boss* owner, Type type, const Vector3& localOffset, int32_t hp, float radius, const Vector4& color) {
+	owner_ = owner;
+	type_ = type;
+	localOffset_ = localOffset;
+
+	CharacterBase::Initialize();
+	maxHp_ = hp;
+	hp_ = hp;
+
+	model_.reset(Model::CreateSphere());
+	objectColor_.Initialize();
+	objectColor_.SetColor(color);
+	worldTransform_.scale_ = {radius, radius, radius};
+
+	if (collider_) {
+		collider_->SetRadius(radius);
+	}
+}
+
+void BossPart::Update() {
+	if (!owner_) {
+		CharacterBase::Update();
+		return;
+	}
+
+	const Vector3 ownerPos = owner_->GetWorldTranslation();
+	worldTransform_.translation_ = {ownerPos.x + localOffset_.x, ownerPos.y + localOffset_.y, ownerPos.z + localOffset_.z};
+	CharacterBase::Update();
+}
+
+void BossPart::Draw(const Camera* camera) {
+	if (!camera || !model_ || !isVisible_ || IsDead()) {
+		return;
+	}
+
+	model_->Draw(worldTransform_, *camera, textureHandle_, &objectColor_);
+}
+
+void BossPart::OnCollision(CharacterBase* /*other*/) {
+	if (!owner_ || !IsCollidable()) {
+		return;
+	}
+	owner_->ApplyPartDamage(*this, GetLastDamageSource());
+}
+
+bool BossPart::IsCollidable() const {
+	if (IsDead()) {
+		return false;
+	}
+	if (type_ == Type::Body && owner_) {
+		return owner_->CanDamageBody();
+	}
+	return true;
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Characters/Boss/BossPart.h
+============================================================
+#pragma once
+
+#include <memory>
+
+#include "3d/Camera.h"
+#include "3d/Model.h"
+#include "3d/ObjectColor.h"
+
+#include "Application/Characters/CharacterBase.h"
+
+class Boss;
+
+/// <summary>
+/// ボスの弱点部位。左右コアと本体を別々の当たり判定として扱う。
+/// </summary>
+class BossPart : public CharacterBase {
+public:
+	enum class Type {
+		LeftCore,
+		RightCore,
+		Body,
+	};
+
+	void Initialize(Boss* owner, Type type, const KamataEngine::Vector3& localOffset, int32_t hp, float radius, const KamataEngine::Vector4& color);
+	void Update() override;
+	void Draw(const KamataEngine::Camera* camera) override;
+	void OnCollision(CharacterBase* other) override;
+
+	bool IsDead() const override { return hp_ <= 0; }
+	bool IsCollidable() const override;
+
+	Type GetType() const { return type_; }
+	const KamataEngine::Vector3& GetLocalOffset() const { return localOffset_; }
+	void SetLocalOffset(const KamataEngine::Vector3& offset) { localOffset_ = offset; }
+	void SetVisible(bool visible) { isVisible_ = visible; }
+
+private:
+	Boss* owner_ = nullptr;
+	Type type_ = Type::Body;
+	KamataEngine::Vector3 localOffset_{0.0f, 0.0f, 0.0f};
+	std::unique_ptr<KamataEngine::Model> model_;
+	KamataEngine::ObjectColor objectColor_;
+	uint32_t textureHandle_ = 0u;
+	bool isVisible_ = true;
+};
+
+
+============================================================
 File Path: DirectXGame/Application/Characters/CharacterBase.cpp
 ============================================================
 #include "CharacterBase.h"
@@ -606,7 +946,6 @@ public:
 	enum class DamageSource {
 		Unknown,
 		Bullet,
-		Laser,
 		HomingMissile,
 		Collision
 	};
@@ -867,6 +1206,9 @@ private:
 File Path: DirectXGame/Application/Characters/Enemy/SeekerEnemy.cpp
 ============================================================
 #include "SeekerEnemy.h"
+
+#include "Application/Utility/GameTime.h"
+
 #include <cmath>
 
 using namespace KamataEngine;
@@ -959,7 +1301,7 @@ void SeekerEnemy::Update() {
 		return;
 	}
 
-	const float dt = kFixedDeltaTime;
+	const float dt = GameTime::kDeltaTime;
 	timeSec_ += dt;
 
 	// --- 寿命・範囲チェック ---
@@ -1324,8 +1666,6 @@ private:
 	// 固定Δtを使用する理由：
 	// 敵AI挙動をフレームレート差の影響から切り離し、
 	// 追尾挙動を安定させるため
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// 強制消滅範囲
 	static constexpr float kKillZ = -40.0f;
 	static constexpr float kKillXY = 220.0f;
@@ -1392,6 +1732,7 @@ File Path: DirectXGame/Application/Characters/Enemy/TurretEnemy.cpp
 ============================================================
 #include "TurretEnemy.h"
 
+#include "Application/Utility/GameTime.h"
 #include "base/TextureManager.h"
 #include <algorithm>
 #include <cmath>
@@ -1498,7 +1839,7 @@ void TurretEnemy::Update() {
 		return;
 	}
 
-	const float dt = 1.0f / 60.0f;
+	const float dt = GameTime::kDeltaTime;
 	UpdateBodyFeedback_(dt);
 
 	if (!state_) {
@@ -1860,6 +2201,8 @@ File Path: DirectXGame/Application/Characters/Player/Bullet.cpp
 ============================================================
 #include "Bullet.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <cmath>
 
 using namespace KamataEngine;
@@ -1919,7 +2262,7 @@ void Bullet::Update() {
 	}
 
 	// 固定Δt
-	elapsedTimeSec_ += kFixedDeltaTime;
+	elapsedTimeSec_ += GameTime::kDeltaTime;
 
 	// 前進（フレーム依存）
 	worldTransform_.translation_.x += dir_.x * speed_;
@@ -2043,8 +2386,6 @@ public:
 
 private:
 	// ===== 定数 =====
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// 見た目
 	static constexpr KamataEngine::Vector3 kBulletScale{0.4f, 0.4f, 0.7f};
 	static constexpr KamataEngine::Vector3 kZeroRotation{0.0f, 0.0f, 0.0f};
@@ -2082,6 +2423,7 @@ File Path: DirectXGame/Application/Characters/Player/HomingMissile.cpp
 ============================================================
 #include "HomingMissile.h"
 
+#include "Application/Utility/GameTime.h"
 #include "Application/Utility/MyMath/MyMath.h"
 #include "base/TextureManager.h"
 
@@ -2133,7 +2475,7 @@ void HomingMissile::Update() {
 		return;
 	}
 
-	elapsedTimeSec_ += kFixedDeltaTime;
+	elapsedTimeSec_ += GameTime::kDeltaTime;
 	if (elapsedTimeSec_ >= kLifeTimeSec) {
 		isDead_ = true;
 		return;
@@ -2239,7 +2581,6 @@ public:
 
 private:
 	// ===== 定数 =====
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 	static constexpr KamataEngine::Vector3 kMissileScale{0.3f, 0.3f, 0.7f};
 	static constexpr float kColliderRadius = 0.65f;
 	static constexpr float kSpeed = 1.4f;
@@ -2262,6 +2603,8 @@ private:
 File Path: DirectXGame/Application/Characters/Player/Laser.cpp
 ============================================================
 #include "Laser.h"
+
+#include "Application/Utility/GameTime.h"
 
 #include <cmath>
 
@@ -2321,7 +2664,7 @@ void Laser::Update() {
 	}
 
 	// 固定Δt
-	elapsedTimeSec_ += kFixedDeltaTime;
+	elapsedTimeSec_ += GameTime::kDeltaTime;
 
 	// 前進
 	worldTransform_.translation_.x += dir_.x * speed_;
@@ -2437,8 +2780,6 @@ public:
 
 private:
 	// ===== 定数 =====
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// 見た目
 	static constexpr KamataEngine::Vector3 kLaserScale{1.0f, 1.0f, 10.0f};
 	static constexpr KamataEngine::Vector3 kZeroRotation{0.0f, 0.0f, 0.0f};
@@ -2476,6 +2817,8 @@ File Path: DirectXGame/Application/Characters/Player/Player.cpp
 ============================================================
 #include "Player.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -2512,7 +2855,7 @@ public:
 		player.worldTransform_.rotation_.z -= player.lastHitRollOffset_;
 		player.lastHitRollOffset_ = 0.0f;
 
-		player.UpdateMoveAndBank_(Player::kFixedDeltaTime);
+		player.UpdateMoveAndBank_(GameTime::kDeltaTime);
 
 		float rollOffset = 0.0f;
 		if (player.hitFlashFrames_ > 0) {
@@ -2999,8 +3342,6 @@ private:
 
 private:
 	// ===== 定数 =====
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// 初期姿勢
 	static constexpr KamataEngine::Vector3 kInitialPos{0.0f, -2.0f, 20.0f};
 	static constexpr KamataEngine::Vector3 kInitialRot{0.0f, 0.0f, 0.0f};
@@ -3522,158 +3863,6 @@ private:
 
 
 ============================================================
-File Path: DirectXGame/Application/Effects/Smoke/Smoke.cpp
-============================================================
-#include "Smoke.h"
-
-using namespace KamataEngine;
-
-void Smoke::Initialize(Model* model, const Vector3& position, const Vector3& velocity, float lifeTime, float startScale, float endScale) {
-	// ===== パラメータ設定 =====
-	model_ = model;          // 非所有
-	velocity_ = velocity;    // 移動速度
-	lifeTimeSec_ = lifeTime; // 寿命
-	startScale_ = startScale;
-	endScale_ = endScale;
-
-	elapsedTimeSec_ = 0.0f;
-	isFinished_ = false;
-
-	// ===== ワールド変換初期化 =====
-	worldTransform_.Initialize();
-	worldTransform_.translation_ = position;
-	worldTransform_.rotation_ = {0.0f, 0.0f, 0.0f};
-	worldTransform_.scale_ = {startScale_, startScale_, startScale_};
-
-	worldTransform_.UpdateMatrix();
-}
-
-void Smoke::Update(float dt) {
-	// 終了している場合は更新しない
-	if (isFinished_) {
-		return;
-	}
-
-	// ===== 時間進行 =====
-	elapsedTimeSec_ += dt;
-	if (elapsedTimeSec_ >= lifeTimeSec_) {
-		isFinished_ = true;
-		return;
-	}
-
-	// ===== 移動（dt対応）=====
-	worldTransform_.translation_.x += velocity_.x * dt;
-	worldTransform_.translation_.y += velocity_.y * dt;
-	worldTransform_.translation_.z += velocity_.z * dt;
-
-	// ===== スケール補間 =====
-	float t = 1.0f;
-	if (lifeTimeSec_ > 0.0f) {
-		t = elapsedTimeSec_ / lifeTimeSec_;
-		if (t < 0.0f)
-			t = 0.0f;
-		if (t > 1.0f)
-			t = 1.0f;
-	}
-
-	const float scale = startScale_ + (endScale_ - startScale_) * t;
-	worldTransform_.scale_ = {(scale < 0.0f) ? 0.0f : scale, (scale < 0.0f) ? 0.0f : scale, (scale < 0.0f) ? 0.0f : scale};
-
-	// ===== 行列更新 =====
-	worldTransform_.UpdateMatrix();
-}
-
-void Smoke::Draw(const Camera* camera) {
-	// 無効な状態では描画しない
-	if (isFinished_ || !camera || !model_) {
-		return;
-	}
-
-	model_->Draw(worldTransform_, *camera);
-}
-
-
-============================================================
-File Path: DirectXGame/Application/Effects/Smoke/Smoke.h
-============================================================
-#pragma once
-
-#include "3d/Camera.h"
-#include "3d/Model.h"
-#include "3d/WorldTransform.h"
-#include "math/Vector3.h"
-
-/// <summary>
-/// 被弾・爆発・推進エンジンなどの演出に使用する残留系パーティクル（煙）。
-/// ・速度ベースで移動（dt対応）
-/// ・寿命（秒）で消滅
-/// ・開始スケール → 終了スケールを補間
-///
-/// DamageParticle よりも寿命が長く、
-/// ふわっと残る演出（煙・蒸気・残像）を想定したクラス。
-/// </summary>
-class Smoke {
-public:
-	/// <summary>
-	/// コンストラクタ / デストラクタ
-	/// </summary>
-	Smoke() = default;
-	~Smoke() = default;
-
-	/// <summary>
-	/// 初期化処理
-	/// </summary>
-	/// <param name="model">
-	/// </param>
-	/// <param name="position">生成位置（ワールド座標）</param>
-	/// <param name="velocity">移動速度（1秒あたり）</param>
-	/// <param name="lifeTime">寿命（秒）</param>
-	/// <param name="startScale">初期スケール</param>
-	/// <param name="endScale">終了スケール</param>
-	void Initialize(KamataEngine::Model* model, const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float lifeTime, float startScale, float endScale);
-
-	/// <summary>
-	/// 更新処理
-	/// </summary>
-	/// <param name="dt">前フレームからの経過時間（秒）</param>
-	void Update(float dt);
-
-	/// <summary>
-	/// 描画処理
-	/// </summary>
-	/// <param name="camera">描画に使用するカメラ</param>
-	void Draw(const KamataEngine::Camera* camera);
-
-	/// <summary>
-	/// 寿命が尽きているかどうか
-	/// 管理クラス側で削除判定に使用する。
-	/// </summary>
-	bool IsFinished() const { return isFinished_; }
-
-private:
-	// ワールド変換情報
-	KamataEngine::WorldTransform worldTransform_;
-
-	// 描画用モデル（非所有）
-	KamataEngine::Model* model_ = nullptr;
-
-	// 移動速度（1秒あたり）
-	KamataEngine::Vector3 velocity_{};
-
-	// 時間管理
-	float elapsedTimeSec_ = 0.0f; // 経過時間
-	float lifeTimeSec_ = 1.0f;    // 寿命
-
-	// スケール補間
-	float startScale_ = 1.0f;
-	float endScale_ = 0.0f;
-
-	// 終了フラグ
-	bool isFinished_ = false;
-};
-
-
-============================================================
 File Path: DirectXGame/Application/Effects/SpeedLine/SpeedLine.cpp
 ============================================================
 #include "SpeedLine.h"
@@ -4029,6 +4218,8 @@ File Path: DirectXGame/Application/Objects/Asteroid/AsteroidField.cpp
 ============================================================
 #include "AsteroidField.h"
 
+#include "Application/Utility/GameTime.h"
+
 using namespace KamataEngine;
 
 void AsteroidField::Initialize(const AsteroidFieldConfig& config) {
@@ -4045,7 +4236,7 @@ void AsteroidField::Initialize(const AsteroidFieldConfig& config) {
 }
 
 void AsteroidField::Update() {
-	spawnTimer_ += kFixedDeltaTime;
+	spawnTimer_ += GameTime::kDeltaTime;
 
 	for (auto& asteroid : asteroids_) {
 		asteroid->Update();
@@ -4134,8 +4325,6 @@ public:
 
 private:
 	// 固定デルタタイム
-	static constexpr float kFixedDeltaTime = 1.0f / 60.0f;
-
 	// 小惑星のスポーン
 	void SpawnAsteroid();
 	float Rand(float min, float max);
@@ -4152,6 +4341,7 @@ private:
 	float spawnTimer_ = 0.0f;
 	std::mt19937 mt_{std::random_device{}()};
 };
+
 
 ============================================================
 File Path: DirectXGame/Application/UI/CountDown/CountDown.cpp
@@ -4267,8 +4457,8 @@ void CountDown::Draw() {
 		return;
 	}
 
-	float duraction = CurrentPhaseDuration();
-	float t01 = (duraction > 0.0f) ? std::clamp(phaseTimer_ / duraction, 0.0f, 1.0f) : 1.0f;
+	float duration = CurrentPhaseDuration();
+	float t01 = (duration > 0.0f) ? std::clamp(phaseTimer_ / duration, 0.0f, 1.0f) : 1.0f;
 
 	// 現在フェーズ用スプライト取得
 	if (auto* spr = CurrentPhaseSprite()) {
@@ -4381,6 +4571,7 @@ void CountDown::AdvancePhase() {
 		break;
 	}
 }
+
 
 ============================================================
 File Path: DirectXGame/Application/UI/CountDown/CountDown.h
@@ -4677,10 +4868,10 @@ private:
 
 	float value_ = 1.0f; // 現在の表示比率(0.0～1.0)
 
-	float kBarWidth = 200.0f;
-	float kBarHeight = 10.0f;
-	float kBarPosX = 24.0f;
-	float kBarPosY = 64.0f;
+	static constexpr float kBarWidth = 200.0f;
+	static constexpr float kBarHeight = 10.0f;
+	static constexpr float kBarPosX = 24.0f;
+	static constexpr float kBarPosY = 64.0f;
 };
 
 
@@ -4689,6 +4880,7 @@ File Path: DirectXGame/Application/UI/PauseMenu/PauseMenu.cpp
 ============================================================
 #include "PauseMenu.h"
 
+#include "Application/Utility/GameTime.h"
 #include "base/TextureManager.h"
 
 using namespace KamataEngine;
@@ -4777,7 +4969,7 @@ void PauseMenu::Update() {
 
 	// --- 開く ---
 	if (isOpening_) {
-		animTimer_ += kDeltaTime;
+		animTimer_ += GameTime::kDeltaTime;
 		float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
 		scale_ = kStartScale + (1.0f - kStartScale) * EaseOutBack(t);
 
@@ -4789,7 +4981,7 @@ void PauseMenu::Update() {
 
 	// --- 閉じる ---
 	if (isClosing_) {
-		animTimer_ += kDeltaTime;
+		animTimer_ += GameTime::kDeltaTime;
 		float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
 		scale_ = 1.0f - (1.0f - kStartScale) * EaseInBack(t);
 
@@ -4972,7 +5164,6 @@ private:
 	// ===== アニメーション定数 =====
 	static constexpr float kAnimDuration = 0.25f;
 	static constexpr float kStartScale = 0.8f;
-	static constexpr float kDeltaTime = 1.0f / 60.0f;
 
 private:
 	// ===== 状態 =====
@@ -5002,6 +5193,8 @@ File Path: DirectXGame/Application/UI/Score/Score.cpp
 ============================================================
 #include "Score.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <algorithm>
 
 void Score::Initialize() {
@@ -5026,7 +5219,7 @@ void Score::Update() {
 	const float follow = 0.22f;
 	displayedScore_ += (static_cast<float>(score_) - displayedScore_) * follow;
 	if (scorePopTimer_ > 0.0f) {
-		scorePopTimer_ = (std::max)(0.0f, scorePopTimer_ - (1.0f / 60.0f));
+		scorePopTimer_ = (std::max)(0.0f, scorePopTimer_ - GameTime::kDeltaTime);
 		const float pulse = 1.0f + (scorePopTimer_ / 0.18f) * 0.35f;
 		for (int i = 0; i < kDigitCount; ++i) {
 			digitSprites_[i]->SetSize({size_.x * pulse, size_.y * pulse});
@@ -5140,6 +5333,18 @@ private:
 	static const int kDigitCount = 5;                                               // 最大桁数（99999まで）
 	std::array<std::unique_ptr<KamataEngine::Sprite>, kDigitCount> digitSprites_{}; // 各桁ごとのスプライト
 };
+
+
+============================================================
+File Path: DirectXGame/Application/Utility/GameTime.h
+============================================================
+#pragma once
+
+namespace GameTime {
+
+inline constexpr float kDeltaTime = 1.0f / 60.0f;
+
+}
 
 
 ============================================================
@@ -5707,12 +5912,14 @@ File Path: DirectXGame/DirectXGame.vcxproj
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application\Cameras\RailCamera\CameraShake.cpp" />
+    <ClCompile Include="Application\Characters\Boss\Boss.cpp" />
+    <ClCompile Include="Application\Characters\Boss\BossAttackController.cpp" />
+    <ClCompile Include="Application\Characters\Boss\BossPart.cpp" />
     <ClCompile Include="Application\Characters\Enemy\TurretEnemy.cpp" />
     <ClCompile Include="Application\Characters\Player\Laser.cpp" />
     <ClCompile Include="Application\Effects\Smoke\GpuSmokeEmitter.cpp" />
     <ClCompile Include="Application\Objects\Asteroid\Asteroid.cpp" />
     <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp" />
-    <ClCompile Include="Application\Effects\Smoke\Smoke.cpp" />
     <ClCompile Include="Application\Objects\Asteroid\AsteroidField.cpp" />
     <ClCompile Include="Application\UI\CountDown\CountDown.cpp" />
     <ClCompile Include="Application\Characters\CharacterBase.cpp" />
@@ -5721,6 +5928,8 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <ClCompile Include="Application\Characters\Player\Bullet.cpp" />
     <ClCompile Include="Application\UI\PauseMenu\PauseMenu.cpp" />
     <ClCompile Include="Application\Characters\Player\HomingMissile.cpp" />
+    <ClCompile Include="Managers\BossManager\BossManager.cpp" />
+    <ClCompile Include="Managers\BossManager\BossUIManager.cpp" />
     <ClCompile Include="Scenes\InGame\GameSceneUpdateExecutor.cpp" />
     <ClCompile Include="Managers\BulletManager\BulletManager.cpp" />
     <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
@@ -5855,13 +6064,16 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <None Include="Resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application\Utility\GameTime.h" />
     <ClInclude Include="Application\Cameras\RailCamera\CameraShake.h" />
+    <ClInclude Include="Application\Characters\Boss\Boss.h" />
+    <ClInclude Include="Application\Characters\Boss\BossAttackController.h" />
+    <ClInclude Include="Application\Characters\Boss\BossPart.h" />
     <ClInclude Include="Application\Characters\Enemy\TurretEnemy.h" />
     <ClInclude Include="Application\Characters\Player\Laser.h" />
     <ClInclude Include="Application\Effects\Smoke\GpuSmokeEmitter.h" />
     <ClInclude Include="Application\Objects\Asteroid\Asteroid.h" />
     <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h" />
-    <ClInclude Include="Application\Effects\Smoke\Smoke.h" />
     <ClInclude Include="Application\Objects\Asteroid\AsteroidField.h" />
     <ClInclude Include="Application\UI\CountDown\CountDown.h" />
     <ClInclude Include="Application\Characters\CharacterBase.h" />
@@ -5870,6 +6082,8 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <ClInclude Include="Application\Characters\Player\Bullet.h" />
     <ClInclude Include="Application\UI\PauseMenu\PauseMenu.h" />
     <ClInclude Include="Application\Characters\Player\HomingMissile.h" />
+    <ClInclude Include="Managers\BossManager\BossManager.h" />
+    <ClInclude Include="Managers\BossManager\BossUIManager.h" />
     <ClInclude Include="Scenes\InGame\GameSceneUpdateExecutor.h" />
     <ClInclude Include="Managers\BulletManager\BulletManager.h" />
     <ClInclude Include="Scenes\Clear\ClearScene.h" />
@@ -5894,6 +6108,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
+
 
 ============================================================
 File Path: DirectXGame/DirectXGame.vcxproj.filters
@@ -6181,6 +6396,9 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <ClInclude Include="Application\Utility\MyMath\MyMath.h">
       <Filter>Application\Utility\MyMath</Filter>
     </ClInclude>
+    <ClInclude Include="Application\Utility\GameTime.h">
+      <Filter>Application\Utility</Filter>
+    </ClInclude>
     <ClInclude Include="Application\Characters\Player\Player.h">
       <Filter>Application\Characters\Player</Filter>
     </ClInclude>
@@ -6266,6 +6484,311 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
   </ItemGroup>
 </Project>
 
+
+============================================================
+File Path: DirectXGame/Managers/BossManager/BossManager.cpp
+============================================================
+#include "BossManager.h"
+
+#include <algorithm>
+#include <cmath>
+
+#include "Application/Characters/Player/Bullet.h"
+#include "Application/Characters/Player/HomingMissile.h"
+
+using namespace KamataEngine;
+
+namespace {
+CharacterBase::DamageSource GetProjectileDamageSource(CharacterBase* projectile) {
+	if (dynamic_cast<HomingMissile*>(projectile)) {
+		return CharacterBase::DamageSource::HomingMissile;
+	}
+	return CharacterBase::DamageSource::Bullet;
+}
+
+bool IsHit(CharacterBase* a, CharacterBase* b) {
+	if (!a || !b || !a->GetCollider() || !b->GetCollider()) {
+		return false;
+	}
+	const Vector3 ap = a->GetCollider()->GetTranslate();
+	const Vector3 bp = b->GetCollider()->GetTranslate();
+	const float ar = a->GetCollider()->GetRadius();
+	const float br = b->GetCollider()->GetRadius();
+	const float dx = ap.x - bp.x;
+	const float dy = ap.y - bp.y;
+	const float dz = ap.z - bp.z;
+	const float rr = ar + br;
+	return dx * dx + dy * dy + dz * dz <= rr * rr;
+}
+} // namespace
+
+void BossManager::Initialize() {
+	state_ = State::Inactive;
+	boss_.reset();
+	introTimer_ = 0.0f;
+	clearTimer_ = 0.0f;
+	defeatHandled_ = false;
+	uiManager_.Initialize();
+}
+
+void BossManager::StartBossBattle(const Vector3& playerPos, WorldTransform* parent) {
+	boss_ = std::make_unique<Boss>();
+	boss_->Initialize({playerPos.x, playerPos.y + 0.8f, playerPos.z + 55.0f});
+	boss_->SetParent(parent);
+	boss_->Update();
+	attackController_.Initialize(boss_.get());
+	state_ = State::Intro;
+	introTimer_ = 0.0f;
+	clearTimer_ = 0.0f;
+	defeatHandled_ = false;
+}
+
+void BossManager::Update(float dt) {
+	if (state_ == State::Inactive) {
+		uiManager_.Update(nullptr, 0.0f, false, false);
+		return;
+	}
+
+	if (state_ == State::Intro) {
+		introTimer_ += dt;
+		if (boss_) {
+			boss_->Update();
+		}
+		const float warningRate = std::fabs(std::sin(introTimer_ * 10.0f));
+		uiManager_.Update(boss_.get(), warningRate, false, true);
+		if (introTimer_ >= kIntroDuration) {
+			state_ = State::Battle;
+		}
+		return;
+	}
+
+	if (state_ == State::Battle) {
+		if (boss_) {
+			boss_->Update();
+			attackController_.Update(dt);
+			if (boss_->IsDead() && !defeatHandled_) {
+				state_ = State::Clear;
+				clearTimer_ = 0.0f;
+				defeatHandled_ = true;
+			}
+		}
+		uiManager_.Update(boss_.get(), 0.0f, true, false);
+		return;
+	}
+
+	if (state_ == State::Clear) {
+		clearTimer_ += dt;
+		uiManager_.Update(boss_.get(), 0.0f, false, false);
+	}
+}
+
+void BossManager::Draw(const Camera* camera) {
+	if (boss_ && state_ != State::Inactive && state_ != State::Clear) {
+		boss_->Draw(camera);
+	}
+}
+
+void BossManager::DrawUI() { uiManager_.Draw(); }
+
+void BossManager::ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<HomingMissile>>& missiles) {
+	if (state_ != State::Battle || !boss_) {
+		return;
+	}
+	ResolveProjectileCollisions_(bullets);
+	ResolveProjectileCollisions_(missiles);
+}
+
+template <class TProjectile>
+void BossManager::ResolveProjectileCollisions_(std::vector<std::unique_ptr<TProjectile>>& projectiles) {
+	if (!boss_) {
+		return;
+	}
+	for (auto& projectile : projectiles) {
+		if (!projectile || projectile->IsDead()) {
+			continue;
+		}
+		for (BossPart* part : boss_->GetCollisionParts()) {
+			if (!part || !part->IsCollidable()) {
+				continue;
+			}
+			if (!IsHit(projectile.get(), part)) {
+				continue;
+			}
+			part->SetLastDamageSource(GetProjectileDamageSource(projectile.get()));
+			part->OnCollision(projectile.get());
+			projectile->OnCollision(part);
+			break;
+		}
+	}
+}
+
+
+============================================================
+File Path: DirectXGame/Managers/BossManager/BossManager.h
+============================================================
+#pragma once
+
+#include <memory>
+#include <vector>
+
+#include <KamataEngine.h>
+
+#include "Application/Characters/Boss/Boss.h"
+#include "Application/Characters/Boss/BossAttackController.h"
+#include "Managers/BossManager/BossUIManager.h"
+
+class Bullet;
+class HomingMissile;
+class Player;
+
+/// <summary>
+/// Boss ステージの出現演出、ボス本体、専用 UI、撃破演出を管理する。
+/// </summary>
+class BossManager {
+public:
+	enum class State {
+		Inactive,
+		Intro,
+		Battle,
+		Clear,
+	};
+
+	void Initialize();
+	void StartBossBattle(const KamataEngine::Vector3& playerPos, KamataEngine::WorldTransform* parent);
+	void Update(float dt);
+	void Draw(const KamataEngine::Camera* camera);
+	void DrawUI();
+
+	void ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<HomingMissile>>& missiles);
+
+	bool IsActive() const { return state_ != State::Inactive; }
+	bool IsBattle() const { return state_ == State::Battle; }
+	bool IsClearFinished() const { return state_ == State::Clear && clearTimer_ >= kClearDuration; }
+	State GetState() const { return state_; }
+	Boss* GetBoss() const { return boss_.get(); }
+
+private:
+	template <class TProjectile>
+	void ResolveProjectileCollisions_(std::vector<std::unique_ptr<TProjectile>>& projectiles);
+
+	State state_ = State::Inactive;
+	std::unique_ptr<Boss> boss_;
+	BossAttackController attackController_;
+	BossUIManager uiManager_;
+	float introTimer_ = 0.0f;
+	float clearTimer_ = 0.0f;
+	bool defeatHandled_ = false;
+
+	static constexpr float kIntroDuration = 2.0f;
+	static constexpr float kClearDuration = 2.0f;
+};
+
+
+============================================================
+File Path: DirectXGame/Managers/BossManager/BossUIManager.cpp
+============================================================
+#include "BossUIManager.h"
+
+#include <algorithm>
+
+#include "Application/Characters/Boss/Boss.h"
+
+using namespace KamataEngine;
+
+namespace {
+constexpr Vector2 kHpPos{330.0f, 22.0f};
+constexpr Vector2 kHpSize{620.0f, 18.0f};
+constexpr Vector2 kWarningPos{270.0f, 300.0f};
+constexpr Vector2 kWarningSize{740.0f, 88.0f};
+} // namespace
+
+void BossUIManager::Initialize() {
+	textureHandle_ = TextureManager::Load("./Resources/white1x1.png");
+	hpFrameBar_.reset(Sprite::Create(textureHandle_, {kHpPos.x - 4.0f, kHpPos.y - 4.0f}, {1.0f, 1.0f, 1.0f, 0.9f}));
+	hpBackBar_.reset(Sprite::Create(textureHandle_, kHpPos, {0.08f, 0.01f, 0.01f, 0.92f}));
+	hpFrontBar_.reset(Sprite::Create(textureHandle_, kHpPos, {1.0f, 0.16f, 0.05f, 0.95f}));
+	warningBar_.reset(Sprite::Create(textureHandle_, kWarningPos, {1.0f, 0.04f, 0.02f, 0.0f}));
+
+	if (hpFrameBar_) {
+		hpFrameBar_->SetSize({kHpSize.x + 8.0f, kHpSize.y + 8.0f});
+	}
+	if (hpBackBar_) {
+		hpBackBar_->SetSize(kHpSize);
+	}
+	if (hpFrontBar_) {
+		hpFrontBar_->SetSize(kHpSize);
+	}
+	if (warningBar_) {
+		warningBar_->SetSize(kWarningSize);
+	}
+}
+
+void BossUIManager::Update(const Boss* boss, float warningRate, bool showHpBar, bool showWarning) {
+	showHpBar_ = showHpBar;
+	showWarning_ = showWarning;
+
+	if (hpFrontBar_) {
+		const float rate = boss ? boss->GetHpRate() : 0.0f;
+		hpFrontBar_->SetSize({kHpSize.x * std::clamp(rate, 0.0f, 1.0f), kHpSize.y});
+	}
+
+	if (warningBar_) {
+		const float alpha = std::clamp(0.35f + warningRate * 0.55f, 0.0f, 0.9f);
+		warningBar_->SetColor({1.0f, 0.02f, 0.02f, alpha});
+	}
+}
+
+void BossUIManager::Draw() {
+	if (showWarning_ && warningBar_) {
+		warningBar_->Draw();
+	}
+
+	if (!showHpBar_) {
+		return;
+	}
+	if (hpFrameBar_) {
+		hpFrameBar_->Draw();
+	}
+	if (hpBackBar_) {
+		hpBackBar_->Draw();
+	}
+	if (hpFrontBar_) {
+		hpFrontBar_->Draw();
+	}
+}
+
+
+============================================================
+File Path: DirectXGame/Managers/BossManager/BossUIManager.h
+============================================================
+#pragma once
+
+#include <memory>
+
+#include <KamataEngine.h>
+
+class Boss;
+
+/// <summary>
+/// Boss 専用 UI。画面上部の HP バーと WARNING 演出を管理する。
+/// </summary>
+class BossUIManager {
+public:
+	void Initialize();
+	void Update(const Boss* boss, float warningRate, bool showHpBar, bool showWarning);
+	void Draw();
+
+private:
+	std::unique_ptr<KamataEngine::Sprite> hpBackBar_;
+	std::unique_ptr<KamataEngine::Sprite> hpFrontBar_;
+	std::unique_ptr<KamataEngine::Sprite> hpFrameBar_;
+	std::unique_ptr<KamataEngine::Sprite> warningBar_;
+	uint32_t textureHandle_ = 0u;
+	bool showHpBar_ = false;
+	bool showWarning_ = false;
+};
+
+
 ============================================================
 File Path: DirectXGame/Managers/BulletManager/BulletManager.cpp
 ============================================================
@@ -6287,7 +6810,6 @@ void BulletManager::Initialize() {
 	missileSeHandle_ = audio_ ? audio_->LoadWave("./Resources/SE/missile.wav") : 0;
 
 	bullets_.clear();
-	lasers_.clear();
 	homingMissiles_.clear();
 	lockedTargets_.clear();
 
@@ -6454,13 +6976,6 @@ void BulletManager::UpdateBullets_(EnemyManager* enemyManager) {
 		}
 	}
 
-	// レーザー更新
-	for (auto& r : lasers_) {
-		if (r) {
-			r->Update();
-		}
-	}
-
 	// ホーミング対象の安全性を事前確認
 	ValidateHomingTargets_(enemyManager);
 
@@ -6479,8 +6994,6 @@ void BulletManager::RemoveDeadBullets_() {
 	// Object Pool Pattern:
 	// 通常弾は死んでも vector から削除しない。isDead_ == true の弾として残し、
 	// 次の発射時に AcquireBullet_() で再利用する。
-
-	lasers_.erase(std::remove_if(lasers_.begin(), lasers_.end(), [](const std::unique_ptr<Laser>& r) { return !r || r->IsDead(); }), lasers_.end());
 
 	homingMissiles_.erase(std::remove_if(homingMissiles_.begin(), homingMissiles_.end(), [](const std::unique_ptr<HomingMissile>& m) { return !m || m->IsDead(); }), homingMissiles_.end());
 }
@@ -6515,11 +7028,6 @@ void BulletManager::Draw(const Camera* camera) {
 		b->Draw(camera);
 	}
 
-	// レーザー
-	for (auto& r : lasers_) {
-		r->Draw(camera);
-	}
-
 	// ホーミングミサイル
 	for (auto& m : homingMissiles_) {
 		m->Draw(camera);
@@ -6530,7 +7038,7 @@ void BulletManager::Draw(const Camera* camera) {
 ============================================================
 File Path: DirectXGame/Managers/BulletManager/BulletManager.h
 ============================================================
-﻿#pragma once
+#pragma once
 
 #include <KamataEngine.h>
 #include <memory>
@@ -6538,14 +7046,13 @@ File Path: DirectXGame/Managers/BulletManager/BulletManager.h
 
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/HomingMissile.h"
-#include "Application/Characters/Player/Laser.h"
 #include "Application/Characters/Player/Player.h"
 #include "UI/CountDown/CountDown.h"
 
 class EnemyManager;
 
 /// <summary>
-/// プレイヤーの通常弾、レーザー、ホーミングミサイル、ロックオン状態を管理する。
+/// プレイヤーの通常弾、ホーミングミサイル、ロックオン状態を管理する。
 /// </summary>
 class BulletManager {
 public:
@@ -6553,92 +7060,108 @@ public:
 	~BulletManager() = default;
 
 	/// <summary>
-	/// 蛻晄悄蛹門・逅・
+	/// 初期化処理
 	/// </summary>
 	void Initialize();
 
 	/// <summary>
-	/// 譖ｴ譁ｰ蜃ｦ逅・
-	/// 蜈･蜉帛愛螳壺・蠑ｾ縺ｮ逋ｺ蟆・・蠑ｾ縺ｮ譖ｴ譁ｰ竊呈ｭｻ莠｡蠑ｾ縺ｮ蜑企勁
+	/// 更新処理
 	/// </summary>
-	/// <param name="input">蜈･蜉帛・逅・ｒ蜿ら・縺吶ｋ轤ｺ縺ｮ繝昴う繝ｳ繧ｿ</param>
-	/// <param name="player">蠑ｾ縺ｮ逋ｺ蟆・ｽ咲ｽｮ蜿門ｾ励↓菴ｿ縺・・繝ｬ繧､繝､繝ｼ</param>
-	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ逋ｺ蟆・桃菴懊ｒ辟｡蜉ｹ縺ｫ縺吶ｋ轤ｺ縺ｮ蜿ら・</param>
+	/// <param name="input">入力情報</param>
+	/// <param name="player">プレイヤー情報</param>
+	/// <param name="countDown">カウントダウン情報</param>
 	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 謠冗判蜃ｦ逅・
+	/// 描画処理
 	/// </summary>
-	/// <param name="camera">謠冗判縺ｫ菴ｿ逕ｨ縺吶ｋ繧ｫ繝｡繝ｩ</param>
+	/// <param name="camera">描画に使用するカメラ</param>
 	void Draw(const KamataEngine::Camera* camera);
 
 	/// <summary>
-	/// 迴ｾ蝨ｨ鬟幄｡御ｸｭ縺ｮ蠑ｾ縺ｮ繧ｳ繝ｳ繝・リ繧貞盾辣ｧ縺ｧ霑斐☆縲・
-	/// 螟夜Κ縺ｧ蠑ｾ縺ｨ縺ｮ蠖薙◆繧雁愛螳壹ｒ陦後≧逕ｨ騾斐〒菴ｿ逕ｨ縺吶ｋ縲・
+	/// 現在管理している通常団のコンテナを参照で返す
+	/// CollisionManagerなど、外部で当たり判定を行う用途で使用する
 	/// </summary>
-	/// <returns>蠑ｾ縺ｮ繧ｳ繝ｳ繝・リ(std::vector&lt;unique_ptr&lt;Bullet&gt;&gt;)</returns>
+	/// <returns>通常弾のコンテナ</returns>
 	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
 
 	/// <summary>
-	/// 迴ｾ蝨ｨ鬟幄｡御ｸｭ縺ｮ繝ｬ繝ｼ繧ｶ繝ｼ(Laser)縺ｮ繧ｳ繝ｳ繝・リ繧貞盾辣ｧ縺ｧ霑斐☆縲・
-	/// 螟夜Κ縺ｧ繝ｬ繝ｼ繧ｶ繝ｼ縺ｨ縺ｮ蠖薙◆繧雁愛螳壹ｒ陦後≧逕ｨ騾斐〒菴ｿ逕ｨ縺吶ｋ縲・
+	/// 現在管理しているホーミングミサイルのコンテナを参照で返す
+	/// CollisionManagerなど、外部で当たり判定を行う用途で使用する
 	/// </summary>
-	std::vector<std::unique_ptr<Laser>>& GetLasers() { return lasers_; }
-
-	/// <summary>
-	///
-	/// </summary>
+	/// <returns>ホーミングミサイルのコンテナ</returns>
 	std::vector<std::unique_ptr<HomingMissile>>& GetHomingMissiles() { return homingMissiles_; }
 
+	/// <summary>
+	/// ホーミングロックのクールダウン率（0.0～1.0）を返す
+	/// </summary>
 	float GetHomingCooldownRate() const;
+
+	/// <summary>
+	/// 現在ロックしている敵の数を返す
+	/// </summary>
+	/// <returns>現在ロックしている敵の数</returns>
 	int32_t GetCurrentLockCount() const { return static_cast<int32_t>(lockedTargets_.size()); }
+
+	/// <summary>
+	/// 最大ロック可能な敵の数を返す
+	/// </summary>
+	/// <returns>最大ロック可能な敵の数</returns>
 	int32_t GetMaxLockCount() const { return kHomingMaxLockCount; }
+
+	/// <summary>
+	/// ホーミングロック中かどうかを返す
+	/// </summary>
+	/// <returns>ホーミングロック中かどうか</returns>
 	bool IsHomingLocking() const { return isHomingLocking_; }
+
+	/// <summary>
+	/// 現在ロックしている敵のリストを返す
+	/// </summary>
+	/// <returns>現在ロックしている敵のリスト</returns>
 	const std::vector<CharacterBase*>& GetLockedTargets() const { return lockedTargets_; }
 
 private:
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ蜈･蜉帙↓蠢懊§縺ｦ蠑ｾ逋ｺ蟆・・逅・ｒ陦後≧縲・
-	/// 繧ｯ繝ｼ繝ｫ繝繧ｦ繝ｳ蛻ｶ蠕｡繧ゅ％縺薙〒陦後≧縲・
+	/// プレイヤーの入力に応じて通常弾を発射する処理 
 	/// </summary>
 	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
 
 	/// <summary>
-	///
+	/// プレイヤーの入力に応じてホーミングミサイルを発射する処理
 	/// </summary>
 	void HandleHomingMissile_(KamataEngine::Input* input, Player* player, const CountDown& countDown, EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 蜈ｨ鬟幄｡悟ｼｾ縺ｮ譖ｴ譁ｰ蜃ｦ逅・ｒ陦後≧縲・
+	/// 通常弾の位置更新と寿命管理
 	/// </summary>
 	void UpdateBullets_(EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 繝帙・繝溘Φ繧ｰ蟇ｾ雎｡縺梧里縺ｫ蜑企勁貂医∩縺ｮ繝溘し繧､繝ｫ縺九ｉ繧ｿ繝ｼ繧ｲ繝・ヨ蜿ら・繧貞､悶☆
+	/// ホーミングミサイルの位置更新と寿命管理
 	/// </summary>
 	void ValidateHomingTargets_(EnemyManager* enemyManager);
 
 	/// <summary>
-	/// 豁ｻ莠｡迥ｶ諷具ｼ亥ｯｿ蜻ｽ蛻・ｌ・剰｡晉ｪ・ｼ剰ｷ晞屬蛻ｶ髯撰ｼ峨・蠑ｾ繧偵さ繝ｳ繝・リ縺九ｉ蜑企勁縺吶ｋ縲・
+	/// 寿命が尽きた通常弾をリストから削除する処理
 	/// </summary>
 	void RemoveDeadBullets_();
 
 	/// <summary>
-	/// Object Pool Pattern: returns an inactive bullet from the pool, or grows the pool.
+	/// 寿命が尽きたホーミングミサイルをリストから削除する処理
 	/// </summary>
 	Bullet* AcquireBullet_();
 
 private:
 	std::vector<std::unique_ptr<Bullet>> bullets_;
-	std::vector<std::unique_ptr<Laser>> lasers_;
 	std::vector<std::unique_ptr<HomingMissile>> homingMissiles_;
 
-	// 繧ｯ繝ｼ繝ｫ繝繧ｦ繝ｳ
+	// 通常弾の発射管理
 	int32_t fireCooldownFrames_ = 0;
 	int32_t burstShotsRemaining_ = 0;
 	static constexpr int32_t kBurstShotCount = 3;
-	static constexpr int32_t kBurstIntervalFrames = 3;  // 繝舌・繧ｹ繝亥・縺ｮ逋ｺ蟆・俣髫・邏・.05遘叩60fps)
-	static constexpr int32_t kBurstCooldownFrames = 18; // 繝舌・繧ｹ繝亥ｾ後・蠕・ｩ滓凾髢・邏・.3遘叩60fps)
+	static constexpr int32_t kBurstIntervalFrames = 3;  // バースト内の連射間隔
+	static constexpr int32_t kBurstCooldownFrames = 18; // バースト終了後のクールダウン
 	static constexpr int32_t kInitialBulletPoolSize = 64;
 
 	bool isHomingLocking_ = false;
@@ -6762,58 +7285,6 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
 				e->OnCollision(b.get());
 				b->OnCollision(e.get());
 				// 1発で1体想定
-				break;
-			}
-		}
-	}
-}
-
-void CollisionManager::ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
-	// カウントダウン中は衝突無効
-	if (countDown.IsInputLocked()) {
-		return;
-	}
-
-	// レーザー×敵
-	for (auto& r : lasers) {
-		if (!r || r->IsDead()) {
-			continue;
-		}
-
-		Collider* laserCollider = r->GetCollider();
-		if (!laserCollider) {
-			continue;
-		}
-
-		const auto rp = laserCollider->GetTranslate();
-		const float rr = laserCollider->GetRadius();
-
-		for (auto& e : enemies) {
-			if (!e || e->IsDead()) {
-				continue;
-			}
-
-			Collider* enemyCollider = e->GetCollider();
-			if (!enemyCollider) {
-				continue;
-			}
-
-			const auto ep = enemyCollider->GetTranslate();
-			const float er = enemyCollider->GetRadius();
-
-			const float dx = rp.x - ep.x;
-			const float dy = rp.y - ep.y;
-			const float dz = rp.z - ep.z;
-			const float dist2 = dx * dx + dy * dy + dz * dz;
-			const float rsum = rr + er;
-
-			if (dist2 <= rsum * rsum) {
-				// 相互通知：敵側がダメージ処理、レーザー側は「消える/貫通」どちらでもOK
-				e->SetLastDamageSource(CharacterBase::DamageSource::Laser);
-				e->OnCollision(r.get());
-				r->OnCollision(e.get());
-
-				// 1発で1体想定（貫通レーザーにしたいなら break を外す）
 				break;
 			}
 		}
@@ -6978,7 +7449,7 @@ void CollisionManager::ResolvePlayerBulletTurretBulletCollisions(
 ============================================================
 File Path: DirectXGame/Managers/CollisionManager/CollisionManager.h
 ============================================================
-﻿#pragma once
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -6988,66 +7459,57 @@ File Path: DirectXGame/Managers/CollisionManager/CollisionManager.h
 #include "Application/Characters/Enemy/TurretEnemy.h"
 #include "Application/Characters/Player/Bullet.h"
 #include "Application/Characters/Player/HomingMissile.h"
-#include "Application/Characters/Player/Laser.h"
 #include "Application/Characters/Player/Player.h"
 
 #include "UI/CountDown/CountDown.h"
 
 /// <summary>
-/// プレイヤー、敵、弾、レーザー、ミサイルの当たり判定をまとめる。
+/// プレイヤー、敵、弾、ミサイルの当たり判定をまとめる。
 /// 各オブジェクトへの通知だけを行い、HPやスコアの処理は個別クラスへ任せる。
 /// </summary>
 class CollisionManager {
 public:
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ縺ｨ隍・焚縺ｮ謨ｵ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧縲・
-	/// 陦晉ｪ√′逋ｺ逕溘＠縺溷ｴ蜷医∽ｸ｡閠・・ OnCollision 繧貞他縺ｳ蜃ｺ縺吶・
+	/// プレイヤーと複数の敵の衝突判定を行う
+	/// 衝突が発生した場合、双方の OnCollision を呼び出す
 	/// </summary>
-	/// <param name="player">陦晉ｪ∝ｯｾ雎｡縺ｮ繝励Ξ繧､繝､繝ｼ</param>
-	/// <param name="enemies">陦晉ｪ∝ｯｾ雎｡縺ｮ謨ｵ繝ｪ繧ｹ繝・/param>
-	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ陦晉ｪ√ｒ辟｡蜉ｹ縺ｫ縺吶ｋ縺溘ａ菴ｿ逕ｨ</param>
+	/// <param name="player">衝突対象のプレイヤー</param>
+	/// <param name="enemies">衝突対象の敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
 	static void ResolvePlayerEnemyCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
-	/// 蠑ｾ縺ｨ隍・焚縺ｮ謨ｵ縺ｨ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧縲・
-	/// 陦晉ｪ√′逋ｺ逕溘＠縺溷ｴ蜷医∵雰縺ｫ OnCollision縲∝ｼｾ縺ｫ OnCollision 繧帝夂衍縺励・
-	/// 1逋ｺ縺ｮ蠑ｾ縺ｫ縺､縺・菴薙・謨ｵ縺ｸ蜻ｽ荳ｭ縺吶ｋ縺薙→繧呈Φ螳壹＠縺ｦ蜃ｦ逅・ｒ荳ｭ譁ｭ縺吶ｋ縲・
+	/// <summary>
+	/// 通常弾と複数の敵との衝突判定を行う。
+	/// 衝突が発生した場合、敵に OnCollision、弾に OnCollision を通知する。
+	/// 1発の弾が複数の敵へ同時に命中しないよう、命中後は処理を中断する。
 	/// </summary>
-	/// <param name="bullets">陦晉ｪ∝ｯｾ雎｡縺ｮ蠑ｾ縺ｮ繝ｪ繧ｹ繝・/param>
-	/// <param name="enemies">陦晉ｪ∝ｯｾ雎｡縺ｮ謨ｵ縺ｮ繝ｪ繧ｹ繝・/param>
-	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ陦晉ｪ√ｒ辟｡蜉ｹ縺ｫ縺吶ｋ縺溘ａ菴ｿ逕ｨ</param>
+	/// <param name="bullets">衝突対象の通常弾リスト。</param>
+	/// <param name="enemies">衝突対象の敵リスト。</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する。</param>
 	static void ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
 	/// <summary>
-	/// 繝ｬ繝ｼ繧ｶ繝ｼ(Laser)縺ｨ隍・焚縺ｮ謨ｵ縺ｨ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧縲・
-	/// 陦晉ｪ√′逋ｺ逕溘＠縺溷ｴ蜷医∵雰縺ｫ OnCollision縲√Ξ繝ｼ繧ｶ繝ｼ縺ｫ OnCollision 繧帝夂衍縺吶ｋ縲・
+	/// ホーミングミサイルと複数の敵との衝突判定を行う
 	/// </summary>
-	/// <param name="lasers">陦晉ｪ∝ｯｾ雎｡縺ｮ繝ｬ繝ｼ繧ｶ繝ｼ縺ｮ繝ｪ繧ｹ繝・/param>
-	/// <param name="enemies">陦晉ｪ∝ｯｾ雎｡縺ｮ謨ｵ縺ｮ繝ｪ繧ｹ繝・/param>
-	/// <param name="countDown">繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ荳ｭ縺ｯ陦晉ｪ√ｒ辟｡蜉ｹ縺ｫ縺吶ｋ縺溘ａ菴ｿ逕ｨ</param>
-	static void ResolveLaserEnemyCollisions(std::vector<std::unique_ptr<Laser>>& lasers, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
-
-	/// <summary>
-	///
-	/// </summary>
-	/// <param name="missiles"></param>
-	/// <param name="enemies"></param>
-	/// <param name="countDown"></param>
+	/// <param name="missiles">衝突対象のホーミングミサイルリスト</param>
+	/// <param name="enemies">衝突対象の敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
 	static void ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ縺ｨ繧ｿ繝ｼ繝ｬ繝・ヨ縺ｮ蠑ｾ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧
+	/// プレイヤーとターレット弾の衝突判定を行う
 	/// </summary>
-	/// <param name="player"></param>
-	/// <param name="enemies"></param>
-	/// <param name="countDown"></param>
+	/// <param name="player">衝突対象のプレイヤー</param>
+	/// <param name="enemies">ターレットを含む敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
 	static void ResolvePlayerTurretBulletCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ蠑ｾ縺ｨ繧ｿ繝ｼ繝ｬ繝・ヨ蠑ｾ縺ｮ陦晉ｪ∝愛螳壹ｒ陦後≧
+	/// プレイヤー弾とターレット弾の衝突判定を行う
 	/// </summary>
-	/// <param name="playerBullets"></param>
-	/// <param name="enemies"></param>
-	/// <param name="countDown"></param>
+	/// <param name="playerBullets">プレイヤーの通常弾リスト</param>
+	/// <param name="enemies">ターレットを含む敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
 	static void ResolvePlayerBulletTurretBulletCollisions(std::vector<std::unique_ptr<Bullet>>& playerBullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
 };
 
@@ -7136,6 +7598,11 @@ void EnemyManager::Initialize() {
 	enemySpawnList_.clear();
 
 	enemySpawnTimer_ = 0.0f;
+}
+
+void EnemyManager::ClearAllEnemies() {
+	enemies_.clear();
+	enemySpawnList_.clear();
 }
 
 void EnemyManager::LoadEnemyCsv(const std::string& path) {
@@ -7334,7 +7801,7 @@ void EnemyManager::RemoveDeadEnemies() {
 ============================================================
 File Path: DirectXGame/Managers/EnemyManager/EnemyManager.h
 ============================================================
-﻿#pragma once
+#pragma once
 
 #include <algorithm>
 #include <memory>
@@ -7358,73 +7825,85 @@ public:
 		float time = 0.0f;
 		KamataEngine::Vector3 pos{0.0f, 0.0f, 0.0f};
 
-		// 謨ｵ繧ｿ繧､繝暦ｼ・seeker" / "turret"・・
+		// 敵のタイプ（seeker" / "turret"）
 		std::string type = "seeker";
 
-		// ===== Seeker 逕ｨ =====
-		float speed = kDefaultSeekerSpeed;
-		float turnRate = kDefaultSeekerTurnRate;
-
-		// ===== 蜈ｱ騾・=====
+		// ===== Enemy共通 =====
 		int32_t hp = kDefaultHp;
 		float radius = kDefaultColliderRadius;
 		float lifeTime = kDefaultLifeTime;
 
-		// ===== Turret 逕ｨ =====
+		// ===== Seeker用 =====
+		float speed = kDefaultSeekerSpeed;
+		float turnRate = kDefaultSeekerTurnRate;	
+
+		// ===== Turret用 =====
 		int32_t shootIntervalFrames = kDefaultShootIntervalFrames;
 		float bulletSpeed = kDefaultBulletSpeed;
 		float bulletLifeTime = kDefaultBulletLifeTime;
 	};
 
 public:
-	/// <summary>蛻晄悄蛹門・逅・/summary>
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
 	void Initialize();
 
 	/// <summary>
-	/// JSON 蠖｢蠑上・謨ｵ蜃ｺ迴ｾ繝・・繧ｿ隱ｭ縺ｿ霎ｼ縺ｿ
+	/// JSON形式の敵出現データを読み込む
 	/// </summary>
 	void LoadEnemyCsv(const std::string& path);
 
 	/// <summary>
-	/// 譖ｴ譁ｰ蜃ｦ逅・
+	/// 更新処理
 	/// </summary>
-	/// <param name="dt">繝・Ν繧ｿ繧ｿ繧､繝・育ｧ抵ｼ・/param>
-	/// <param name="playerPos">繝励Ξ繧､繝､繝ｼ縺ｮ繝ｯ繝ｼ繝ｫ繝牙ｺｧ讓・/param>
+	/// <param name="dt">デルタタイム</param>
+	/// <param name="playerPos">プレイヤーの位置</param>
 	void Update(float dt, const KamataEngine::Vector3& playerPos);
 
 	/// <summary>
-	/// 謠冗判蜃ｦ逅・
+	/// 描画処理
 	/// </summary>
 	void Draw(const KamataEngine::Camera* camera);
 
 	/// <summary>
-	/// 逕溷ｭ倅ｸｭ縺ｮ謨ｵ繝ｪ繧ｹ繝亥叙蠕暦ｼ・ollisionManager 逕ｨ・・
+	/// 衝突判定用の敵リストを取得する
 	/// </summary>
 	std::vector<std::unique_ptr<CharacterBase>>& GetEnemies() { return enemies_; }
 
 	/// <summary>
-	/// 繝励Ξ繧､繝､繝ｼ縺九ｉ霑代＞鬆・・謨ｵ繝昴う繝ｳ繧ｿ繧呈怙螟ｧ謨ｰ縺ｾ縺ｧ蜿門ｾ励☆繧・
+	/// 指定位置から近い順に生存中の敵を取得する。CollisionManager などで使用する
 	/// </summary>
 	std::vector<CharacterBase*> GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const;
 
 	/// <summary>
-	/// 豁ｻ莠｡縺励◆謨ｵ繧貞炎髯､縺吶ｋ
+	/// 死亡した敵をリストから削除する
 	/// </summary>
 	void RemoveDeadEnemies();
 
+	/// <summary>
+	/// 出現待ちを含めて敵が残っていないかを返す
+	/// </summary>
+	bool IsAllEnemyDestroyed() const { return enemies_.empty() && enemySpawnList_.empty(); }
+
+	/// <summary>
+	/// Boss戦への切り替え時に、出現中・出現待ちの通常敵をすべて破棄する
+	/// </summary>
+	void ClearAllEnemies();
+
 private:
 	/// <summary>
-	/// 蜃ｺ迴ｾ譎る俣縺ｫ驕斐＠縺滓雰繧堤函謌舌☆繧・
+	/// CSVの出現データに基づいて敵を出現させる
 	/// </summary>
 	void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
 
 	/// <summary>
-	/// Factory Method Pattern: creates an enemy instance from EnemySpawnData.
+	/// 出現データに基づいて敵を生成する
 	/// </summary>
 	std::unique_ptr<CharacterBase> CreateEnemy_(const EnemySpawnData& spawnData, const KamataEngine::Vector3& spawnPos) const;
 
 private:
-	// ===== 螳壽焚・医ョ繝輔か繝ｫ繝亥､・・====
+	// ===== 定数（デフォルト値） ====
 	static constexpr float kDefaultSeekerSpeed = 0.2f;
 	static constexpr float kDefaultSeekerTurnRate = 0.15f;
 	static constexpr int32_t kDefaultHp = 1;
@@ -7436,13 +7915,13 @@ private:
 	static constexpr float kDefaultBulletLifeTime = 3.0f;
 
 private:
-	// 逕溷ｭ倅ｸｭ縺ｮ謨ｵ
+	// 生存中の敵リスト
 	std::vector<std::unique_ptr<CharacterBase>> enemies_;
 
-	// 蜃ｺ迴ｾ蠕・■謨ｵ繝・・繧ｿ
+	// 出現町の敵データ
 	std::vector<EnemySpawnData> enemySpawnList_;
 
-	// 邨碁℃譎る俣
+	// 経過時間
 	float enemySpawnTimer_ = 0.0f;
 };
 
@@ -7538,7 +8017,7 @@ void UIManager::Draw() {
 ============================================================
 File Path: DirectXGame/Managers/UIManager/UIManager.h
 ============================================================
-﻿#pragma once
+#pragma once
 
 #include <KamataEngine.h>
 #include <algorithm>
@@ -7557,44 +8036,44 @@ public:
 	~UIManager() = default;
 
 	/// <summary>
-	/// 蛻晄悄蛹・
+	/// 初期化処理
 	/// </summary>
-	/// <param name="player">HP蜿ら・逕ｨ縺ｮ繝励Ξ繧､繝､繝ｼ・域園譛峨＠縺ｪ縺・ｼ・/param>
+	/// <param name="player">HPバーの対象となるプレイヤー</param>
 	void Initialize(Player* player);
 
 	/// <summary>
-	/// 譖ｴ譁ｰ蜃ｦ逅・ｼ・P繝舌・縲√せ繧ｳ繧｢縺ｪ縺ｩ・・
+	/// 更新処理
 	/// </summary>
 	void Update();
 
 	/// <summary>
-	/// 謠冗判蜃ｦ逅・
+	/// 描画処理	
 	/// </summary>
 	void Draw();
 
 	/// <summary>
-	/// 繧ｹ繧ｳ繧｢繧ｪ繝悶ず繧ｧ繧ｯ繝医∈縺ｮ繧｢繧ｯ繧ｻ繧ｹ・亥ｿ・ｦ√↑繧会ｼ・
+	/// スコア情報を取得する
 	/// </summary>
 	Score* GetScore() { return score_.get(); }
 
 	/// <summary>
-	///
+	/// ホーミングミサイルのクールダウン率を設定する
 	/// </summary>
 	void SetHomingCooldownRate(float rate) { homingCooldownRate_ = std::clamp(rate, 0.0f, 1.0f); }
 
 	/// <summary>
-	///
+	/// ホーミングミサイルのロックオン数と情報を設定する。
 	/// </summary>
 	void SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking);
 
 private:
-	// HP蜿ら・逕ｨ・域園譛画ｨｩ縺ｪ縺暦ｼ・
+	// HP参照用。所有権は持たない
 	Player* player_ = nullptr;
 
-	// HP繝舌・
+	// HPバー
 	std::unique_ptr<Graph> graph_;
 
-	// 繧ｹ繧ｳ繧｢
+	// スコア
 	std::unique_ptr<Score> score_;
 
 	std::unique_ptr<KamataEngine::Sprite> homingCooldownBack_;
@@ -7614,12 +8093,12 @@ File Path: DirectXGame/Scenes/Clear/ClearScene.cpp
 ============================================================
 #include "ClearScene.h"
 
+#include "Application/Utility/GameTime.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
 
 namespace {
-constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 constexpr float kScreenWidth = 1280.0f;
 constexpr float kScreenHeight = 720.0f;
 constexpr float kScoreDigitWidth = 32.0f;
@@ -7712,7 +8191,7 @@ void ClearScene::Update() {
 	skydome_->Update();
 
 	// 小惑星生成間隔の更新
-	const float dt = kFixedDeltaTime;
+	const float dt = GameTime::kDeltaTime;
 	asteroidField_.Update();
 
 	// ===== クリア演出フェーズ制御 =====
@@ -7834,6 +8313,7 @@ void ClearScene::Draw() {
 
 std::unique_ptr<IScene> ClearScene::NextScene() const { return std::make_unique<TitleScene>(); }
 
+
 ============================================================
 File Path: DirectXGame/Scenes/Clear/ClearScene.h
 ============================================================
@@ -7942,12 +8422,12 @@ File Path: DirectXGame/Scenes/Finish/FinishScene.cpp
 ============================================================
 #include "FinishScene.h"
 
+#include "Application/Utility/GameTime.h"
 #include "TitleScene.h"
 
 using namespace KamataEngine;
 
 namespace {
-constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 constexpr float kTwoPi = 6.28318530717958647692f;
 
 constexpr int kAsteroidCount = 10;
@@ -8015,7 +8495,7 @@ void FinishScene::Update() {
 	asteroidField_.Update();
 
 	// 点滅演出更新
-	blinkTimer_ += kFixedDeltaTime;
+	blinkTimer_ += GameTime::kDeltaTime;
 
 	if (blinkTimer_ >= blinkInterval_) {
 		blinkTimer_ -= blinkInterval_;
@@ -8087,6 +8567,7 @@ void FinishScene::Draw() {
 }
 
 std::unique_ptr<IScene> FinishScene::NextScene() const { return std::make_unique<TitleScene>(); }
+
 
 ============================================================
 File Path: DirectXGame/Scenes/Finish/FinishScene.h
@@ -8362,12 +8843,12 @@ void GameScene::Initialize() {
 
 	// ===== 操作UI =====
 	wasdTextureHandle_ = TextureManager::Load("./Resources/InGame/WASD.png");
-	const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
+	const Vector2 keySize = {kWasdKeySize, kWasdKeySize};
 	const Vector2 keyUvSize = {96.0f, 96.0f};
-	wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}));
-	wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}));
-	wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}));
-	wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}));
+	wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY}));
+	wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing)}));
+	wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing)}));
+	wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing)}));
 	if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
 		wasdWSprite_->SetAnchorPoint({0.0f, 0.0f});
 		wasdASprite_->SetAnchorPoint({0.0f, 0.0f});
@@ -8384,12 +8865,12 @@ void GameScene::Initialize() {
 	}
 
 	mouseTextureHandle_ = TextureManager::Load("./Resources/InGame/Mouse.png");
-	const Vector2 mouseSize = {kMouseSize_, kMouseSize_};
+	const Vector2 mouseSize = {kMouseSize, kMouseSize};
 	const Vector2 mouseButtonUvSize = {320.0f, 270.0f};
-	const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
-	mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_, kMouseBaseY_}, {1.0f, 1.0f, 1.0f, 0.55f}));
-	mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_, kMouseBaseY_}));
-	mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}));
+	const Vector2 mouseButtonSize = {kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f};
+	mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX, kMouseBaseY}, {1.0f, 1.0f, 1.0f, 0.55f}));
+	mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX, kMouseBaseY}));
+	mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX + mouseButtonSize.x, kMouseBaseY}));
 	if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
 		mouseBaseSprite_->SetAnchorPoint({0.0f, 0.0f});
 		mouseLeftSprite_->SetAnchorPoint({0.0f, 0.0f});
@@ -8403,7 +8884,7 @@ void GameScene::Initialize() {
 	}
 
 	// ===== スピードライン初期化 =====
-	speedLine_.Initialize(&camera_, kSpeedLineCount_);
+	speedLine_.Initialize(&camera_, kSpeedLineCount);
 
 	// ===== エンジンスモーク初期化 =====
 	engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
@@ -8436,9 +8917,9 @@ void GameScene::Initialize() {
 
 	// ===== カウントダウン =====
 	countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/GO.png");
-	countDown_.SetTimings(kCountDownStartDelay_, kCountDownNumberDuration_, kCountDownGoDuration_);
-	countDown_.SetScaleRange(kCountDownScaleStart_, kCountDownScaleEnd_);
-	countDown_.SetBackOvershoot(kCountDownBackOvershoot_);
+	countDown_.SetTimings(kCountDownStartDelay, kCountDownNumberDuration, kCountDownGoDuration);
+	countDown_.SetScaleRange(kCountDownScaleStart, kCountDownScaleEnd);
+	countDown_.SetBackOvershoot(kCountDownBackOvershoot);
 
 	countDown_.SetAudio(audio_->LoadWave("./Resources/SE/CountBeep.wav"), audio_->LoadWave("./Resources/SE/Start.wav"));
 
@@ -8448,6 +8929,7 @@ void GameScene::Initialize() {
 	// ===== 弾・敵 =====
 	bulletManager_.Initialize();
 	enemyManager_.Initialize();
+	bossManager_.Initialize();
 	enemyManager_.LoadEnemyCsv(levelJsonPath_);
 	int defaultClearScore = 10000;
 	isTutorialLevel_ = levelJsonPath_.find("Tutorial.json") != std::string::npos;
@@ -8458,9 +8940,11 @@ void GameScene::Initialize() {
 	} else if (levelJsonPath_.find("Hard.json") != std::string::npos) {
 		defaultClearScore = 15000;
 	}
+	isBossStageEnabled_ = (levelJsonPath_.find("Normal.json") != std::string::npos) || (levelJsonPath_.find("Hard.json") != std::string::npos);
+	hasBossBattleStarted_ = false;
 
 	// ===== 開始 =====
-	kClearScore_ = LoadClearScoreFromLevelJson(levelJsonPath_, defaultClearScore);
+	requiredClearScore_ = LoadClearScoreFromLevelJson(levelJsonPath_, defaultClearScore);
 	countDown_.Start();
 
 	// 開始　３カウントから
@@ -8468,7 +8952,7 @@ void GameScene::Initialize() {
 
 	// ===== 照準 =====
 	reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
-	lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png"); // ロックオン演出
+	lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png");
 	reticleSprite_.reset(Sprite::Create(reticleTexHandle_, reticlePos_));
 	if (reticleSprite_) {
 		reticleSprite_->SetAnchorPoint({0.5f, 0.5f});
@@ -8479,7 +8963,7 @@ void GameScene::Initialize() {
 	pauseMenu_ = std::make_unique<PauseMenu>();
 	pauseMenu_->Initialize();
 	pauseTitleTexHandle_ = TextureManager::Load("./Resources/InGame/Pause.png");
-	pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, {kPauseTitlePosX_, kPauseTitlePosY_}));
+	pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, {kPauseTitlePosX, kPauseTitlePosY}));
 	pauseTitleSprite_->SetAnchorPoint({0.0f, 0.0f});
 	const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
 	pauseTitleSprite_->SetSize({pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f});
@@ -8495,6 +8979,7 @@ void GameScene::Initialize() {
 	clearScore_ = 0;
 
 	isClearAnimating_ = false;
+	isBossTransitionAnimating_ = false;
 	clearAnimTimer_ = 0.0f;
 
 	transitionPhase_ = SceneTransitionPhase::None;
@@ -8541,8 +9026,9 @@ void GameScene::Draw() {
 		// スピードライン
 		speedLine_.Draw();
 
-		// 敵・弾
+		// 敵・弾・ボス
 		enemyManager_.Draw(cam);
+		bossManager_.Draw(cam);
 		bulletManager_.Draw(cam);
 	}
 
@@ -8576,6 +9062,7 @@ void GameScene::Draw() {
 	// UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
 	if (state_ == GameState::Playing) {
 		uiManager_.Draw();
+		bossManager_.DrawUI();
 
 		if (reticleSprite_ && result_ == GameResult::None) {
 			reticleSprite_->Draw();
@@ -8596,7 +9083,7 @@ void GameScene::Draw() {
 				if (clip.z < 0.0f || clip.z > 1.0f) {
 					continue;
 				}
-				const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * kScreenWidth_, (-clip.y * 0.5f + 0.5f) * kScreenHeight_};
+				const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight};
 				const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
 				const float scale = 0.85f + 0.35f * (1.0f - t);
 				const float alpha = (std::max)(0.0f, 1.0f - t);
@@ -8617,12 +9104,12 @@ void GameScene::Draw() {
 			const bool isAPressed = input_->PushKey(DIK_A);
 			const bool isSPressed = input_->PushKey(DIK_S);
 			const bool isDPressed = input_->PushKey(DIK_D);
-			const Vector2 keySize = {kWasdKeySize_, kWasdKeySize_};
+			const Vector2 keySize = {kWasdKeySize, kWasdKeySize};
 
-			ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_}, keySize, isWPressed);
-			ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX_, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isAPressed);
-			ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_), kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isSPressed);
-			ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX_ + (keySize.x + kWasdSpacing_) * 2.0f, kWasdBaseY_ + (keySize.y + kWasdSpacing_)}, keySize, isDPressed);
+			ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY}, keySize, isWPressed);
+			ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isAPressed);
+			ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isSPressed);
+			ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isDPressed);
 
 			wasdWSprite_->Draw();
 			wasdASprite_->Draw();
@@ -8633,10 +9120,10 @@ void GameScene::Draw() {
 		if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
 			const bool isLeftPressed = input_->IsPressMouse(0);
 			const bool isRightPressed = input_->IsPressMouse(1);
-			const Vector2 mouseButtonSize = {kMouseSize_ * 0.5f, kMouseSize_ * 270.0f / 640.0f};
+			const Vector2 mouseButtonSize = {kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f};
 
-			ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX_, kMouseBaseY_}, mouseButtonSize, isLeftPressed);
-			ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX_ + mouseButtonSize.x, kMouseBaseY_}, mouseButtonSize, isRightPressed);
+			ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX, kMouseBaseY}, mouseButtonSize, isLeftPressed);
+			ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX + mouseButtonSize.x, kMouseBaseY}, mouseButtonSize, isRightPressed);
 
 			mouseBaseSprite_->Draw();
 			mouseLeftSprite_->Draw();
@@ -8701,6 +9188,7 @@ File Path: DirectXGame/Scenes/InGame/GameScene.h
 #include "Application/UI/Score/Score.h"
 
 #include "Managers/BulletManager/BulletManager.h"
+#include "Managers/BossManager/BossManager.h"
 #include "Managers/CollisionManager/CollisionManager.h"
 #include "Managers/EnemyManager/EnemyManager.h"
 #include "Managers/UIManager/UIManager.h"
@@ -8727,6 +9215,10 @@ enum class SceneTransitionPhase {
 	IntroCinematic,
 	ClearCinematic,
 	FailCinematic,
+	BossExitCinematic,
+	BossStartCinematic,
+	BossIntroCinematic,
+	BossClearCinematic,
 };
 
 /// <summary>
@@ -8772,8 +9264,6 @@ private:
 	std::unique_ptr<KamataEngine::Model> model_;
 	KamataEngine::Camera camera_;
 
-	static constexpr float kFixedDeltaTime_ = 1.0f / 60.0f;
-
 	// ========== ゲーム状態 ==========
 	GameState state_ = GameState::CountDown;
 
@@ -8797,19 +9287,19 @@ private:
 	std::unique_ptr<KamataEngine::Sprite> wasdASprite_;
 	std::unique_ptr<KamataEngine::Sprite> wasdSSprite_;
 	std::unique_ptr<KamataEngine::Sprite> wasdDSprite_;
-	static constexpr float kWasdBaseX_ = 36.0f;
-	static constexpr float kWasdBaseY_ = 566.0f;
-	static constexpr float kWasdKeySize_ = 64.0f;
-	static constexpr float kWasdSpacing_ = 6.0f;
+	static constexpr float kWasdBaseX = 36.0f;
+	static constexpr float kWasdBaseY = 566.0f;
+	static constexpr float kWasdKeySize = 64.0f;
+	static constexpr float kWasdSpacing = 6.0f;
 
 	// ========== マウス操作UI ==========
 	uint32_t mouseTextureHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> mouseBaseSprite_;
 	std::unique_ptr<KamataEngine::Sprite> mouseLeftSprite_;
 	std::unique_ptr<KamataEngine::Sprite> mouseRightSprite_;
-	static constexpr float kMouseBaseX_ = 286.0f;
-	static constexpr float kMouseBaseY_ = 558.0f;
-	static constexpr float kMouseSize_ = 104.0f;
+	static constexpr float kMouseBaseX = 286.0f;
+	static constexpr float kMouseBaseY = 558.0f;
+	static constexpr float kMouseSize = 104.0f;
 
 	// ========== 照準 ==========
 	uint32_t reticleTexHandle_ = 0;
@@ -8830,9 +9320,12 @@ private:
 	// ========== レベルデータ ==========
 	std::string levelJsonPath_;
 
-	// ========== 敵・弾管理 ==========
+	// ========== 敵・弾・ボス管理 ==========
 	EnemyManager enemyManager_;
 	BulletManager bulletManager_;
+	BossManager bossManager_;
+	bool isBossStageEnabled_ = false;
+	bool hasBossBattleStarted_ = false;
 
 	// ========== スピードライン ==========
 	SpeedLine speedLine_;
@@ -8854,28 +9347,28 @@ private:
 	SmokeParams normalSmokeParams_; // 通常煙パラメータ
 	SmokeParams boostSmokeParams_;  // ブースト煙パラメータ
 
-	static constexpr float kSmokeOffsetY_ = -0.3f;
-	static constexpr float kSmokeOffsetZ_ = -1.5f;
-	static constexpr float kSmokeRandXY_ = 0.5f;
-	static constexpr float kSmokeRandZ_ = 0.10f;
+	static constexpr float kSmokeOffsetY = -0.3f;
+	static constexpr float kSmokeOffsetZ = -1.5f;
+	static constexpr float kSmokeRandXY = 0.5f;
+	static constexpr float kSmokeRandZ = 0.10f;
 
 	// ========== GPUダメージエフェクト ==========
 	std::unordered_map<CharacterBase*, int32_t> prevEnemyHpMap_;
 	int32_t prevPlayerHp_ = 0;
-	float kDamageGpuLife_ = 0.35f;
-	float kDamageGpuStartScale_ = 0.20f;
-	float kDamageGpuEndScale_ = 0.8f;
-	int kDamageGpuBurst_ = 32;
-	float kDamageGpuSpeed_ = 6.0f;
+	static constexpr float kDamageGpuLife = 0.35f;
+	static constexpr float kDamageGpuStartScale = 0.20f;
+	static constexpr float kDamageGpuEndScale = 0.8f;
+	static constexpr int kDamageGpuBurst = 32;
+	static constexpr float kDamageGpuSpeed = 6.0f;
 
 	// ========== 効果音 ==========
 	uint32_t seEnemyHitHandle_ = 0;
 	uint32_t seEnemyKillHandle_ = 0;
 	int hitStopFrames_ = 0;
 	int hitStopRequestFrames_ = 0;
-	int kEnemyHitStopFrames_ = 3;
-	int kEnemyKillBurstScale_ = 4;
-	int kEnemyHitBurstScale_ = 1;
+	static constexpr int kEnemyHitStopFrames = 3;
+	static constexpr int kEnemyKillBurstScale = 4;
+	static constexpr int kEnemyHitBurstScale = 1;
 	uint32_t scorePopupTexHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> scorePopupDigitSprite_;
 
@@ -8889,19 +9382,19 @@ private:
 	std::vector<ScorePopup> scorePopups_;
 
 	// ========== ミサイルアフターバーナー ==========
-	float kMissileAfterburnerLife_ = 0.28f;
-	float kMissileAfterburnerStartScale_ = 0.13f;
-	float kMissileAfterburnerEndScale_ = 0.0f;
-	float kMissileAfterburnerSpeed_ = -3.8f;
-	float kMissileAfterburnerOffsetZ_ = -0.55f;
-	float kMissileAfterburnerRand_ = 0.2f;
+	static constexpr float kMissileAfterburnerLife = 0.28f;
+	static constexpr float kMissileAfterburnerStartScale = 0.13f;
+	static constexpr float kMissileAfterburnerEndScale = 0.0f;
+	static constexpr float kMissileAfterburnerSpeed = -3.8f;
+	static constexpr float kMissileAfterburnerOffsetZ = -0.55f;
+	static constexpr float kMissileAfterburnerRand = 0.2f;
 
 	// ========== UI・スコア関連 ==========
 	UIManager uiManager_;
 	int clearScore_ = 0;
 
-	int kScorePerEnemy_ = 100;
-	int kClearScore_ = 5000;
+	static constexpr int kScorePerEnemy = 100;
+	int requiredClearScore_ = 5000;
 	bool isTutorialLevel_ = false;
 
 	// ========== ポーズ ==========
@@ -8910,11 +9403,11 @@ private:
 	std::unique_ptr<PauseMenu> pauseMenu_;
 	std::unique_ptr<KamataEngine::Sprite> pauseTitleSprite_;
 	uint32_t pauseTitleTexHandle_ = 0;
-	static constexpr float kScreenWidth_ = 1280.0f;
-	static constexpr float kScreenHeight_ = 720.0f;
-	static constexpr float kPauseTitlePosX_ = 20.0f;
-	static constexpr float kPauseTitlePosY_ = 16.0f;
-	static constexpr float kPauseTitleScale_ = 0.7f;
+	static constexpr float kScreenWidth = 1280.0f;
+	static constexpr float kScreenHeight = 720.0f;
+	static constexpr float kPauseTitlePosX = 20.0f;
+	static constexpr float kPauseTitlePosY = 16.0f;
+	static constexpr float kPauseTitleScale = 0.7f;
 
 	// ========== リトライ・タイトル遷移 ==========
 	bool requestRetry_ = false;
@@ -8922,27 +9415,32 @@ private:
 
 	// ========== クリアアニメーション ==========
 	bool isClearAnimating_ = false;
+	bool isBossTransitionAnimating_ = false;
 	float clearAnimTimer_ = 0.0f;
+	KamataEngine::Vector3 bossTransitionStartPosition_{};
+	KamataEngine::Vector3 bossTransitionStartRotation_{};
+	KamataEngine::Vector3 bossTransitionStartScale_{1.0f, 1.0f, 1.0f};
 
-	float kClearBoostSpeedZ_ = 1.0f;
-	float kClearBoostSpeedY_ = 5.0f;
-	float kClearRotateSpeedX_ = 0.5f;
+	static constexpr float kClearBoostSpeedZ = 1.0f;
+	static constexpr float kClearBoostSpeedY = 5.0f;
+	static constexpr float kClearRotateSpeedX = 0.5f;
 
-	float kClearShrinkStart_ = 0.5f;
-	float kClearShrinkSpeed_ = 1.0f;
-	float kClearAnimEndTime_ = 2.0f;
+	static constexpr float kClearShrinkStart = 0.5f;
+	static constexpr float kClearShrinkSpeed = 1.0f;
+	static constexpr float kClearAnimEndTime = 2.0f;
 
-	static constexpr int kSpeedLineCount_ = 10;
-	static constexpr float kCountDownStartDelay_ = 0.1f;
-	static constexpr float kCountDownNumberDuration_ = 0.5f;
-	static constexpr float kCountDownGoDuration_ = 0.4f;
-	static constexpr float kCountDownScaleStart_ = 1.2f;
-	static constexpr float kCountDownScaleEnd_ = 1.0f;
-	static constexpr float kCountDownBackOvershoot_ = 1.7f;
-	static constexpr float kCameraShakeMin_ = -1.0f;
-	static constexpr float kCameraShakeMax_ = 1.0f;
-	static constexpr float kCameraShakeDuration_ = 1.0f;
-	static constexpr float kCameraInputScale_ = 40.0f;
+	static constexpr int kSpeedLineCount = 10;
+	static constexpr float kCountDownStartDelay = 0.1f;
+	static constexpr float kCountDownNumberDuration = 0.5f;
+	static constexpr float kCountDownGoDuration = 0.4f;
+	static constexpr float kCountDownScaleStart = 1.2f;
+	static constexpr float kCountDownScaleEnd = 1.0f;
+	static constexpr float kCountDownBackOvershoot = 1.7f;
+	static constexpr float kCameraShakeMin = -1.0f;
+	static constexpr float kCameraShakeMax = 1.0f;
+	static constexpr float kCameraShakeDuration = 1.0f;
+	static constexpr float kCameraInputScale = 40.0f;
+	static constexpr float kBossStartCinematicDuration = 1.5f;
 
 	// ========== シーン遷移 ==========
 	SceneTransitionPhase transitionPhase_ = SceneTransitionPhase::None;
@@ -8965,6 +9463,8 @@ File Path: DirectXGame/Scenes/InGame/GameSceneUpdateExecutor.cpp
 ============================================================
 #include "GameSceneUpdateExecutor.h"
 #include "GameScene.h"
+
+#include "Application/Utility/GameTime.h"
 
 #include <algorithm>
 #include <cmath>
@@ -9061,7 +9561,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	}
 
 	// 演出スローを反映した dt を作る。
-	const float dt = gameScene.kFixedDeltaTime_ * gameScene.timeScale_;
+	const float dt = GameTime::kDeltaTime * gameScene.timeScale_;
 
 	// ESC でポーズを開閉する。
 	if (gameScene.input_->TriggerKey(DIK_ESCAPE) && gameScene.state_ == GameState::Playing) {
@@ -9130,6 +9630,7 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		PlayerUpdate(gameScene);
 		SpawnDamageParticles(gameScene);
 		BattleUpdate(gameScene, dt);
+		gameScene.bossManager_.Update(dt);
 		UIUpdate(gameScene);
 		UpdateLockOnMarkers(gameScene);
 		DamageGpuParticlesUpdate(gameScene, dt);
@@ -9155,8 +9656,8 @@ void GameSceneUpdateExecutor::BackgroundUpdate(GameScene& gameScene) { gameScene
 // プレイヤー操作を更新する。
 void GameSceneUpdateExecutor::PlayerUpdate(GameScene& gameScene) {
 	if (!gameScene.countDown_.IsInputLocked()) {
-		// クリア演出中は専用処理に任せる。
-		if (!(gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_)) {
+		// クリア演出・Bossステージ遷移演出中は専用処理に任せる。
+		if (!(gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_) && !gameScene.isBossTransitionAnimating_) {
 			gameScene.player_->Update();
 		}
 	}
@@ -9179,15 +9680,20 @@ void GameSceneUpdateExecutor::SpawnDamageParticles(GameScene& gameScene) {
 
 	// 被弾火花をばらまく。
 	if (gameScene.damageSmokeEmitter_) {
-		for (int i = 0; i < gameScene.kDamageGpuBurst_; ++i) {
-			Vector3 v = {dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_, dist(rng) * gameScene.kDamageGpuSpeed_ * 0.6f};
-			gameScene.damageSmokeEmitter_->Emit(pos, v, gameScene.kDamageGpuLife_, gameScene.kDamageGpuStartScale_, gameScene.kDamageGpuEndScale_, kSparkStartColor, kSparkEndColor);
+		for (int i = 0; i < gameScene.kDamageGpuBurst; ++i) {
+			Vector3 v = {dist(rng) * gameScene.kDamageGpuSpeed, dist(rng) * gameScene.kDamageGpuSpeed, dist(rng) * gameScene.kDamageGpuSpeed * 0.6f};
+			gameScene.damageSmokeEmitter_->Emit(pos, v, gameScene.kDamageGpuLife, gameScene.kDamageGpuStartScale, gameScene.kDamageGpuEndScale, kSparkStartColor, kSparkEndColor);
 		}
 	}
 }
 
 // 戦闘処理を更新する。
 void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
+	// Bossステージへの切り替え演出中は通常戦闘を停止する。
+	if (gameScene.isBossTransitionAnimating_) {
+		return;
+	}
+
 	// 弾の移動と発射を更新する。
 	if (gameScene.result_ == GameResult::None && !gameScene.player_->IsExploding()) {
 		gameScene.bulletManager_.Update(gameScene.input_, gameScene.player_.get(), gameScene.countDown_, gameScene.shootDirection_, &gameScene.enemyManager_);
@@ -9199,7 +9705,6 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 
 		// プレイヤー攻撃と敵の衝突。
 		CollisionManager::ResolveBulletEnemyCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
-		CollisionManager::ResolveLaserEnemyCollisions(gameScene.bulletManager_.GetLasers(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		CollisionManager::ResolveHomingMissileEnemyCollisions(gameScene.bulletManager_.GetHomingMissiles(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		// 敵弾とプレイヤー側の衝突。
 		CollisionManager::ResolvePlayerBulletTurretBulletCollisions(gameScene.bulletManager_.GetBullets(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
@@ -9223,12 +9728,12 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 			if (nowHp < prevHp && !e->IsDead()) {
 				const Vector3 hitPos = e->GetWorldTranslation();
 				if (gameScene.damageSmokeEmitter_) {
-					for (int i = 0; i < gameScene.kDamageGpuBurst_ * gameScene.kEnemyHitBurstScale_; ++i) {
+					for (int i = 0; i < gameScene.kDamageGpuBurst * gameScene.kEnemyHitBurstScale; ++i) {
 						Vector3 v = {
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.85f),
-						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed_ * 0.45f)};
+						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed * 0.85f), randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed * 0.85f),
+						    randDist(enemyHitRng) * (gameScene.kDamageGpuSpeed * 0.45f)};
 						gameScene.damageSmokeEmitter_->Emit(
-						    hitPos, v, gameScene.kDamageGpuLife_ * 0.6f, gameScene.kDamageGpuStartScale_ * 0.5f, gameScene.kDamageGpuEndScale_ * 0.5f, kSparkStartColor, kSparkEndColor);
+						    hitPos, v, gameScene.kDamageGpuLife * 0.6f, gameScene.kDamageGpuStartScale * 0.5f, gameScene.kDamageGpuEndScale * 0.5f, kSparkStartColor, kSparkEndColor);
 					}
 				}
 				if (gameScene.audio_ && gameScene.seEnemyHitHandle_ != 0u) {
@@ -9240,36 +9745,36 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 				const Vector3 deadPos = e->GetWorldTranslation();
 				const bool killedByMissile = e->GetLastDamageSource() == CharacterBase::DamageSource::HomingMissile;
 				const float killEffectScale = killedByMissile ? 2.0f : 1.0f;
-				const int fireBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * gameScene.kEnemyKillBurstScale_ * killEffectScale);
-				const int smokeBurstCount = static_cast<int>(gameScene.kDamageGpuBurst_ * killEffectScale);
+				const int fireBurstCount = static_cast<int>(gameScene.kDamageGpuBurst * gameScene.kEnemyKillBurstScale * killEffectScale);
+				const int smokeBurstCount = static_cast<int>(gameScene.kDamageGpuBurst * killEffectScale);
 				if (gameScene.damageSmokeEmitter_) {
 					for (int i = 0; i < fireBurstCount; ++i) {
 						Vector3 v = {
-							  randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.6f * killEffectScale),
-							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 1.3f * killEffectScale) };
+							  randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 1.6f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 1.6f * killEffectScale),
+							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 1.3f * killEffectScale) };
 						gameScene.damageSmokeEmitter_->Emit(
-							deadPos, v, gameScene.kDamageGpuLife_ * 1.0f, gameScene.kDamageGpuStartScale_ * 1.2f * killEffectScale, gameScene.kDamageGpuEndScale_ * 1.8f * killEffectScale,
+							deadPos, v, gameScene.kDamageGpuLife * 1.0f, gameScene.kDamageGpuStartScale * 1.2f * killEffectScale, gameScene.kDamageGpuEndScale * 1.8f * killEffectScale,
 							kExplosionHotColor, kExplosionFireColor);
 					}
 					for (int i = 0; i < smokeBurstCount; ++i) {
 						Vector3 v = {
-						   randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.75f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.75f * killEffectScale),
-							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed_ * 0.55f * killEffectScale) };
+						   randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 0.75f * killEffectScale), randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 0.75f * killEffectScale),
+							randDist(enemyHitRng)* (gameScene.kDamageGpuSpeed * 0.55f * killEffectScale) };
 						gameScene.damageSmokeEmitter_->Emit(
-							deadPos, v, gameScene.kDamageGpuLife_ * 2.5f, gameScene.kDamageGpuStartScale_ * 1.6f * killEffectScale, gameScene.kDamageGpuEndScale_ * 3.0f * killEffectScale,
+							deadPos, v, gameScene.kDamageGpuLife * 2.5f, gameScene.kDamageGpuStartScale * 1.6f * killEffectScale, gameScene.kDamageGpuEndScale * 3.0f * killEffectScale,
 							kSmokeStartColor, kSmokeEndColor);
 					}
 				}
 				if (gameScene.railCamera_) {
 					gameScene.railCamera_->AddShake({ randDist(enemyHitRng), randDist(enemyHitRng), 0.0f }, 0.7f * killEffectScale);
 				}
-				gameScene.hitStopRequestFrames_ = (std::max)(gameScene.hitStopRequestFrames_, gameScene.kEnemyHitStopFrames_);
+				gameScene.hitStopRequestFrames_ = (std::max)(gameScene.hitStopRequestFrames_, gameScene.kEnemyHitStopFrames);
 
 				if (gameScene.audio_ && gameScene.seEnemyKillHandle_ != 0u) {
 					gameScene.audio_->PlayWave(gameScene.seEnemyKillHandle_, false, 0.55f);
 				}
 
-				const int earnedScore = dynamic_cast<TurretEnemy*>(e.get()) ? 300 : gameScene.kScorePerEnemy_;
+				const int earnedScore = dynamic_cast<TurretEnemy*>(e.get()) ? 300 : gameScene.kScorePerEnemy;
 				earnedScoreTotal += earnedScore;
 				//gameScene.scorePopups_.push_back({deadPos, earnedScore, 0.6f, 0.6f, 1.8f});
 			}
@@ -9286,6 +9791,10 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 		CollisionManager::ResolvePlayerEnemyCollisions(gameScene.player_.get(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		gameScene.enemyManager_.RemoveDeadEnemies();
 	}
+
+	if (!gameScene.countDown_.IsInputLocked() && gameScene.result_ == GameResult::None && gameScene.bossManager_.IsBattle()) {
+		gameScene.bossManager_.ResolvePlayerAttackCollisions(gameScene.bulletManager_.GetBullets(), gameScene.bulletManager_.GetHomingMissiles());
+	}
 }
 
 // 狙い方向を更新する。
@@ -9296,8 +9805,8 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 
 	// マウス位置を画面内へ収める。
 	const Vector2 mouse = gameScene.input_->GetMousePosition();
-	gameScene.reticlePos_.x = std::clamp(mouse.x, 0.0f, gameScene.kScreenWidth_);
-	gameScene.reticlePos_.y = std::clamp(mouse.y, 0.0f, gameScene.kScreenHeight_);
+	gameScene.reticlePos_.x = std::clamp(mouse.x, 0.0f, gameScene.kScreenWidth);
+	gameScene.reticlePos_.y = std::clamp(mouse.y, 0.0f, gameScene.kScreenHeight);
 	if (gameScene.reticleSprite_) {
 		gameScene.reticleSprite_->SetPosition(gameScene.reticlePos_);
 	}
@@ -9308,8 +9817,8 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 		return;
 	}
 
-	const float ndcX = (gameScene.reticlePos_.x / gameScene.kScreenWidth_) * 2.0f - 1.0f;
-	const float ndcY = 1.0f - (gameScene.reticlePos_.y / gameScene.kScreenHeight_) * 2.0f;
+	const float ndcX = (gameScene.reticlePos_.x / gameScene.kScreenWidth) * 2.0f - 1.0f;
+	const float ndcY = 1.0f - (gameScene.reticlePos_.y / gameScene.kScreenHeight) * 2.0f;
 
 	// レティクルをワールドへ逆投影する。
 	const Matrix4x4 viewProj = MyMath::Multiply(cam->matView, cam->matProjection);
@@ -9371,8 +9880,8 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 			continue;
 		}
 
-		const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * gameScene.kScreenWidth_, (-clip.y * 0.5f + 0.5f) * gameScene.kScreenHeight_};
-		if (screenPos.x < 0.0f || screenPos.x > gameScene.kScreenWidth_ || screenPos.y < 0.0f || screenPos.y > gameScene.kScreenHeight_) {
+		const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * gameScene.kScreenWidth, (-clip.y * 0.5f + 0.5f) * gameScene.kScreenHeight};
+		if (screenPos.x < 0.0f || screenPos.x > gameScene.kScreenWidth || screenPos.y < 0.0f || screenPos.y > gameScene.kScreenHeight) {
 			continue;
 		}
 
@@ -9437,8 +9946,8 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 	const GameScene::SmokeParams& params = (gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_) ? gameScene.boostSmokeParams_ : gameScene.normalSmokeParams_;
 
 	static std::mt19937 rng{std::random_device{}()};
-	std::uniform_real_distribution<float> xyDist(-gameScene.kSmokeRandXY_, gameScene.kSmokeRandXY_);
-	std::uniform_real_distribution<float> zDist(-gameScene.kSmokeRandZ_, gameScene.kSmokeRandZ_);
+	std::uniform_real_distribution<float> xyDist(-gameScene.kSmokeRandXY, gameScene.kSmokeRandXY);
+	std::uniform_real_distribution<float> zDist(-gameScene.kSmokeRandZ, gameScene.kSmokeRandZ);
 
 	// 蓄積タイマーで発生間隔を保つ。
 	while (gameScene.smokeEmitTimer_ >= params.emitInterval) {
@@ -9449,7 +9958,7 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 		const auto& playerWt = gameScene.player_->GetWorldTransform();
 		const Matrix4x4 playerRotateMatrix = MyMath::MakeAffineMatrix({1.0f, 1.0f, 1.0f}, playerWt.rotation_, {0.0f, 0.0f, 0.0f});
 
-		const Vector3 localOffset = {0.0f, gameScene.kSmokeOffsetY_, gameScene.kSmokeOffsetZ_};
+		const Vector3 localOffset = {0.0f, gameScene.kSmokeOffsetY, gameScene.kSmokeOffsetZ};
 		const Vector3 offset = MyMath::TransformNormal(localOffset, playerRotateMatrix);
 		const Vector3 spawnPos = MyMath::Add(playerPos, offset);
 
@@ -9480,7 +9989,7 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 	}
 
 	static std::mt19937 rng{std::random_device{}()};
-	std::uniform_real_distribution<float> randDist(-gameScene.kMissileAfterburnerRand_, gameScene.kMissileAfterburnerRand_);
+	std::uniform_real_distribution<float> randDist(-gameScene.kMissileAfterburnerRand, gameScene.kMissileAfterburnerRand);
 
 	// 各ミサイルの後方に噴射を出す。
 	for (const auto& missile : gameScene.bulletManager_.GetHomingMissiles()) {
@@ -9498,13 +10007,13 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 		}
 
 		const Vector3 pos = missile->GetWorldTranslation();
-		const Vector3 spawnPos = MyMath::Add(pos, MyMath::Multiply(vel, gameScene.kMissileAfterburnerOffsetZ_));
-		Vector3 emitVel = MyMath::Multiply(vel, gameScene.kMissileAfterburnerSpeed_);
+		const Vector3 spawnPos = MyMath::Add(pos, MyMath::Multiply(vel, gameScene.kMissileAfterburnerOffsetZ));
+		Vector3 emitVel = MyMath::Multiply(vel, gameScene.kMissileAfterburnerSpeed);
 		emitVel.x += randDist(rng);
 		emitVel.y += randDist(rng);
 		emitVel.z += randDist(rng);
 		gameScene.missileAfterburnerEmitter_->Emit(
-		    spawnPos, emitVel, gameScene.kMissileAfterburnerLife_, gameScene.kMissileAfterburnerStartScale_, gameScene.kMissileAfterburnerEndScale_, kAfterburnerCoreColor, kAfterburnerOuterColor);
+		    spawnPos, emitVel, gameScene.kMissileAfterburnerLife, gameScene.kMissileAfterburnerStartScale, gameScene.kMissileAfterburnerEndScale, kAfterburnerCoreColor, kAfterburnerOuterColor);
 
 		// 追加の火の粉。
 		Vector3 emberVel = emitVel;
@@ -9512,7 +10021,7 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 		emberVel.y += randDist(rng) * 0.8f;
 		emberVel.z += randDist(rng) * 0.8f;
 		gameScene.missileAfterburnerEmitter_->Emit(
-		    spawnPos, emberVel, gameScene.kMissileAfterburnerLife_ * 0.65f, gameScene.kMissileAfterburnerStartScale_ * 0.6f, 0.0f, kBoostOuterColor, kExplosionFireColor);
+		    spawnPos, emberVel, gameScene.kMissileAfterburnerLife * 0.65f, gameScene.kMissileAfterburnerStartScale * 0.6f, 0.0f, kBoostOuterColor, kExplosionFireColor);
 	}
 
 	gameScene.missileAfterburnerEmitter_->Update(dt);
@@ -9549,56 +10058,113 @@ void GameSceneUpdateExecutor::SpeedLineUpdate(GameScene& gameScene, float dt) {
 
 // リザルトを判定する。
 void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
-	if (gameScene.result_ == GameResult::None) {
-		const int currentScore = gameScene.uiManager_.GetScore()->GetScore();
-		// チュートリアルは目標到達で即クリア。
-		if (gameScene.isTutorialLevel_ && currentScore >= gameScene.kClearScore_) {
-			gameScene.result_ = GameResult::Clear;
-			gameScene.clearScore_ = currentScore;
-			gameScene.isEnd_ = true;
-			return;
-		}
+	if (gameScene.result_ != GameResult::None) {
+		return;
+	}
 
-		// 通常ステージは撃墜後に成否判定。
-		if (gameScene.player_->IsExplosionFinished()) {
-			if (currentScore >= gameScene.kClearScore_) {
-				gameScene.result_ = GameResult::Clear;
-				gameScene.clearScore_ = currentScore;
-				gameScene.isEnd_ = true;
-			} else {
-				gameScene.result_ = GameResult::Fail;
-				gameScene.transitionPhase_ = SceneTransitionPhase::FailCinematic;
-				gameScene.transitionTimer_ = 0.0f;
-				gameScene.timeScale_ = 0.35f;
-				StartExplosionAtPlayer(gameScene, 2.3f);
-			}
-		}
+	const int currentScore = gameScene.uiManager_.GetScore()->GetScore();
+	const bool reachedClearScore = currentScore >= gameScene.requiredClearScore_;
+
+	// チュートリアルは従来通り、目標到達で即クリア。
+	if (gameScene.isTutorialLevel_ && reachedClearScore) {
+		gameScene.result_ = GameResult::Clear;
+		gameScene.clearScore_ = currentScore;
+		gameScene.isEnd_ = true;
+		return;
+	}
+
+	// Normal / Hard は目標スコア到達直後に、クリア離脱演出を経て Boss ステージへ切り替える。
+	if (gameScene.isBossStageEnabled_ && reachedClearScore && !gameScene.hasBossBattleStarted_) {
+		gameScene.hasBossBattleStarted_ = true;
+		gameScene.isBossTransitionAnimating_ = true;
+		gameScene.clearAnimTimer_ = 0.0f;
+
+		auto& wt = gameScene.player_->GetWorldTransform();
+		gameScene.bossTransitionStartPosition_ = wt.translation_;
+		gameScene.bossTransitionStartRotation_ = wt.rotation_;
+		gameScene.bossTransitionStartScale_ = wt.scale_;
+
+		// Boss戦に通常敵や通常戦の弾を持ち越さない。
+		gameScene.enemyManager_.ClearAllEnemies();
+		gameScene.bulletManager_.Initialize();
+
+		gameScene.transitionPhase_ = SceneTransitionPhase::BossExitCinematic;
+		gameScene.transitionTimer_ = 0.0f;
+		gameScene.timeScale_ = 0.5f;
+		return;
+	}
+
+	if (gameScene.isBossStageEnabled_ && gameScene.bossManager_.IsClearFinished()) {
+		gameScene.result_ = GameResult::Clear;
+		gameScene.clearScore_ = currentScore;
+		gameScene.isClearAnimating_ = true;
+		gameScene.clearAnimTimer_ = 0.0f;
+		gameScene.transitionPhase_ = SceneTransitionPhase::BossClearCinematic;
+		gameScene.transitionTimer_ = 0.0f;
+		gameScene.timeScale_ = 0.5f;
+		return;
+	}
+
+	// Easy など Boss 非対応ステージは、目標到達かつフィールド掃討後にクリア演出へ入る。
+	const bool fieldCleared = gameScene.enemyManager_.IsAllEnemyDestroyed();
+	if (!gameScene.isBossStageEnabled_ && reachedClearScore && fieldCleared) {
+		gameScene.result_ = GameResult::Clear;
+		gameScene.clearScore_ = currentScore;
+		gameScene.isClearAnimating_ = true;
+		gameScene.clearAnimTimer_ = 0.0f;
+		gameScene.transitionPhase_ = SceneTransitionPhase::ClearCinematic;
+		gameScene.transitionTimer_ = 0.0f;
+		gameScene.timeScale_ = 0.5f;
+		return;
+	}
+
+	if (gameScene.player_->IsExplosionFinished()) {
+		gameScene.result_ = GameResult::Fail;
+		gameScene.transitionPhase_ = SceneTransitionPhase::FailCinematic;
+		gameScene.transitionTimer_ = 0.0f;
+		gameScene.timeScale_ = 0.35f;
+		StartExplosionAtPlayer(gameScene, 2.3f);
 	}
 }
 
 // クリア離脱演出を更新する。
 void GameSceneUpdateExecutor::ClearAnimationUpdate(GameScene& gameScene, float dt) {
-	if (gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_) {
+	const bool isResultClearAnimating = gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_;
+	const bool isBossExitAnimating = gameScene.isBossTransitionAnimating_ && gameScene.transitionPhase_ == SceneTransitionPhase::BossExitCinematic;
+	if (isResultClearAnimating || isBossExitAnimating) {
 		gameScene.clearAnimTimer_ += dt;
 		auto& wt = gameScene.player_->GetWorldTransform();
 
 		// 前上方へ飛び去らせる。
-		wt.translation_.z += gameScene.kClearBoostSpeedZ_ * dt;
-		wt.translation_.y += gameScene.kClearBoostSpeedY_ * dt;
-		wt.rotation_.x -= gameScene.kClearRotateSpeedX_ * dt;
+		wt.translation_.z += gameScene.kClearBoostSpeedZ * dt;
+		wt.translation_.y += gameScene.kClearBoostSpeedY * dt;
+		wt.rotation_.x -= gameScene.kClearRotateSpeedX * dt;
 
 		// 後半は縮小させる。
-		if (gameScene.clearAnimTimer_ > gameScene.kClearShrinkStart_) {
-			float shrink = gameScene.clearAnimTimer_ - gameScene.kClearShrinkStart_;
-			float scale = (std::max)(0.0f, 1.0f - shrink * gameScene.kClearShrinkSpeed_);
+		if (gameScene.clearAnimTimer_ > gameScene.kClearShrinkStart) {
+			float shrink = gameScene.clearAnimTimer_ - gameScene.kClearShrinkStart;
+			float scale = (std::max)(0.0f, 1.0f - shrink * gameScene.kClearShrinkSpeed);
 			wt.scale_ = {scale, scale, scale};
 		}
 
 		wt.UpdateMatrix();
 
-		if (gameScene.clearAnimTimer_ >= gameScene.kClearAnimEndTime_) {
-			gameScene.isEnd_ = true;
-			gameScene.isClearAnimating_ = false;
+		if (gameScene.clearAnimTimer_ >= gameScene.kClearAnimEndTime) {
+			if (isBossExitAnimating) {
+				// 離脱前の姿勢へ戻し、カウントダウンなしの開始演出へつなぐ。
+				wt.translation_ = gameScene.bossTransitionStartPosition_;
+				wt.rotation_ = gameScene.bossTransitionStartRotation_;
+				wt.scale_ = gameScene.bossTransitionStartScale_;
+				wt.UpdateMatrix();
+				gameScene.previousPlayerPos_ = wt.translation_;
+
+				gameScene.transitionPhase_ = SceneTransitionPhase::BossStartCinematic;
+				gameScene.transitionTimer_ = 0.0f;
+				gameScene.timeScale_ = 0.55f;
+			} else {
+				gameScene.isEnd_ = true;
+				gameScene.isClearAnimating_ = false;
+			}
 		}
 	}
 }
@@ -9614,7 +10180,7 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 	// 開始演出。
 	if (gameScene.transitionPhase_ == SceneTransitionPhase::IntroCinematic) {
 		gameScene.railCamera_->SetCinematicZoom(-10.0f);
-		if (gameScene.transitionTimer_ >= 0.8f) {
+		if (gameScene.transitionTimer_ >= gameScene.kBossStartCinematicDuration) {
 			gameScene.transitionPhase_ = SceneTransitionPhase::None;
 			gameScene.timeScale_ = 1.0f;
 			gameScene.railCamera_->SetCinematicZoom(0.0f);
@@ -9623,6 +10189,29 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 		// クリア演出。
 		gameScene.railCamera_->SetCinematicZoom(-18.0f);
 		if (gameScene.transitionTimer_ >= 0.55f) {
+			gameScene.timeScale_ = 1.0f;
+		}
+	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossStartCinematic) {
+		// ゲーム開始時と同じカメラ演出。カウントダウンは再生しない。
+		gameScene.railCamera_->SetCinematicZoom(-10.0f);
+		if (gameScene.transitionTimer_ >= 0.8f) {
+			gameScene.isBossTransitionAnimating_ = false;
+			gameScene.transitionPhase_ = SceneTransitionPhase::BossIntroCinematic;
+			gameScene.transitionTimer_ = 0.0f;
+			gameScene.timeScale_ = 0.65f;
+			gameScene.railCamera_->SetCinematicZoom(0.0f);
+			gameScene.bossManager_.StartBossBattle(gameScene.player_->GetTranslation(), &gameScene.railCamera_->GetWorldTransform());
+		}
+	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossIntroCinematic) {
+		gameScene.railCamera_->SetCinematicZoom(-26.0f);
+		if (gameScene.transitionTimer_ >= 2.0f) {
+			gameScene.transitionPhase_ = SceneTransitionPhase::None;
+			gameScene.timeScale_ = 1.0f;
+			gameScene.railCamera_->SetCinematicZoom(0.0f);
+		}
+	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossClearCinematic) {
+		gameScene.railCamera_->SetCinematicZoom(-28.0f);
+		if (gameScene.transitionTimer_ >= 0.6f) {
 			gameScene.timeScale_ = 1.0f;
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::FailCinematic) {
@@ -9650,21 +10239,21 @@ void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
 	// 火花パーティクル。
-	const int count = static_cast<int>(gameScene.kDamageGpuBurst_ * scale);
+	const int count = static_cast<int>(gameScene.kDamageGpuBurst * scale);
 	for (int i = 0; i < count; i++) {
 		if (gameScene.damageSmokeEmitter_) {
-			Vector3 vel = {dist(rng) * (gameScene.kDamageGpuSpeed_ * scale), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale)};
+			Vector3 vel = {dist(rng) * (gameScene.kDamageGpuSpeed * scale), dist(rng) * (gameScene.kDamageGpuSpeed * scale), dist(rng) * (gameScene.kDamageGpuSpeed * scale)};
 			gameScene.damageSmokeEmitter_->Emit(
-			    pos, vel, gameScene.kDamageGpuLife_ * 1.3f, gameScene.kDamageGpuStartScale_ * scale, gameScene.kDamageGpuEndScale_ * scale, kExplosionHotColor, kExplosionFireColor);
+			    pos, vel, gameScene.kDamageGpuLife * 1.3f, gameScene.kDamageGpuStartScale * scale, gameScene.kDamageGpuEndScale * scale, kExplosionHotColor, kExplosionFireColor);
 		}
 	}
 	// 煙パーティクル。
 	for (int i = 0; i < count / 2; i++) {
 		if (gameScene.damageSmokeEmitter_) {
 			Vector3 vel = {
-			    dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed_ * scale * 0.45f)};
+			    dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f)};
 			gameScene.damageSmokeEmitter_->Emit(
-			    pos, vel, gameScene.kDamageGpuLife_ * 3.2f, gameScene.kDamageGpuStartScale_ * scale * 1.2f, gameScene.kDamageGpuEndScale_ * scale * 2.4f, kSmokeStartColor, kSmokeEndColor);
+			    pos, vel, gameScene.kDamageGpuLife * 3.2f, gameScene.kDamageGpuStartScale * scale * 1.2f, gameScene.kDamageGpuEndScale * scale * 2.4f, kSmokeStartColor, kSmokeEndColor);
 		}
 	}
 	if (gameScene.railCamera_) {
@@ -10126,6 +10715,8 @@ File Path: DirectXGame/Scenes/SceneManager.cpp
 ============================================================
 #include "SceneManager.h"
 
+#include "Application/Utility/GameTime.h"
+
 SceneManager::SceneManager() {
 	// BGM
 	audio_ = KamataEngine::Audio::GetInstance();
@@ -10242,7 +10833,7 @@ void SceneManager::Update() {
 	// 白フラッシュ
 	// ===============
 	case SceneTransitionState::FlashOut: {
-		flashTimer_ += 1.0f / 60.0f;
+		flashTimer_ += GameTime::kDeltaTime;
 		float t = std::clamp(flashTimer_ / flashTime_, 0.0f, 1.0f);
 		float alpha = (t < 0.5f) ? (t * 2.0f) : (2.0f - t * 2.0f);
 		flashSprite_->SetColor({1.0f, 1.0f, 1.0f, alpha});
@@ -10371,6 +10962,7 @@ uint32_t SceneManager::GetBgmHandleForScene_(SceneName sceneName) {
 	}
 }
 
+
 ============================================================
 File Path: DirectXGame/Scenes/SceneManager.h
 ============================================================
@@ -10463,7 +11055,7 @@ private:
 	/// Title → Introduction : 黒フェード
 	/// Introduction → InGame : 白フラッシュ
 	/// </summary>
-	bool ShouldUseWhiteFlash(SceneName form, SceneName to) const;
+	bool ShouldUseWhiteFlash(SceneName from, SceneName to) const;
 
 private:
 	std::unique_ptr<IScene> currentScene_ = nullptr; // 現在実行中のシーン
@@ -10495,6 +11087,7 @@ private:
 	SceneName currentBgmScene_ = SceneName::None;
 };
 
+
 ============================================================
 File Path: DirectXGame/Scenes/SceneName.h
 ============================================================
@@ -10514,6 +11107,7 @@ File Path: DirectXGame/Scenes/Title/TitleScene.cpp
 ============================================================
 #include "TitleScene.h"
 
+#include "Application/Utility/GameTime.h"
 #include "Scenes/Introduction/IntroductionScene.h"
 
 using namespace KamataEngine;
@@ -10521,7 +11115,6 @@ using namespace KamataEngine;
 // ===== TitleScene.cpp 内部定数（演出・時間）=====
 namespace {
 // フレーム
-constexpr float kFixedDeltaTime = 1.0f / 60.0f;
 constexpr float kTwoPi = 6.28318530717958647692f;
 
 // タイトル落下演出
@@ -10611,7 +11204,7 @@ void TitleScene::Update() {
 
 	// Start点滅
 	if (isTitleFallFinished_) {
-		blinkTimer_ += kFixedDeltaTime;
+		blinkTimer_ += GameTime::kDeltaTime;
 		if (blinkTimer_ >= blinkInterval_) {
 			blinkTimer_ -= blinkInterval_;
 		}
@@ -10800,7 +11393,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
     KamataEngine::Initialize(L"LE4C_06_タカキ_ケンゴ_AstroWing");
     {
         // ゲームプレイ中はOSカーソルを非表示にする
-        //while (ShowCursor(FALSE) >= 0) {}
+        while (ShowCursor(FALSE) >= 0) {}
 
         // 描画開始/終了を行うDirectX共通クラス
         KamataEngine::DirectXCommon* dxCommon = KamataEngine::DirectXCommon::GetInstance();
