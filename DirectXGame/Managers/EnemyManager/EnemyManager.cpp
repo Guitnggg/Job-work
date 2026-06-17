@@ -86,6 +86,8 @@ void EnemyManager::ClearAllEnemies() {
 	enemySpawnList_.clear();
 }
 
+void EnemyManager::ClearPendingSpawns() { enemySpawnList_.clear(); }
+
 void EnemyManager::LoadEnemyCsv(const std::string& path) {
 	enemySpawnList_.clear();
 

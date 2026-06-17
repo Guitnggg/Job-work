@@ -19,6 +19,8 @@ using namespace KamataEngine;
 using json = nlohmann::json;
 
 namespace {
+constexpr bool kEnableBossStage = false;
+
 int LoadClearScoreFromLevelJson(const std::string& path, int fallbackScore) {
 	std::ifstream ifs(path);
 	if (!ifs) {
@@ -200,7 +202,7 @@ void GameScene::Initialize() {
 	} else if (levelJsonPath_.find("Hard.json") != std::string::npos) {
 		defaultClearScore = 15000;
 	}
-	isBossStageEnabled_ = (levelJsonPath_.find("Normal.json") != std::string::npos) || (levelJsonPath_.find("Hard.json") != std::string::npos);
+	isBossStageEnabled_ = kEnableBossStage && ((levelJsonPath_.find("Normal.json") != std::string::npos) || (levelJsonPath_.find("Hard.json") != std::string::npos));
 	hasBossBattleStarted_ = false;
 
 	// ===== 開始 =====

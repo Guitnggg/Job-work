@@ -87,6 +87,7 @@ public:
 	/// Boss戦への切り替え時に、出現中・出現待ちの通常敵をすべて破棄する
 	/// </summary>
 	void ClearAllEnemies();
+	void ClearPendingSpawns();
 
 private:
 	/// <summary>

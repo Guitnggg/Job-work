@@ -643,6 +643,10 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	}
 
 	// Easy など Boss 非対応ステージは、目標到達かつフィールド掃討後にクリア演出へ入る。
+	if (!gameScene.isBossStageEnabled_ && reachedClearScore) {
+		gameScene.enemyManager_.ClearPendingSpawns();
+	}
+
 	const bool fieldCleared = gameScene.enemyManager_.IsAllEnemyDestroyed();
 	if (!gameScene.isBossStageEnabled_ && reachedClearScore && fieldCleared) {
 		gameScene.result_ = GameResult::Clear;
