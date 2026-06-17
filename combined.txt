@@ -7605,6 +7605,8 @@ void EnemyManager::ClearAllEnemies() {
 	enemySpawnList_.clear();
 }
 
+void EnemyManager::ClearPendingSpawns() { enemySpawnList_.clear(); }
+
 void EnemyManager::LoadEnemyCsv(const std::string& path) {
 	enemySpawnList_.clear();
 
@@ -7890,6 +7892,7 @@ public:
 	/// Boss戦への切り替え時に、出現中・出現待ちの通常敵をすべて破棄する
 	/// </summary>
 	void ClearAllEnemies();
+	void ClearPendingSpawns();
 
 private:
 	/// <summary>
@@ -8759,6 +8762,8 @@ using namespace KamataEngine;
 using json = nlohmann::json;
 
 namespace {
+constexpr bool kEnableBossStage = false;
+
 int LoadClearScoreFromLevelJson(const std::string& path, int fallbackScore) {
 	std::ifstream ifs(path);
 	if (!ifs) {
@@ -8940,7 +8945,7 @@ void GameScene::Initialize() {
 	} else if (levelJsonPath_.find("Hard.json") != std::string::npos) {
 		defaultClearScore = 15000;
 	}
-	isBossStageEnabled_ = (levelJsonPath_.find("Normal.json") != std::string::npos) || (levelJsonPath_.find("Hard.json") != std::string::npos);
+	isBossStageEnabled_ = kEnableBossStage && ((levelJsonPath_.find("Normal.json") != std::string::npos) || (levelJsonPath_.find("Hard.json") != std::string::npos));
 	hasBossBattleStarted_ = false;
 
 	// ===== 開始 =====
@@ -10106,6 +10111,10 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	}
 
 	// Easy など Boss 非対応ステージは、目標到達かつフィールド掃討後にクリア演出へ入る。
+	if (!gameScene.isBossStageEnabled_ && reachedClearScore) {
+		gameScene.enemyManager_.ClearPendingSpawns();
+	}
+
 	const bool fieldCleared = gameScene.enemyManager_.IsAllEnemyDestroyed();
 	if (!gameScene.isBossStageEnabled_ && reachedClearScore && fieldCleared) {
 		gameScene.result_ = GameResult::Clear;
