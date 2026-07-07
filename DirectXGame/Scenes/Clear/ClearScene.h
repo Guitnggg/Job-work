@@ -7,7 +7,7 @@
 
 #include "Application/Background/Skydome/Skydome.h"
 #include "Application/Objects/Asteroid/AsteroidField.h"
-#include "UI/Score/Score.h"
+#include "Application/UI/Score/Score.h"
 
 #include "Scenes/IScene.h"
 class TitleScene;

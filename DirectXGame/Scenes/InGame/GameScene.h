@@ -21,11 +21,11 @@
 #include "Application/UI/PauseMenu/PauseMenu.h"
 #include "Application/UI/Score/Score.h"
 
-#include "Managers/BulletManager/BulletManager.h"
-#include "Managers/BossManager/BossManager.h"
-#include "Managers/CollisionManager/CollisionManager.h"
-#include "Managers/EnemyManager/EnemyManager.h"
-#include "Managers/UIManager/UIManager.h"
+#include "Application/Managers/BulletManager/BulletManager.h"
+#include "Application/Managers/BossManager/BossManager.h"
+#include "Application/Managers/CollisionManager/CollisionManager.h"
+#include "Application/Managers/EnemyManager/EnemyManager.h"
+#include "Application/Managers/UIManager/UIManager.h"
 
 #include "Scenes/IScene.h"
 class FinishScene;

@@ -1,7 +1,7 @@
 #include "IntroductionScene.h"
 
-#include "GameScene.h"
-#include "TitleScene.h"
+#include "Scenes/InGame/GameScene.h"
+#include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
 

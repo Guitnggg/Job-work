@@ -7,7 +7,7 @@
 
 #include "Application/Characters/Boss/Boss.h"
 #include "Application/Characters/Boss/BossAttackController.h"
-#include "Managers/BossManager/BossUIManager.h"
+#include "Application/Managers/BossManager/BossUIManager.h"
 
 class Bullet;
 class HomingMissile;
