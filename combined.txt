@@ -45,6 +45,24 @@
 └── └── └── └── SpeedLine/
 └── └── └──     ├── SpeedLine.cpp
 └── └── └──     └── SpeedLine.h
+└── └── ├── Managers/
+└── └── └── ├── BossManager/
+└── └── └── └── ├── BossManager.cpp
+└── └── └── └── ├── BossManager.h
+└── └── └── └── ├── BossUIManager.cpp
+└── └── └── └── └── BossUIManager.h
+└── └── └── ├── BulletManager/
+└── └── └── └── ├── BulletManager.cpp
+└── └── └── └── └── BulletManager.h
+└── └── └── ├── CollisionManager/
+└── └── └── └── ├── CollisionManager.cpp
+└── └── └── └── └── CollisionManager.h
+└── └── └── ├── EnemyManager/
+└── └── └── └── ├── EnemyManager.cpp
+└── └── └── └── └── EnemyManager.h
+└── └── └── └── UIManager/
+└── └── └──     ├── UIManager.cpp
+└── └── └──     └── UIManager.h
 └── └── ├── Objects/
 └── └── └── └── Asteroid/
 └── └── └──     ├── Asteroid.cpp
@@ -72,24 +90,6 @@
 └── └──         └── WorldTransformEx.cpp
 └── ├── DirectXGame.vcxproj
 └── ├── DirectXGame.vcxproj.filters
-└── ├── Managers/
-└── └── ├── BossManager/
-└── └── └── ├── BossManager.cpp
-└── └── └── ├── BossManager.h
-└── └── └── ├── BossUIManager.cpp
-└── └── └── └── BossUIManager.h
-└── └── ├── BulletManager/
-└── └── └── ├── BulletManager.cpp
-└── └── └── └── BulletManager.h
-└── └── ├── CollisionManager/
-└── └── └── ├── CollisionManager.cpp
-└── └── └── └── CollisionManager.h
-└── └── ├── EnemyManager/
-└── └── └── ├── EnemyManager.cpp
-└── └── └── └── EnemyManager.h
-└── └── └── UIManager/
-└── └──     ├── UIManager.cpp
-└── └──     └── UIManager.h
 └── ├── Resources/
 └── └── ├── Asteroid/
 └── └── ├── Beam/
@@ -4075,6 +4075,1612 @@ private:
 
 
 ============================================================
+File Path: DirectXGame/Application/Managers/BossManager/BossManager.cpp
+============================================================
+#include "BossManager.h"
+
+#include <algorithm>
+#include <cmath>
+
+#include "Application/Characters/Player/Bullet.h"
+#include "Application/Characters/Player/HomingMissile.h"
+
+using namespace KamataEngine;
+
+namespace {
+CharacterBase::DamageSource GetProjectileDamageSource(CharacterBase* projectile) {
+	if (dynamic_cast<HomingMissile*>(projectile)) {
+		return CharacterBase::DamageSource::HomingMissile;
+	}
+	return CharacterBase::DamageSource::Bullet;
+}
+
+bool IsHit(CharacterBase* a, CharacterBase* b) {
+	if (!a || !b || !a->GetCollider() || !b->GetCollider()) {
+		return false;
+	}
+	const Vector3 ap = a->GetCollider()->GetTranslate();
+	const Vector3 bp = b->GetCollider()->GetTranslate();
+	const float ar = a->GetCollider()->GetRadius();
+	const float br = b->GetCollider()->GetRadius();
+	const float dx = ap.x - bp.x;
+	const float dy = ap.y - bp.y;
+	const float dz = ap.z - bp.z;
+	const float rr = ar + br;
+	return dx * dx + dy * dy + dz * dz <= rr * rr;
+}
+} // namespace
+
+void BossManager::Initialize() {
+	state_ = State::Inactive;
+	boss_.reset();
+	introTimer_ = 0.0f;
+	clearTimer_ = 0.0f;
+	defeatHandled_ = false;
+	uiManager_.Initialize();
+}
+
+void BossManager::StartBossBattle(const Vector3& playerPos, WorldTransform* parent) {
+	boss_ = std::make_unique<Boss>();
+	boss_->Initialize({playerPos.x, playerPos.y + 0.8f, playerPos.z + 55.0f});
+	boss_->SetParent(parent);
+	boss_->Update();
+	attackController_.Initialize(boss_.get());
+	state_ = State::Intro;
+	introTimer_ = 0.0f;
+	clearTimer_ = 0.0f;
+	defeatHandled_ = false;
+}
+
+void BossManager::Update(float dt) {
+	if (state_ == State::Inactive) {
+		uiManager_.Update(nullptr, 0.0f, false, false);
+		return;
+	}
+
+	if (state_ == State::Intro) {
+		introTimer_ += dt;
+		if (boss_) {
+			boss_->Update();
+		}
+		const float warningRate = std::fabs(std::sin(introTimer_ * 10.0f));
+		uiManager_.Update(boss_.get(), warningRate, false, true);
+		if (introTimer_ >= kIntroDuration) {
+			state_ = State::Battle;
+		}
+		return;
+	}
+
+	if (state_ == State::Battle) {
+		if (boss_) {
+			boss_->Update();
+			attackController_.Update(dt);
+			if (boss_->IsDead() && !defeatHandled_) {
+				state_ = State::Clear;
+				clearTimer_ = 0.0f;
+				defeatHandled_ = true;
+			}
+		}
+		uiManager_.Update(boss_.get(), 0.0f, true, false);
+		return;
+	}
+
+	if (state_ == State::Clear) {
+		clearTimer_ += dt;
+		uiManager_.Update(boss_.get(), 0.0f, false, false);
+	}
+}
+
+void BossManager::Draw(const Camera* camera) {
+	if (boss_ && state_ != State::Inactive && state_ != State::Clear) {
+		boss_->Draw(camera);
+	}
+}
+
+void BossManager::DrawUI() { uiManager_.Draw(); }
+
+void BossManager::ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<HomingMissile>>& missiles) {
+	if (state_ != State::Battle || !boss_) {
+		return;
+	}
+	ResolveProjectileCollisions_(bullets);
+	ResolveProjectileCollisions_(missiles);
+}
+
+template <class TProjectile>
+void BossManager::ResolveProjectileCollisions_(std::vector<std::unique_ptr<TProjectile>>& projectiles) {
+	if (!boss_) {
+		return;
+	}
+	for (auto& projectile : projectiles) {
+		if (!projectile || projectile->IsDead()) {
+			continue;
+		}
+		for (BossPart* part : boss_->GetCollisionParts()) {
+			if (!part || !part->IsCollidable()) {
+				continue;
+			}
+			if (!IsHit(projectile.get(), part)) {
+				continue;
+			}
+			part->SetLastDamageSource(GetProjectileDamageSource(projectile.get()));
+			part->OnCollision(projectile.get());
+			projectile->OnCollision(part);
+			break;
+		}
+	}
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/BossManager/BossManager.h
+============================================================
+#pragma once
+
+#include <memory>
+#include <vector>
+
+#include <KamataEngine.h>
+
+#include "Application/Characters/Boss/Boss.h"
+#include "Application/Characters/Boss/BossAttackController.h"
+#include "Application/Managers/BossManager/BossUIManager.h"
+
+class Bullet;
+class HomingMissile;
+class Player;
+
+/// <summary>
+/// Boss ステージの出現演出、ボス本体、専用 UI、撃破演出を管理する。
+/// </summary>
+class BossManager {
+public:
+	enum class State {
+		Inactive,
+		Intro,
+		Battle,
+		Clear,
+	};
+
+	void Initialize();
+	void StartBossBattle(const KamataEngine::Vector3& playerPos, KamataEngine::WorldTransform* parent);
+	void Update(float dt);
+	void Draw(const KamataEngine::Camera* camera);
+	void DrawUI();
+
+	void ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<HomingMissile>>& missiles);
+
+	bool IsActive() const { return state_ != State::Inactive; }
+	bool IsBattle() const { return state_ == State::Battle; }
+	bool IsClearFinished() const { return state_ == State::Clear && clearTimer_ >= kClearDuration; }
+	State GetState() const { return state_; }
+	Boss* GetBoss() const { return boss_.get(); }
+
+private:
+	template <class TProjectile>
+	void ResolveProjectileCollisions_(std::vector<std::unique_ptr<TProjectile>>& projectiles);
+
+	State state_ = State::Inactive;
+	std::unique_ptr<Boss> boss_;
+	BossAttackController attackController_;
+	BossUIManager uiManager_;
+	float introTimer_ = 0.0f;
+	float clearTimer_ = 0.0f;
+	bool defeatHandled_ = false;
+
+	static constexpr float kIntroDuration = 2.0f;
+	static constexpr float kClearDuration = 2.0f;
+};
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/BossManager/BossUIManager.cpp
+============================================================
+#include "BossUIManager.h"
+
+#include <algorithm>
+
+#include "Application/Characters/Boss/Boss.h"
+
+using namespace KamataEngine;
+
+namespace {
+constexpr Vector2 kHpPos{330.0f, 22.0f};
+constexpr Vector2 kHpSize{620.0f, 18.0f};
+constexpr Vector2 kWarningPos{270.0f, 300.0f};
+constexpr Vector2 kWarningSize{740.0f, 88.0f};
+} // namespace
+
+void BossUIManager::Initialize() {
+	textureHandle_ = TextureManager::Load("./Resources/white1x1.png");
+	hpFrameBar_.reset(Sprite::Create(textureHandle_, {kHpPos.x - 4.0f, kHpPos.y - 4.0f}, {1.0f, 1.0f, 1.0f, 0.9f}));
+	hpBackBar_.reset(Sprite::Create(textureHandle_, kHpPos, {0.08f, 0.01f, 0.01f, 0.92f}));
+	hpFrontBar_.reset(Sprite::Create(textureHandle_, kHpPos, {1.0f, 0.16f, 0.05f, 0.95f}));
+	warningBar_.reset(Sprite::Create(textureHandle_, kWarningPos, {1.0f, 0.04f, 0.02f, 0.0f}));
+
+	if (hpFrameBar_) {
+		hpFrameBar_->SetSize({kHpSize.x + 8.0f, kHpSize.y + 8.0f});
+	}
+	if (hpBackBar_) {
+		hpBackBar_->SetSize(kHpSize);
+	}
+	if (hpFrontBar_) {
+		hpFrontBar_->SetSize(kHpSize);
+	}
+	if (warningBar_) {
+		warningBar_->SetSize(kWarningSize);
+	}
+}
+
+void BossUIManager::Update(const Boss* boss, float warningRate, bool showHpBar, bool showWarning) {
+	showHpBar_ = showHpBar;
+	showWarning_ = showWarning;
+
+	if (hpFrontBar_) {
+		const float rate = boss ? boss->GetHpRate() : 0.0f;
+		hpFrontBar_->SetSize({kHpSize.x * std::clamp(rate, 0.0f, 1.0f), kHpSize.y});
+	}
+
+	if (warningBar_) {
+		const float alpha = std::clamp(0.35f + warningRate * 0.55f, 0.0f, 0.9f);
+		warningBar_->SetColor({1.0f, 0.02f, 0.02f, alpha});
+	}
+}
+
+void BossUIManager::Draw() {
+	if (showWarning_ && warningBar_) {
+		warningBar_->Draw();
+	}
+
+	if (!showHpBar_) {
+		return;
+	}
+	if (hpFrameBar_) {
+		hpFrameBar_->Draw();
+	}
+	if (hpBackBar_) {
+		hpBackBar_->Draw();
+	}
+	if (hpFrontBar_) {
+		hpFrontBar_->Draw();
+	}
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/BossManager/BossUIManager.h
+============================================================
+#pragma once
+
+#include <memory>
+
+#include <KamataEngine.h>
+
+class Boss;
+
+/// <summary>
+/// Boss 専用 UI。画面上部の HP バーと WARNING 演出を管理する。
+/// </summary>
+class BossUIManager {
+public:
+	void Initialize();
+	void Update(const Boss* boss, float warningRate, bool showHpBar, bool showWarning);
+	void Draw();
+
+private:
+	std::unique_ptr<KamataEngine::Sprite> hpBackBar_;
+	std::unique_ptr<KamataEngine::Sprite> hpFrontBar_;
+	std::unique_ptr<KamataEngine::Sprite> hpFrameBar_;
+	std::unique_ptr<KamataEngine::Sprite> warningBar_;
+	uint32_t textureHandle_ = 0u;
+	bool showHpBar_ = false;
+	bool showWarning_ = false;
+};
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/BulletManager/BulletManager.cpp
+============================================================
+#include "BulletManager.h"
+
+#include <algorithm>
+
+#include "Application/Managers/EnemyManager/EnemyManager.h"
+
+using namespace KamataEngine;
+
+namespace {
+constexpr Vector3 kForward{0.0f, 0.0f, 1.0f};
+} // namespace
+
+void BulletManager::Initialize() {
+	audio_ = Audio::GetInstance();
+	shotSeHandle_ = audio_ ? audio_->LoadWave("./Resources/SE/shot.wav") : 0;
+	missileSeHandle_ = audio_ ? audio_->LoadWave("./Resources/SE/missile.wav") : 0;
+
+	bullets_.clear();
+	homingMissiles_.clear();
+	lockedTargets_.clear();
+
+	// Object Pool Pattern:
+	// 通常弾は連射で頻繁に生成・破棄されるため、最初に一定数を生成してプールとして保持する。
+	// 発射時はこの中から未使用(isDead_)の弾を取り出して再利用し、毎回 new/delete しないようにする。
+	bullets_.reserve(kInitialBulletPoolSize);
+	for (int32_t i = 0; i < kInitialBulletPoolSize; ++i) {
+		auto bullet = std::make_unique<Bullet>();
+		bullet->Initialize();
+		bullet->Deactivate();
+		bullets_.push_back(std::move(bullet));
+	}
+
+	fireCooldownFrames_ = 0;
+	burstShotsRemaining_ = 0;
+	isHomingLocking_ = false;
+	homingLockFrame_ = 0;
+	homingCooldownFrames_ = 0;
+	wasHomingPressing_ = false;
+}
+
+float BulletManager::GetHomingCooldownRate() const {
+	const float rate = 1.0f - static_cast<float>(homingCooldownFrames_) / static_cast<float>(kHomingCooldownMaxFrame);
+	return std::clamp(rate, 0.0f, 1.0f);
+}
+
+void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager) {
+	if (!input || !player || countDown.IsInputLocked()) {
+		return;
+	}
+
+	// クールダウン経過
+	if (fireCooldownFrames_ > 0) {
+		--fireCooldownFrames_;
+	}
+
+	if (input->IsTriggerMouse(0) && burstShotsRemaining_ <= 0 && fireCooldownFrames_ <= 0) {
+		burstShotsRemaining_ = kBurstShotCount;
+	}
+
+	if (burstShotsRemaining_ <= 0 || fireCooldownFrames_ > 0) {
+		HandleHomingMissile_(input, player, countDown, enemyManager);
+		return;
+	}
+
+	Vector3 dir = shootDir;
+	const float lenSq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+	if (lenSq <= 0.000001f) {
+		dir = kForward;
+	}
+
+	// Object Pool Pattern:
+	// 新しい弾を直接生成せず、プールから再利用できる弾を取得して発射する。
+	Bullet* bullet = AcquireBullet_();
+	if (bullet) {
+		bullet->FireFrom(player->GetWorldTranslation(), dir);
+	}
+
+	--burstShotsRemaining_;
+	fireCooldownFrames_ = (burstShotsRemaining_ > 0) ? kBurstIntervalFrames : kBurstCooldownFrames;
+
+	if (audio_ && shotSeHandle_ != 0) {
+		audio_->PlayWave(shotSeHandle_);
+	}
+
+	HandleHomingMissile_(input, player, countDown, enemyManager);
+}
+
+void BulletManager::HandleHomingMissile_(KamataEngine::Input* input, Player* player, const CountDown& countDown, EnemyManager* enemyManager) {
+	if (!input || !player || !enemyManager || countDown.IsInputLocked()) {
+		isHomingLocking_ = false;
+		lockedTargets_.clear();
+		homingLockFrame_ = 0;
+		wasHomingPressing_ = false;
+		return;
+	}
+
+	if (homingCooldownFrames_ > 0) {
+		--homingCooldownFrames_;
+	}
+
+	// 右クリック押下でロック開始
+	if (input->IsTriggerMouse(1) && homingCooldownFrames_ <= 0) {
+		isHomingLocking_ = true;
+		homingLockFrame_ = 0;
+		lockedTargets_.clear();
+	}
+
+	if (!isHomingLocking_) {
+		return;
+	}
+
+	++homingLockFrame_;
+	if (homingLockFrame_ >= kHomingLockStartFrame) {
+		lockedTargets_ = enemyManager->GetNearestEnemies(player->GetWorldTranslation(), kHomingMaxLockCount);
+	}
+
+	const bool isPressing = input->IsPressMouse(1);
+	const bool released = wasHomingPressing_ && !isPressing;
+	wasHomingPressing_ = isPressing;
+	const bool lockCompleted = homingLockFrame_ >= kHomingLockMaxFrame;
+	if (!released && !lockCompleted) {
+		return;
+	}
+
+	bool firedMissile = false;
+	for (CharacterBase* target : lockedTargets_) {
+		if (!target || target->IsDead()) {
+			continue;
+		}
+
+		auto missile = std::make_unique<HomingMissile>();
+		missile->Initialize();
+		missile->FireFrom(player->GetWorldTranslation(), target);
+		homingMissiles_.push_back(std::move(missile));
+		firedMissile = true;
+	}
+
+	if (firedMissile && audio_ && missileSeHandle_ != 0) {
+		audio_->PlayWave(missileSeHandle_);
+	}
+
+	homingCooldownFrames_ = kHomingCooldownMaxFrame;
+	isHomingLocking_ = false;
+	homingLockFrame_ = 0;
+	lockedTargets_.clear();
+}
+
+void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager) {
+	if (!enemyManager) {
+		for (auto& m : homingMissiles_) {
+			if (m) {
+				m->ClearTarget();
+			}
+		}
+		return;
+	}
+
+	auto& enemies = enemyManager->GetEnemies();
+	for (auto& m : homingMissiles_) {
+		if (!m || m->IsDead()) {
+			continue;
+		}
+
+		CharacterBase* target = m->GetTarget();
+		if (!target) {
+			continue;
+		}
+
+		const bool exists = std::any_of(enemies.begin(), enemies.end(), [target](const std::unique_ptr<CharacterBase>& e) { return e && e.get() == target && !e->IsDead(); });
+
+		if (!exists) {
+			m->ClearTarget();
+		}
+	}
+}
+
+void BulletManager::UpdateBullets_(EnemyManager* enemyManager) {
+	// 通常弾更新
+	for (auto& b : bullets_) {
+		if (b) {
+			b->Update();
+		}
+	}
+
+	// ホーミング対象の安全性を事前確認
+	ValidateHomingTargets_(enemyManager);
+
+	// ホーミングミサイル更新
+	for (auto& m : homingMissiles_) {
+		if (m) {
+			m->Update();
+		}
+	}
+
+	// 死亡した弾を削除
+	RemoveDeadBullets_();
+}
+
+void BulletManager::RemoveDeadBullets_() {
+	// Object Pool Pattern:
+	// 通常弾は死んでも vector から削除しない。isDead_ == true の弾として残し、
+	// 次の発射時に AcquireBullet_() で再利用する。
+
+	homingMissiles_.erase(std::remove_if(homingMissiles_.begin(), homingMissiles_.end(), [](const std::unique_ptr<HomingMissile>& m) { return !m || m->IsDead(); }), homingMissiles_.end());
+}
+
+Bullet* BulletManager::AcquireBullet_() {
+	// Object Pool Pattern:
+	// まずプール内の未使用弾を探す。見つかればそのインスタンスを再利用する。
+	for (auto& bullet : bullets_) {
+		if (bullet && bullet->IsDead()) {
+			return bullet.get();
+		}
+	}
+
+	// プールが足りない場合だけ追加生成する。通常時のメモリ確保回数を抑えつつ、
+	// 弾数が一時的に増えた場合にも対応できるようにしている。
+	auto bullet = std::make_unique<Bullet>();
+	bullet->Initialize();
+	bullet->Deactivate();
+	Bullet* result = bullet.get();
+	bullets_.push_back(std::move(bullet));
+	return result;
+}
+
+void BulletManager::Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager) {
+	HandleShooting_(input, player, countDown, shootDir, enemyManager);
+	UpdateBullets_(enemyManager);
+}
+
+void BulletManager::Draw(const Camera* camera) {
+	// 通常弾
+	for (auto& b : bullets_) {
+		b->Draw(camera);
+	}
+
+	// ホーミングミサイル
+	for (auto& m : homingMissiles_) {
+		m->Draw(camera);
+	}
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/BulletManager/BulletManager.h
+============================================================
+#pragma once
+
+#include <KamataEngine.h>
+#include <memory>
+#include <vector>
+
+#include "Application/Characters/Player/Bullet.h"
+#include "Application/Characters/Player/HomingMissile.h"
+#include "Application/Characters/Player/Player.h"
+#include "Application/UI/CountDown/CountDown.h"
+
+class EnemyManager;
+
+/// <summary>
+/// プレイヤーの通常弾、ホーミングミサイル、ロックオン状態を管理する。
+/// </summary>
+class BulletManager {
+public:
+	BulletManager() = default;
+	~BulletManager() = default;
+
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
+	void Initialize();
+
+	/// <summary>
+	/// 更新処理
+	/// </summary>
+	/// <param name="input">入力情報</param>
+	/// <param name="player">プレイヤー情報</param>
+	/// <param name="countDown">カウントダウン情報</param>
+	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
+
+	/// <summary>
+	/// 描画処理
+	/// </summary>
+	/// <param name="camera">描画に使用するカメラ</param>
+	void Draw(const KamataEngine::Camera* camera);
+
+	/// <summary>
+	/// 現在管理している通常団のコンテナを参照で返す
+	/// CollisionManagerなど、外部で当たり判定を行う用途で使用する
+	/// </summary>
+	/// <returns>通常弾のコンテナ</returns>
+	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
+
+	/// <summary>
+	/// 現在管理しているホーミングミサイルのコンテナを参照で返す
+	/// CollisionManagerなど、外部で当たり判定を行う用途で使用する
+	/// </summary>
+	/// <returns>ホーミングミサイルのコンテナ</returns>
+	std::vector<std::unique_ptr<HomingMissile>>& GetHomingMissiles() { return homingMissiles_; }
+
+	/// <summary>
+	/// ホーミングロックのクールダウン率（0.0～1.0）を返す
+	/// </summary>
+	float GetHomingCooldownRate() const;
+
+	/// <summary>
+	/// 現在ロックしている敵の数を返す
+	/// </summary>
+	/// <returns>現在ロックしている敵の数</returns>
+	int32_t GetCurrentLockCount() const { return static_cast<int32_t>(lockedTargets_.size()); }
+
+	/// <summary>
+	/// 最大ロック可能な敵の数を返す
+	/// </summary>
+	/// <returns>最大ロック可能な敵の数</returns>
+	int32_t GetMaxLockCount() const { return kHomingMaxLockCount; }
+
+	/// <summary>
+	/// ホーミングロック中かどうかを返す
+	/// </summary>
+	/// <returns>ホーミングロック中かどうか</returns>
+	bool IsHomingLocking() const { return isHomingLocking_; }
+
+	/// <summary>
+	/// 現在ロックしている敵のリストを返す
+	/// </summary>
+	/// <returns>現在ロックしている敵のリスト</returns>
+	const std::vector<CharacterBase*>& GetLockedTargets() const { return lockedTargets_; }
+
+private:
+	/// <summary>
+	/// プレイヤーの入力に応じて通常弾を発射する処理 
+	/// </summary>
+	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
+
+	/// <summary>
+	/// プレイヤーの入力に応じてホーミングミサイルを発射する処理
+	/// </summary>
+	void HandleHomingMissile_(KamataEngine::Input* input, Player* player, const CountDown& countDown, EnemyManager* enemyManager);
+
+	/// <summary>
+	/// 通常弾の位置更新と寿命管理
+	/// </summary>
+	void UpdateBullets_(EnemyManager* enemyManager);
+
+	/// <summary>
+	/// ホーミングミサイルの位置更新と寿命管理
+	/// </summary>
+	void ValidateHomingTargets_(EnemyManager* enemyManager);
+
+	/// <summary>
+	/// 寿命が尽きた通常弾をリストから削除する処理
+	/// </summary>
+	void RemoveDeadBullets_();
+
+	/// <summary>
+	/// 寿命が尽きたホーミングミサイルをリストから削除する処理
+	/// </summary>
+	Bullet* AcquireBullet_();
+
+private:
+	std::vector<std::unique_ptr<Bullet>> bullets_;
+	std::vector<std::unique_ptr<HomingMissile>> homingMissiles_;
+
+	// 通常弾の発射管理
+	int32_t fireCooldownFrames_ = 0;
+	int32_t burstShotsRemaining_ = 0;
+	static constexpr int32_t kBurstShotCount = 3;
+	static constexpr int32_t kBurstIntervalFrames = 3;  // バースト内の連射間隔
+	static constexpr int32_t kBurstCooldownFrames = 18; // バースト終了後のクールダウン
+	static constexpr int32_t kInitialBulletPoolSize = 64;
+
+	bool isHomingLocking_ = false;
+	int32_t homingLockFrame_ = 0;
+	int32_t homingCooldownFrames_ = 0;
+	std::vector<CharacterBase*> lockedTargets_;
+	bool wasHomingPressing_ = false;
+
+	static constexpr int32_t kHomingLockStartFrame = 30; // 0.5s
+	static constexpr int32_t kHomingLockMaxFrame = 60;   // 1.0s
+	static constexpr int32_t kHomingMaxLockCount = 5;
+	static constexpr int32_t kHomingCooldownMaxFrame = 600; // 10s
+
+	KamataEngine::Audio* audio_ = nullptr;
+	uint32_t shotSeHandle_ = 0;
+	uint32_t missileSeHandle_ = 0;
+};
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/CollisionManager/CollisionManager.cpp
+============================================================
+#include "CollisionManager.h"
+
+using namespace KamataEngine;
+
+void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	// 無効条件（入力ロック中、プレイヤー不在、プレイヤー爆散演出終了まちetc...）
+	if (!player || countDown.IsInputLocked() || player->IsExplosionFinished()) {
+		return;
+	}
+
+	// プレイヤー側コライダー取得
+	Collider* playerCollider = player->GetCollider();
+	if (!playerCollider) {
+		return;
+	}
+
+	const auto p = playerCollider->GetTranslate();
+	const float pr = playerCollider->GetRadius();
+
+	// 各敵との衝突判定ループ
+	for (auto& e : enemies) {
+		if (!e) {
+			continue;
+		}
+		Collider* enemyCollider = e->GetCollider();
+		if (!enemyCollider) {
+			continue;
+		}
+
+		const auto q = enemyCollider->GetTranslate();
+		const float er = enemyCollider->GetRadius();
+
+		// 距離チェック
+		const float dx = p.x - q.x;
+		const float dy = p.y - q.y;
+		const float dz = p.z - q.z;
+		const float dist2 = dx * dx + dy * dy + dz * dz;
+		const float r = pr + er;
+
+		// 半径の合計より近ければ衝突
+		if (dist2 <= r * r) {
+			player->SetLastDamageSource(CharacterBase::DamageSource::Collision);
+			e->SetLastDamageSource(CharacterBase::DamageSource::Collision);
+			player->OnCollision(e.get());
+			e->OnCollision(player);
+		}
+	}
+}
+
+void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	// カウントダウン中は無効
+	if (countDown.IsInputLocked()) {
+		return;
+	}
+
+	// 全弾ループ
+	for (auto& b : bullets) {
+		if (!b || b->IsDead()) {
+			continue;
+		}
+
+		Collider* bc = b->GetCollider();
+		if (!bc) {
+			continue;
+		}
+
+		const auto bp = bc->GetTranslate();
+		const float br = bc->GetRadius();
+
+		// 各敵と衝突チェック
+		for (auto& e : enemies) {
+			if (!e) {
+				continue;
+			}
+
+			// 既に死んだ敵は飛ばす
+			if (e->IsDead()) {
+				continue;
+			}
+
+			Collider* enemyCollider = e->GetCollider();
+			if (!enemyCollider) {
+				continue;
+			}
+
+			const auto ep = enemyCollider->GetTranslate();
+			const float er = enemyCollider->GetRadius();
+
+			// 球判定
+			const float dx = bp.x - ep.x;
+			const float dy = bp.y - ep.y;
+			const float dz = bp.z - ep.z;
+			const float dist2 = dx * dx + dy * dy + dz * dz;
+			const float rr = br + er;
+
+			if (dist2 <= rr * rr) {
+				// 相互通知：敵は死に、弾は消える
+				e->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
+				e->OnCollision(b.get());
+				b->OnCollision(e.get());
+				// 1発で1体想定
+				break;
+			}
+		}
+	}
+}
+
+void CollisionManager::ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	if (countDown.IsInputLocked()) {
+		return;
+	}
+
+	for (auto& m : missiles) {
+		if (!m || m->IsDead()) {
+			continue;
+		}
+
+		Collider* missileCollider = m->GetCollider();
+		if (!missileCollider) {
+			continue;
+		}
+
+		const auto mp = missileCollider->GetTranslate();
+		const float mr = missileCollider->GetRadius();
+
+		for (auto& e : enemies) {
+			if (!e || e->IsDead()) {
+				continue;
+			}
+
+			Collider* enemyCollider = e->GetCollider();
+			if (!enemyCollider) {
+				continue;
+			}
+
+			const auto ep = enemyCollider->GetTranslate();
+			const float er = enemyCollider->GetRadius();
+
+			const float dx = mp.x - ep.x;
+			const float dy = mp.y - ep.y;
+			const float dz = mp.z - ep.z;
+			const float dist2 = dx * dx + dy * dy + dz * dz;
+			const float rr = mr + er;
+
+			if (dist2 <= rr * rr) {
+				e->SetLastDamageSource(CharacterBase::DamageSource::HomingMissile);
+				e->OnCollision(m.get());
+				m->OnCollision(e.get());
+				break;
+			}
+		}
+	}
+}
+
+void CollisionManager::ResolvePlayerTurretBulletCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	if (!player || countDown.IsInputLocked() || player->IsExplosionFinished()) {
+		return;
+	}
+
+	Collider* playerCollider = player->GetCollider();
+	if (!playerCollider) {
+		return;
+	}
+
+	const auto pp = playerCollider->GetTranslate();
+	const float pr = playerCollider->GetRadius();
+
+	for (auto& e : enemies) {
+		auto* turret = dynamic_cast<TurretEnemy*>(e.get());
+		if (!turret || turret->IsDead()) {
+			continue;
+		}
+
+		for (auto& tb : turret->GetBullets()) {
+			if (!tb || tb->IsDead()) {
+				continue;
+			}
+
+			Collider* bulletCollider = tb->GetCollider();
+			if (!bulletCollider) {
+				continue;
+			}
+
+			const auto bp = bulletCollider->GetTranslate();
+			const float br = bulletCollider->GetRadius();
+
+			const float dx = pp.x - bp.x;
+			const float dy = pp.y - bp.y;
+			const float dz = pp.z - bp.z;
+			const float dist2 = dx * dx + dy * dy + dz * dz;
+			const float rr = pr + br;
+
+			if (dist2 <= rr * rr) {
+				player->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
+				player->OnCollision(tb.get());
+				tb->OnCollision(player);
+			}
+		}
+	}
+}
+
+void CollisionManager::ResolvePlayerBulletTurretBulletCollisions(
+    std::vector<std::unique_ptr<Bullet>>& playerBullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
+	if (countDown.IsInputLocked()) {
+		return;
+	}
+
+	for (auto& pb : playerBullets) {
+		if (!pb || pb->IsDead()) {
+			continue;
+		}
+
+		Collider* playerBulletCollider = pb->GetCollider();
+		if (!playerBulletCollider) {
+			continue;
+		}
+
+		const auto pp = playerBulletCollider->GetTranslate();
+		const float pr = playerBulletCollider->GetRadius();
+
+		bool hit = false;
+		for (auto& e : enemies) {
+			auto* turret = dynamic_cast<TurretEnemy*>(e.get());
+			if (!turret || turret->IsDead()) {
+				continue;
+			}
+
+			for (auto& tb : turret->GetBullets()) {
+				if (!tb || tb->IsDead()) {
+					continue;
+				}
+
+				Collider* turretBulletCollider = tb->GetCollider();
+				if (!turretBulletCollider) {
+					continue;
+				}
+
+				const auto tp = turretBulletCollider->GetTranslate();
+				const float tr = turretBulletCollider->GetRadius();
+
+				const float dx = pp.x - tp.x;
+				const float dy = pp.y - tp.y;
+				const float dz = pp.z - tp.z;
+				const float dist2 = dx * dx + dy * dy + dz * dz;
+				const float rr = pr + tr;
+
+				if (dist2 <= rr * rr) {
+					pb->OnCollision(tb.get());
+					tb->OnCollision(pb.get());
+					hit = true;
+					break;
+				}
+			}
+
+			if (hit) {
+				break;
+			}
+		}
+	}
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/CollisionManager/CollisionManager.h
+============================================================
+#pragma once
+
+#include <memory>
+#include <vector>
+
+#include "Application/Characters/Collider.h"
+#include "Application/Characters/Enemy/SeekerEnemy.h"
+#include "Application/Characters/Enemy/TurretEnemy.h"
+#include "Application/Characters/Player/Bullet.h"
+#include "Application/Characters/Player/HomingMissile.h"
+#include "Application/Characters/Player/Player.h"
+
+#include "Application/UI/CountDown/CountDown.h"
+
+/// <summary>
+/// プレイヤー、敵、弾、ミサイルの当たり判定をまとめる。
+/// 各オブジェクトへの通知だけを行い、HPやスコアの処理は個別クラスへ任せる。
+/// </summary>
+class CollisionManager {
+public:
+	/// <summary>
+	/// プレイヤーと複数の敵の衝突判定を行う
+	/// 衝突が発生した場合、双方の OnCollision を呼び出す
+	/// </summary>
+	/// <param name="player">衝突対象のプレイヤー</param>
+	/// <param name="enemies">衝突対象の敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
+	static void ResolvePlayerEnemyCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+
+	/// <summary>
+	/// 通常弾と複数の敵との衝突判定を行う。
+	/// 衝突が発生した場合、敵に OnCollision、弾に OnCollision を通知する。
+	/// 1発の弾が複数の敵へ同時に命中しないよう、命中後は処理を中断する。
+	/// </summary>
+	/// <param name="bullets">衝突対象の通常弾リスト。</param>
+	/// <param name="enemies">衝突対象の敵リスト。</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する。</param>
+	static void ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+
+	/// <summary>
+	/// ホーミングミサイルと複数の敵との衝突判定を行う
+	/// </summary>
+	/// <param name="missiles">衝突対象のホーミングミサイルリスト</param>
+	/// <param name="enemies">衝突対象の敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
+	static void ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+
+	/// <summary>
+	/// プレイヤーとターレット弾の衝突判定を行う
+	/// </summary>
+	/// <param name="player">衝突対象のプレイヤー</param>
+	/// <param name="enemies">ターレットを含む敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
+	static void ResolvePlayerTurretBulletCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+
+	/// <summary>
+	/// プレイヤー弾とターレット弾の衝突判定を行う
+	/// </summary>
+	/// <param name="playerBullets">プレイヤーの通常弾リスト</param>
+	/// <param name="enemies">ターレットを含む敵リスト</param>
+	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
+	static void ResolvePlayerBulletTurretBulletCollisions(std::vector<std::unique_ptr<Bullet>>& playerBullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
+};
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/EnemyManager/EnemyManager.cpp
+============================================================
+#include "EnemyManager.h"
+
+#include <cmath>
+
+#include <fstream>
+#include <random>
+
+#include <json.hpp>
+using json = nlohmann::json;
+
+using namespace KamataEngine;
+
+namespace {
+// Strategy Pattern:
+// 難易度ごとの敵パラメータ補正を共通インターフェースにする。
+// EnemyManager は「どの難易度か」を意識せず、Apply() を呼ぶだけで補正を適用できる。
+class IEnemySpawnStrategy {
+public:
+	virtual ~IEnemySpawnStrategy() = default;
+	virtual void Apply(EnemyManager::EnemySpawnData& spawnData) const = 0;
+};
+
+// Tutorial は最初の練習用なので、敵速度と弾速を下げ、射撃間隔を長くする。
+class TutorialEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 0.85f;
+		spawnData.bulletSpeed *= 0.85f;
+		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.25f);
+	}
+};
+
+// Easy は Normal より少しだけ易しくするため、敵速度と弾速を抑える。
+class EasyEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 0.9f;
+		spawnData.bulletSpeed *= 0.9f;
+		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.15f);
+	}
+};
+
+// Normal は JSON の設定値をそのまま使う標準戦略。
+class NormalEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData&) const override {}
+};
+
+// Hard は敵を強くする戦略。速度、弾速、HP を上げ、射撃間隔を短くする。
+class HardEnemySpawnStrategy : public IEnemySpawnStrategy {
+public:
+	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+		spawnData.speed *= 1.15f;
+		spawnData.bulletSpeed *= 1.15f;
+		spawnData.hp = (std::max)(spawnData.hp, spawnData.hp + 1);
+		spawnData.shootIntervalFrames = (std::max)(1, static_cast<int32_t>(spawnData.shootIntervalFrames * 0.8f));
+	}
+};
+
+std::unique_ptr<IEnemySpawnStrategy> CreateEnemySpawnStrategy(const std::string& path) {
+	// Strategy Pattern: difficulty-specific enemy tuning is selected by the level file.
+	// レベルファイル名から使用する戦略を選択する。新しい難易度を増やす場合は、
+	// IEnemySpawnStrategy の派生クラスと、この分岐を追加すればよい。
+	if (path.find("Tutorial") != std::string::npos) {
+		return std::make_unique<TutorialEnemySpawnStrategy>();
+	}
+	if (path.find("Easy") != std::string::npos) {
+		return std::make_unique<EasyEnemySpawnStrategy>();
+	}
+	if (path.find("Hard") != std::string::npos) {
+		return std::make_unique<HardEnemySpawnStrategy>();
+	}
+	return std::make_unique<NormalEnemySpawnStrategy>();
+}
+} // namespace
+
+void EnemyManager::Initialize() {
+	enemies_.clear();
+	enemySpawnList_.clear();
+
+	enemySpawnTimer_ = 0.0f;
+}
+
+void EnemyManager::ClearAllEnemies() {
+	enemies_.clear();
+	enemySpawnList_.clear();
+}
+
+void EnemyManager::ClearPendingSpawns() { enemySpawnList_.clear(); }
+
+void EnemyManager::LoadEnemyCsv(const std::string& path) {
+	enemySpawnList_.clear();
+
+	std::ifstream ifs(path);
+	if (!ifs) {
+		return;
+	}
+
+	json root;
+	ifs >> root;
+
+	if (!root.contains("randomAreas")) {
+		return;
+	}
+
+	static std::mt19937_64 rng{123456789ull};
+	// Strategy Pattern:
+	// このロード処理内では具体的な難易度クラスを直接扱わず、
+	// 選択済みの戦略に敵データ補正を任せる。
+	const std::unique_ptr<IEnemySpawnStrategy> spawnStrategy = CreateEnemySpawnStrategy(path);
+
+	for (auto& r : root["randomAreas"]) {
+		const int32_t count = r.value("count", 0);
+		const float timeMin = r.value("timeMin", 0.0f);
+		const float timeMax = r.value("timeMax", timeMin);
+
+		const auto centerNode = r["posCenter"];
+		const Vector3 center{centerNode[0].get<float>(), centerNode[1].get<float>(), centerNode[2].get<float>()};
+
+		const auto rangeNode = r["posRange"];
+		const Vector3 range{rangeNode[0].get<float>(), rangeNode[1].get<float>(), rangeNode[2].get<float>()};
+
+		const std::string type = r.value("type", std::string("seeker"));
+
+		// Seeker
+		const float baseSpeed = r.value("speed", kDefaultSeekerSpeed);
+		const float speedRange = r.value("speedRange", 0.0f);
+		const float turnRate = r.value("turnRate", kDefaultSeekerTurnRate);
+
+		// 共通
+		const int32_t hp = r.value("hp", kDefaultHp);
+		const float radius = r.value("radius", kDefaultColliderRadius);
+		const float lifeTime = r.value("lifeTime", kDefaultLifeTime);
+
+		// Turret
+		const int32_t shootIntervalFrames = r.value("shootIntervalFrames", kDefaultShootIntervalFrames);
+		const float bulletSpeed = r.value("bulletSpeed", kDefaultBulletSpeed);
+		const float bulletLifeTime = r.value("bulletLifeTime", kDefaultBulletLifeTime);
+
+		std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
+		std::uniform_real_distribution<float> dx(-range.x, range.x);
+		std::uniform_real_distribution<float> dy(-range.y, range.y);
+		std::uniform_real_distribution<float> dz(-range.z, range.z);
+		std::uniform_real_distribution<float> speedDist(baseSpeed - speedRange, baseSpeed + speedRange);
+
+		for (int32_t i = 0; i < count; ++i) {
+			EnemySpawnData d;
+			d.time = timeDist(rng);
+			d.pos = {center.x + dx(rng), center.y + dy(rng), center.z + dz(rng)};
+			d.type = type;
+
+			d.speed = speedDist(rng);
+			d.turnRate = turnRate;
+
+			d.hp = hp;
+			d.radius = radius;
+			d.lifeTime = lifeTime;
+
+			d.shootIntervalFrames = shootIntervalFrames;
+			d.bulletSpeed = bulletSpeed;
+			d.bulletLifeTime = bulletLifeTime;
+
+			// Strategy Pattern:
+			// JSON から作った基本出現データに、難易度ごとの補正を適用する。
+			spawnStrategy->Apply(d);
+			enemySpawnList_.push_back(d);
+		}
+	}
+
+	std::sort(enemySpawnList_.begin(), enemySpawnList_.end(), [](const EnemySpawnData& a, const EnemySpawnData& b) { return a.time < b.time; });
+}
+
+void EnemyManager::SpawnEnemiesByCsv(const Vector3& playerPos) {
+	const float currentTime = enemySpawnTimer_;
+
+	while (!enemySpawnList_.empty()) {
+		const EnemySpawnData& d = enemySpawnList_.front();
+		if (currentTime < d.time) {
+			break;
+		}
+
+		const Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
+
+		auto enemy = CreateEnemy_(d, spawnPos);
+		if (enemy) {
+			enemies_.push_back(std::move(enemy));
+		}
+
+		enemySpawnList_.erase(enemySpawnList_.begin());
+	}
+}
+
+std::unique_ptr<CharacterBase> EnemyManager::CreateEnemy_(const EnemySpawnData& spawnData, const Vector3& spawnPos) const {
+	// Factory Method Pattern:
+	// EnemyManager requests creation, and each enemy type setup is centralized here.
+	if (spawnData.type == "turret") {
+		auto turret = std::make_unique<TurretEnemy>();
+		turret->GetWorldTransform().translation_ = spawnPos;
+
+		turret->SetInitialHP(spawnData.hp);
+		turret->SetColliderRadius(spawnData.radius);
+		turret->SetShootIntervalFrames(spawnData.shootIntervalFrames);
+		turret->SetBulletSpeed(spawnData.bulletSpeed);
+		turret->SetBulletLifeTime(spawnData.bulletLifeTime);
+
+		turret->Initialize();
+		return turret;
+	}
+
+	auto seeker = std::make_unique<SeekerEnemy>();
+	seeker->SetInitialPosition(spawnPos);
+	seeker->SetSpeed(spawnData.speed);
+	seeker->SetTurnRate(spawnData.turnRate);
+	seeker->SetInitialHP(spawnData.hp);
+	seeker->SetColliderRadius(spawnData.radius);
+	seeker->SetLifeTime(spawnData.lifeTime);
+
+	seeker->Initialize();
+	return seeker;
+}
+
+void EnemyManager::Update(float dt, const Vector3& playerPos) {
+	enemySpawnTimer_ += dt;
+	SpawnEnemiesByCsv(playerPos);
+
+	// 敵更新
+	for (auto& enemy : enemies_) {
+		// 敵タイプごとにターゲット設定
+		// dynamic_cast を使用している理由：
+		// EnemyManager は CharacterBase のみを保持し、
+		// 各敵固有の機能は派生クラスに委譲する設計のため
+		if (auto* seeker = dynamic_cast<SeekerEnemy*>(enemy.get())) {
+			seeker->SetTarget(playerPos);
+		} else if (auto* turret = dynamic_cast<TurretEnemy*>(enemy.get())) {
+			turret->SetTarget(playerPos);
+		}
+
+		enemy->Update();
+	}
+}
+
+void EnemyManager::Draw(const Camera* camera) {
+	for (auto& enemy : enemies_) {
+		enemy->Draw(camera);
+	}
+}
+
+std::vector<CharacterBase*> EnemyManager::GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const {
+	std::vector<std::pair<float, CharacterBase*>> distances;
+	distances.reserve(enemies_.size());
+
+	for (const auto& enemy : enemies_) {
+		if (!enemy || enemy->IsDead()) {
+			continue;
+		}
+		const KamataEngine::Vector3 pos = enemy->GetWorldTranslation();
+		const float dx = pos.x - from.x;
+		const float dy = pos.y - from.y;
+		const float dz = pos.z - from.z;
+		const float distSq = dx * dx + dy * dy + dz * dz;
+		distances.emplace_back(distSq, enemy.get());
+	}
+
+	std::sort(distances.begin(), distances.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+
+	if (maxCount <= 0) {
+		return {};
+	}
+
+	const size_t count = (std::min)(distances.size(), static_cast<size_t>(maxCount));
+	std::vector<CharacterBase*> result;
+	result.reserve(count);
+	for (size_t i = 0; i < count; ++i) {
+		result.push_back(distances[i].second);
+	}
+	return result;
+}
+
+void EnemyManager::RemoveDeadEnemies() {
+	enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/EnemyManager/EnemyManager.h
+============================================================
+#pragma once
+
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <KamataEngine.h>
+
+#include "Application/Characters/Enemy/SeekerEnemy.h"
+#include "Application/Characters/Enemy/TurretEnemy.h"
+
+/// <summary>
+/// JSON の出現データを読み込み、敵の生成、更新、描画、破棄を管理する。
+/// </summary>
+class EnemyManager {
+public:
+	/// <summary>
+	/// 謨ｵ蜃ｺ迴ｾ繝・・繧ｿ・・SON 1莉ｶ蛻・ｼ・
+	/// </summary>
+	struct EnemySpawnData {
+		float time = 0.0f;
+		KamataEngine::Vector3 pos{0.0f, 0.0f, 0.0f};
+
+		// 敵のタイプ（seeker" / "turret"）
+		std::string type = "seeker";
+
+		// ===== Enemy共通 =====
+		int32_t hp = kDefaultHp;
+		float radius = kDefaultColliderRadius;
+		float lifeTime = kDefaultLifeTime;
+
+		// ===== Seeker用 =====
+		float speed = kDefaultSeekerSpeed;
+		float turnRate = kDefaultSeekerTurnRate;	
+
+		// ===== Turret用 =====
+		int32_t shootIntervalFrames = kDefaultShootIntervalFrames;
+		float bulletSpeed = kDefaultBulletSpeed;
+		float bulletLifeTime = kDefaultBulletLifeTime;
+	};
+
+public:
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
+	void Initialize();
+
+	/// <summary>
+	/// JSON形式の敵出現データを読み込む
+	/// </summary>
+	void LoadEnemyCsv(const std::string& path);
+
+	/// <summary>
+	/// 更新処理
+	/// </summary>
+	/// <param name="dt">デルタタイム</param>
+	/// <param name="playerPos">プレイヤーの位置</param>
+	void Update(float dt, const KamataEngine::Vector3& playerPos);
+
+	/// <summary>
+	/// 描画処理
+	/// </summary>
+	void Draw(const KamataEngine::Camera* camera);
+
+	/// <summary>
+	/// 衝突判定用の敵リストを取得する
+	/// </summary>
+	std::vector<std::unique_ptr<CharacterBase>>& GetEnemies() { return enemies_; }
+
+	/// <summary>
+	/// 指定位置から近い順に生存中の敵を取得する。CollisionManager などで使用する
+	/// </summary>
+	std::vector<CharacterBase*> GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const;
+
+	/// <summary>
+	/// 死亡した敵をリストから削除する
+	/// </summary>
+	void RemoveDeadEnemies();
+
+	/// <summary>
+	/// 出現待ちを含めて敵が残っていないかを返す
+	/// </summary>
+	bool IsAllEnemyDestroyed() const { return enemies_.empty() && enemySpawnList_.empty(); }
+
+	/// <summary>
+	/// Boss戦への切り替え時に、出現中・出現待ちの通常敵をすべて破棄する
+	/// </summary>
+	void ClearAllEnemies();
+	void ClearPendingSpawns();
+
+private:
+	/// <summary>
+	/// CSVの出現データに基づいて敵を出現させる
+	/// </summary>
+	void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
+
+	/// <summary>
+	/// 出現データに基づいて敵を生成する
+	/// </summary>
+	std::unique_ptr<CharacterBase> CreateEnemy_(const EnemySpawnData& spawnData, const KamataEngine::Vector3& spawnPos) const;
+
+private:
+	// ===== 定数（デフォルト値） ====
+	static constexpr float kDefaultSeekerSpeed = 0.2f;
+	static constexpr float kDefaultSeekerTurnRate = 0.15f;
+	static constexpr int32_t kDefaultHp = 1;
+	static constexpr float kDefaultColliderRadius = 1.0f;
+	static constexpr float kDefaultLifeTime = 30.0f;
+
+	static constexpr int32_t kDefaultShootIntervalFrames = 60;
+	static constexpr float kDefaultBulletSpeed = 2.8f;
+	static constexpr float kDefaultBulletLifeTime = 3.0f;
+
+private:
+	// 生存中の敵リスト
+	std::vector<std::unique_ptr<CharacterBase>> enemies_;
+
+	// 出現町の敵データ
+	std::vector<EnemySpawnData> enemySpawnList_;
+
+	// 経過時間
+	float enemySpawnTimer_ = 0.0f;
+};
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/UIManager/UIManager.cpp
+============================================================
+#include "UIManager.h"
+
+#include <algorithm>
+
+using namespace KamataEngine;
+
+namespace {
+constexpr float kUiMaxHp = 100.0f;
+constexpr Vector2 kCoolPos{24.0f, 84.0f};
+constexpr Vector2 kCoolSize{200.0f, 10.0f};
+constexpr Vector2 kLockPos{24.0f, 98.0f};
+constexpr Vector2 kLockBaseSize{200.0f, 6.0f};
+} // namespace
+
+void UIManager::Initialize(Player* player) {
+	player_ = player;
+
+	// HPバー（Graph）
+	graph_ = std::make_unique<Graph>();
+	graph_->Initialize();
+
+	// スコア
+	score_ = std::make_unique<Score>();
+	score_->Initialize();
+
+	homingBarTexHandle_ = TextureManager::Load("./Resources/white1x1.png");
+	homingCooldownBack_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, {0.1f, 0.1f, 0.1f, 0.9f}));
+	homingCooldownFront_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, {0.2f, 0.8f, 1.0f, 0.9f}));
+	lockProgressBar_.reset(Sprite::Create(homingBarTexHandle_, kLockPos, {1.0f, 0.85f, 0.2f, 0.9f}));
+
+	homingCooldownBack_->SetSize(kCoolSize);
+	homingCooldownFront_->SetSize(kCoolSize);
+	lockProgressBar_->SetSize({0.0f, kLockBaseSize.y});
+}
+
+void UIManager::SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking) {
+	homingLockCount_ = (std::max)(currentLockCount, 0);
+	homingMaxLockCount_ = (std::max)(maxLockCount, 1);
+	isHomingLocking_ = isLocking;
+}
+
+void UIManager::Update() {
+	// HPバー更新
+	if (player_ && graph_) {
+		// HP(0〜100想定) を 0.0〜1.0 に変換してGraphに渡す
+		float hpRate = static_cast<float>(player_->GetHP()) / kUiMaxHp;
+
+		graph_->SetValue(hpRate);
+		graph_->Update();
+	}
+
+	// スコア更新
+	if (score_) {
+		score_->Update();
+	}
+
+	if (homingCooldownFront_) {
+		homingCooldownFront_->SetSize({kCoolSize.x * homingCooldownRate_, kCoolSize.y});
+	}
+
+	if (lockProgressBar_) {
+		const float lockRate = static_cast<float>(homingLockCount_) / static_cast<float>(homingMaxLockCount_);
+		lockProgressBar_->SetSize({kLockBaseSize.x * std::clamp(lockRate, 0.0f, 1.0f), kLockBaseSize.y});
+	}
+}
+
+void UIManager::Draw() {
+	if (graph_) {
+		graph_->Draw();
+	}
+	if (score_) {
+		score_->Draw();
+	}
+	if (homingCooldownBack_) {
+		homingCooldownBack_->Draw();
+	}
+	if (homingCooldownFront_) {
+		homingCooldownFront_->Draw();
+	}
+	if (isHomingLocking_ && lockProgressBar_) {
+		lockProgressBar_->Draw();
+	}
+}
+
+
+============================================================
+File Path: DirectXGame/Application/Managers/UIManager/UIManager.h
+============================================================
+#pragma once
+
+#include <KamataEngine.h>
+#include <algorithm>
+#include <memory>
+
+#include "Application/Characters/Player/Player.h"
+#include "Application/UI/HPBar/Graph.h"
+#include "Application/UI/Score/Score.h"
+
+/// <summary>
+/// HPバー、スコア、ホーミング関連ゲージなどの画面UIをまとめて管理する。
+/// </summary>
+class UIManager {
+public:
+	UIManager() = default;
+	~UIManager() = default;
+
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
+	/// <param name="player">HPバーの対象となるプレイヤー</param>
+	void Initialize(Player* player);
+
+	/// <summary>
+	/// 更新処理
+	/// </summary>
+	void Update();
+
+	/// <summary>
+	/// 描画処理	
+	/// </summary>
+	void Draw();
+
+	/// <summary>
+	/// スコア情報を取得する
+	/// </summary>
+	Score* GetScore() { return score_.get(); }
+
+	/// <summary>
+	/// ホーミングミサイルのクールダウン率を設定する
+	/// </summary>
+	void SetHomingCooldownRate(float rate) { homingCooldownRate_ = std::clamp(rate, 0.0f, 1.0f); }
+
+	/// <summary>
+	/// ホーミングミサイルのロックオン数と情報を設定する。
+	/// </summary>
+	void SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking);
+
+private:
+	// HP参照用。所有権は持たない
+	Player* player_ = nullptr;
+
+	// HPバー
+	std::unique_ptr<Graph> graph_;
+
+	// スコア
+	std::unique_ptr<Score> score_;
+
+	std::unique_ptr<KamataEngine::Sprite> homingCooldownBack_;
+	std::unique_ptr<KamataEngine::Sprite> homingCooldownFront_;
+	std::unique_ptr<KamataEngine::Sprite> lockProgressBar_;
+	uint32_t homingBarTexHandle_ = 0;
+
+	float homingCooldownRate_ = 1.0f;
+	int32_t homingLockCount_ = 0;
+	int32_t homingMaxLockCount_ = 5;
+	bool isHomingLocking_ = false;
+};
+
+
+============================================================
 File Path: DirectXGame/Application/Objects/Asteroid/Asteroid.cpp
 ============================================================
 #include "Asteroid.h"
@@ -5841,7 +7447,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -5864,7 +7470,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>MinSpace</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -5891,7 +7497,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Scenes;$(ProjectDir)Scenes\Title;$(ProjectDir)Scenes\Introduction;$(ProjectDir)Scenes\InGame;$(ProjectDir)Scenes\Finish;$(ProjectDir)Application;$(ProjectDir)Application\Asteroid;$(ProjectDir)Application\MyMath;$(ProjectDir)Application\Charactor;$(ProjectDir)Application\RailCamera;$(ProjectDir)Application\Skydome;$(ProjectDir)Application\CountDown;$(ProjectDir)Application\Charactor\Player;$(ProjectDir)Application\Charactor\Enemy;$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\External\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -5928,13 +7534,13 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <ClCompile Include="Application\Characters\Player\Bullet.cpp" />
     <ClCompile Include="Application\UI\PauseMenu\PauseMenu.cpp" />
     <ClCompile Include="Application\Characters\Player\HomingMissile.cpp" />
-    <ClCompile Include="Managers\BossManager\BossManager.cpp" />
-    <ClCompile Include="Managers\BossManager\BossUIManager.cpp" />
+    <ClCompile Include="Application\Managers\BossManager\BossManager.cpp" />
+    <ClCompile Include="Application\Managers\BossManager\BossUIManager.cpp" />
     <ClCompile Include="Scenes\InGame\GameSceneUpdateExecutor.cpp" />
-    <ClCompile Include="Managers\BulletManager\BulletManager.cpp" />
+    <ClCompile Include="Application\Managers\BulletManager\BulletManager.cpp" />
     <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
-    <ClCompile Include="Managers\CollisionManager\CollisionManager.cpp" />
-    <ClCompile Include="Managers\EnemyManager\EnemyManager.cpp" />
+    <ClCompile Include="Application\Managers\CollisionManager\CollisionManager.cpp" />
+    <ClCompile Include="Application\Managers\EnemyManager\EnemyManager.cpp" />
     <ClCompile Include="Scenes\Finish\FinishScene.cpp" />
     <ClCompile Include="Scenes\InGame\GameScene.cpp" />
     <ClCompile Include="Scenes\Introduction\IntroductionScene.cpp" />
@@ -5948,7 +7554,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <ClCompile Include="Application\Utility\MyMath\WorldTransformEx.cpp" />
     <ClCompile Include="Application\Characters\Enemy\SeekerEnemy.cpp" />
     <ClCompile Include="Application\UI\Score\Score.cpp" />
-    <ClCompile Include="Managers\UIManager\UIManager.cpp" />
+    <ClCompile Include="Application\Managers\UIManager\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\GpuSmokePS.hlsl">
@@ -6082,13 +7688,13 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <ClInclude Include="Application\Characters\Player\Bullet.h" />
     <ClInclude Include="Application\UI\PauseMenu\PauseMenu.h" />
     <ClInclude Include="Application\Characters\Player\HomingMissile.h" />
-    <ClInclude Include="Managers\BossManager\BossManager.h" />
-    <ClInclude Include="Managers\BossManager\BossUIManager.h" />
+    <ClInclude Include="Application\Managers\BossManager\BossManager.h" />
+    <ClInclude Include="Application\Managers\BossManager\BossUIManager.h" />
     <ClInclude Include="Scenes\InGame\GameSceneUpdateExecutor.h" />
-    <ClInclude Include="Managers\BulletManager\BulletManager.h" />
+    <ClInclude Include="Application\Managers\BulletManager\BulletManager.h" />
     <ClInclude Include="Scenes\Clear\ClearScene.h" />
-    <ClInclude Include="Managers\CollisionManager\CollisionManager.h" />
-    <ClInclude Include="Managers\EnemyManager\EnemyManager.h" />
+    <ClInclude Include="Application\Managers\CollisionManager\CollisionManager.h" />
+    <ClInclude Include="Application\Managers\EnemyManager\EnemyManager.h" />
     <ClInclude Include="Scenes\Finish\FinishScene.h" />
     <ClInclude Include="Scenes\InGame\GameScene.h" />
     <ClInclude Include="Scenes\Introduction\IntroductionScene.h" />
@@ -6102,7 +7708,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <ClInclude Include="Scenes\Title\TitleScene.h" />
     <ClInclude Include="Application\Characters\Enemy\SeekerEnemy.h" />
     <ClInclude Include="Application\UI\Score\Score.h" />
-    <ClInclude Include="Managers\UIManager\UIManager.h" />
+    <ClInclude Include="Application\Managers\UIManager\UIManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
@@ -6113,7 +7719,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
 ============================================================
 File Path: DirectXGame/DirectXGame.vcxproj.filters
 ============================================================
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Filter Include="Application">
@@ -6179,19 +7785,22 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <Filter Include="Application\Utility\MyMath">
       <UniqueIdentifier>{0ca6f6c3-565c-47f3-91b8-fbf1d487dab3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers">
+    <Filter Include="Application\Managers">
       <UniqueIdentifier>{1fe0d41f-64e0-4887-9b77-f6ba36a88b64}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\BulletManager">
+    <Filter Include="Application\Managers\BossManager">
+      <UniqueIdentifier>{6fbe6e41-84c3-4f65-b183-706e583f24a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application\Managers\BulletManager">
       <UniqueIdentifier>{bd9b6c75-ecc1-4202-b014-51c92d27db12}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\CollisionManager">
+    <Filter Include="Application\Managers\CollisionManager">
       <UniqueIdentifier>{5cab915b-87da-4b48-b9c8-e9960fb73b81}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\EnemyManager">
+    <Filter Include="Application\Managers\EnemyManager">
       <UniqueIdentifier>{c6795cba-24ff-4e2d-8a0d-d3424d14cf21}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\UIManager">
+    <Filter Include="Application\Managers\UIManager">
       <UniqueIdentifier>{cf669c1c-304f-47f2-9a65-812b8655c2e6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources">
@@ -6241,9 +7850,6 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp">
       <Filter>Application\Effects\SpeedLine</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Effects\Smoke\Smoke.cpp">
-      <Filter>Application\Effects\Smoke</Filter>
-    </ClCompile>
     <ClCompile Include="Application\Objects\Asteroid\AsteroidField.cpp">
       <Filter>Application\Objects\Asteroid</Filter>
     </ClCompile>
@@ -6268,17 +7874,23 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <ClCompile Include="Application\Characters\Player\HomingMissile.cpp">
       <Filter>Application\Characters\Player</Filter>
     </ClCompile>
-    <ClCompile Include="Managers\BulletManager\BulletManager.cpp">
-      <Filter>Managers\BulletManager</Filter>
+    <ClCompile Include="Application\Managers\BossManager\BossManager.cpp">
+      <Filter>Application\Managers\BossManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Managers\BossManager\BossUIManager.cpp">
+      <Filter>Application\Managers\BossManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Managers\BulletManager\BulletManager.cpp">
+      <Filter>Application\Managers\BulletManager</Filter>
     </ClCompile>
     <ClCompile Include="Scenes\Clear\ClearScene.cpp">
       <Filter>Scenes\Clear</Filter>
     </ClCompile>
-    <ClCompile Include="Managers\CollisionManager\CollisionManager.cpp">
-      <Filter>Managers\CollisionManager</Filter>
+    <ClCompile Include="Application\Managers\CollisionManager\CollisionManager.cpp">
+      <Filter>Application\Managers\CollisionManager</Filter>
     </ClCompile>
-    <ClCompile Include="Managers\EnemyManager\EnemyManager.cpp">
-      <Filter>Managers\EnemyManager</Filter>
+    <ClCompile Include="Application\Managers\EnemyManager\EnemyManager.cpp">
+      <Filter>Application\Managers\EnemyManager</Filter>
     </ClCompile>
     <ClCompile Include="Scenes\Finish\FinishScene.cpp">
       <Filter>Scenes\Finish</Filter>
@@ -6319,8 +7931,8 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <ClCompile Include="Application\UI\Score\Score.cpp">
       <Filter>Application\UI\Score</Filter>
     </ClCompile>
-    <ClCompile Include="Managers\UIManager\UIManager.cpp">
-      <Filter>Managers\UIManager</Filter>
+    <ClCompile Include="Application\Managers\UIManager\UIManager.cpp">
+      <Filter>Application\Managers\UIManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -6341,9 +7953,6 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     </ClInclude>
     <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h">
       <Filter>Application\Effects\SpeedLine</Filter>
-    </ClInclude>
-    <ClInclude Include="Application\Effects\Smoke\Smoke.h">
-      <Filter>Application\Effects\Smoke</Filter>
     </ClInclude>
     <ClInclude Include="Application\Objects\Asteroid\AsteroidField.h">
       <Filter>Application\Objects\Asteroid</Filter>
@@ -6369,17 +7978,23 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <ClInclude Include="Application\Characters\Player\HomingMissile.h">
       <Filter>Application\Characters\Player</Filter>
     </ClInclude>
-    <ClInclude Include="Managers\BulletManager\BulletManager.h">
-      <Filter>Managers\BulletManager</Filter>
+    <ClInclude Include="Application\Managers\BossManager\BossManager.h">
+      <Filter>Application\Managers\BossManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Managers\BossManager\BossUIManager.h">
+      <Filter>Application\Managers\BossManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Managers\BulletManager\BulletManager.h">
+      <Filter>Application\Managers\BulletManager</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\Clear\ClearScene.h">
       <Filter>Scenes\Clear</Filter>
     </ClInclude>
-    <ClInclude Include="Managers\CollisionManager\CollisionManager.h">
-      <Filter>Managers\CollisionManager</Filter>
+    <ClInclude Include="Application\Managers\CollisionManager\CollisionManager.h">
+      <Filter>Application\Managers\CollisionManager</Filter>
     </ClInclude>
-    <ClInclude Include="Managers\EnemyManager\EnemyManager.h">
-      <Filter>Managers\EnemyManager</Filter>
+    <ClInclude Include="Application\Managers\EnemyManager\EnemyManager.h">
+      <Filter>Application\Managers\EnemyManager</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\Finish\FinishScene.h">
       <Filter>Scenes\Finish</Filter>
@@ -6423,8 +8038,8 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <ClInclude Include="Application\UI\Score\Score.h">
       <Filter>Application\UI\Score</Filter>
     </ClInclude>
-    <ClInclude Include="Managers\UIManager\UIManager.h">
-      <Filter>Managers\UIManager</Filter>
+    <ClInclude Include="Application\Managers\UIManager\UIManager.h">
+      <Filter>Application\Managers\UIManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -6483,1612 +8098,6 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     </None>
   </ItemGroup>
 </Project>
-
-
-============================================================
-File Path: DirectXGame/Managers/BossManager/BossManager.cpp
-============================================================
-#include "BossManager.h"
-
-#include <algorithm>
-#include <cmath>
-
-#include "Application/Characters/Player/Bullet.h"
-#include "Application/Characters/Player/HomingMissile.h"
-
-using namespace KamataEngine;
-
-namespace {
-CharacterBase::DamageSource GetProjectileDamageSource(CharacterBase* projectile) {
-	if (dynamic_cast<HomingMissile*>(projectile)) {
-		return CharacterBase::DamageSource::HomingMissile;
-	}
-	return CharacterBase::DamageSource::Bullet;
-}
-
-bool IsHit(CharacterBase* a, CharacterBase* b) {
-	if (!a || !b || !a->GetCollider() || !b->GetCollider()) {
-		return false;
-	}
-	const Vector3 ap = a->GetCollider()->GetTranslate();
-	const Vector3 bp = b->GetCollider()->GetTranslate();
-	const float ar = a->GetCollider()->GetRadius();
-	const float br = b->GetCollider()->GetRadius();
-	const float dx = ap.x - bp.x;
-	const float dy = ap.y - bp.y;
-	const float dz = ap.z - bp.z;
-	const float rr = ar + br;
-	return dx * dx + dy * dy + dz * dz <= rr * rr;
-}
-} // namespace
-
-void BossManager::Initialize() {
-	state_ = State::Inactive;
-	boss_.reset();
-	introTimer_ = 0.0f;
-	clearTimer_ = 0.0f;
-	defeatHandled_ = false;
-	uiManager_.Initialize();
-}
-
-void BossManager::StartBossBattle(const Vector3& playerPos, WorldTransform* parent) {
-	boss_ = std::make_unique<Boss>();
-	boss_->Initialize({playerPos.x, playerPos.y + 0.8f, playerPos.z + 55.0f});
-	boss_->SetParent(parent);
-	boss_->Update();
-	attackController_.Initialize(boss_.get());
-	state_ = State::Intro;
-	introTimer_ = 0.0f;
-	clearTimer_ = 0.0f;
-	defeatHandled_ = false;
-}
-
-void BossManager::Update(float dt) {
-	if (state_ == State::Inactive) {
-		uiManager_.Update(nullptr, 0.0f, false, false);
-		return;
-	}
-
-	if (state_ == State::Intro) {
-		introTimer_ += dt;
-		if (boss_) {
-			boss_->Update();
-		}
-		const float warningRate = std::fabs(std::sin(introTimer_ * 10.0f));
-		uiManager_.Update(boss_.get(), warningRate, false, true);
-		if (introTimer_ >= kIntroDuration) {
-			state_ = State::Battle;
-		}
-		return;
-	}
-
-	if (state_ == State::Battle) {
-		if (boss_) {
-			boss_->Update();
-			attackController_.Update(dt);
-			if (boss_->IsDead() && !defeatHandled_) {
-				state_ = State::Clear;
-				clearTimer_ = 0.0f;
-				defeatHandled_ = true;
-			}
-		}
-		uiManager_.Update(boss_.get(), 0.0f, true, false);
-		return;
-	}
-
-	if (state_ == State::Clear) {
-		clearTimer_ += dt;
-		uiManager_.Update(boss_.get(), 0.0f, false, false);
-	}
-}
-
-void BossManager::Draw(const Camera* camera) {
-	if (boss_ && state_ != State::Inactive && state_ != State::Clear) {
-		boss_->Draw(camera);
-	}
-}
-
-void BossManager::DrawUI() { uiManager_.Draw(); }
-
-void BossManager::ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<HomingMissile>>& missiles) {
-	if (state_ != State::Battle || !boss_) {
-		return;
-	}
-	ResolveProjectileCollisions_(bullets);
-	ResolveProjectileCollisions_(missiles);
-}
-
-template <class TProjectile>
-void BossManager::ResolveProjectileCollisions_(std::vector<std::unique_ptr<TProjectile>>& projectiles) {
-	if (!boss_) {
-		return;
-	}
-	for (auto& projectile : projectiles) {
-		if (!projectile || projectile->IsDead()) {
-			continue;
-		}
-		for (BossPart* part : boss_->GetCollisionParts()) {
-			if (!part || !part->IsCollidable()) {
-				continue;
-			}
-			if (!IsHit(projectile.get(), part)) {
-				continue;
-			}
-			part->SetLastDamageSource(GetProjectileDamageSource(projectile.get()));
-			part->OnCollision(projectile.get());
-			projectile->OnCollision(part);
-			break;
-		}
-	}
-}
-
-
-============================================================
-File Path: DirectXGame/Managers/BossManager/BossManager.h
-============================================================
-#pragma once
-
-#include <memory>
-#include <vector>
-
-#include <KamataEngine.h>
-
-#include "Application/Characters/Boss/Boss.h"
-#include "Application/Characters/Boss/BossAttackController.h"
-#include "Managers/BossManager/BossUIManager.h"
-
-class Bullet;
-class HomingMissile;
-class Player;
-
-/// <summary>
-/// Boss ステージの出現演出、ボス本体、専用 UI、撃破演出を管理する。
-/// </summary>
-class BossManager {
-public:
-	enum class State {
-		Inactive,
-		Intro,
-		Battle,
-		Clear,
-	};
-
-	void Initialize();
-	void StartBossBattle(const KamataEngine::Vector3& playerPos, KamataEngine::WorldTransform* parent);
-	void Update(float dt);
-	void Draw(const KamataEngine::Camera* camera);
-	void DrawUI();
-
-	void ResolvePlayerAttackCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<HomingMissile>>& missiles);
-
-	bool IsActive() const { return state_ != State::Inactive; }
-	bool IsBattle() const { return state_ == State::Battle; }
-	bool IsClearFinished() const { return state_ == State::Clear && clearTimer_ >= kClearDuration; }
-	State GetState() const { return state_; }
-	Boss* GetBoss() const { return boss_.get(); }
-
-private:
-	template <class TProjectile>
-	void ResolveProjectileCollisions_(std::vector<std::unique_ptr<TProjectile>>& projectiles);
-
-	State state_ = State::Inactive;
-	std::unique_ptr<Boss> boss_;
-	BossAttackController attackController_;
-	BossUIManager uiManager_;
-	float introTimer_ = 0.0f;
-	float clearTimer_ = 0.0f;
-	bool defeatHandled_ = false;
-
-	static constexpr float kIntroDuration = 2.0f;
-	static constexpr float kClearDuration = 2.0f;
-};
-
-
-============================================================
-File Path: DirectXGame/Managers/BossManager/BossUIManager.cpp
-============================================================
-#include "BossUIManager.h"
-
-#include <algorithm>
-
-#include "Application/Characters/Boss/Boss.h"
-
-using namespace KamataEngine;
-
-namespace {
-constexpr Vector2 kHpPos{330.0f, 22.0f};
-constexpr Vector2 kHpSize{620.0f, 18.0f};
-constexpr Vector2 kWarningPos{270.0f, 300.0f};
-constexpr Vector2 kWarningSize{740.0f, 88.0f};
-} // namespace
-
-void BossUIManager::Initialize() {
-	textureHandle_ = TextureManager::Load("./Resources/white1x1.png");
-	hpFrameBar_.reset(Sprite::Create(textureHandle_, {kHpPos.x - 4.0f, kHpPos.y - 4.0f}, {1.0f, 1.0f, 1.0f, 0.9f}));
-	hpBackBar_.reset(Sprite::Create(textureHandle_, kHpPos, {0.08f, 0.01f, 0.01f, 0.92f}));
-	hpFrontBar_.reset(Sprite::Create(textureHandle_, kHpPos, {1.0f, 0.16f, 0.05f, 0.95f}));
-	warningBar_.reset(Sprite::Create(textureHandle_, kWarningPos, {1.0f, 0.04f, 0.02f, 0.0f}));
-
-	if (hpFrameBar_) {
-		hpFrameBar_->SetSize({kHpSize.x + 8.0f, kHpSize.y + 8.0f});
-	}
-	if (hpBackBar_) {
-		hpBackBar_->SetSize(kHpSize);
-	}
-	if (hpFrontBar_) {
-		hpFrontBar_->SetSize(kHpSize);
-	}
-	if (warningBar_) {
-		warningBar_->SetSize(kWarningSize);
-	}
-}
-
-void BossUIManager::Update(const Boss* boss, float warningRate, bool showHpBar, bool showWarning) {
-	showHpBar_ = showHpBar;
-	showWarning_ = showWarning;
-
-	if (hpFrontBar_) {
-		const float rate = boss ? boss->GetHpRate() : 0.0f;
-		hpFrontBar_->SetSize({kHpSize.x * std::clamp(rate, 0.0f, 1.0f), kHpSize.y});
-	}
-
-	if (warningBar_) {
-		const float alpha = std::clamp(0.35f + warningRate * 0.55f, 0.0f, 0.9f);
-		warningBar_->SetColor({1.0f, 0.02f, 0.02f, alpha});
-	}
-}
-
-void BossUIManager::Draw() {
-	if (showWarning_ && warningBar_) {
-		warningBar_->Draw();
-	}
-
-	if (!showHpBar_) {
-		return;
-	}
-	if (hpFrameBar_) {
-		hpFrameBar_->Draw();
-	}
-	if (hpBackBar_) {
-		hpBackBar_->Draw();
-	}
-	if (hpFrontBar_) {
-		hpFrontBar_->Draw();
-	}
-}
-
-
-============================================================
-File Path: DirectXGame/Managers/BossManager/BossUIManager.h
-============================================================
-#pragma once
-
-#include <memory>
-
-#include <KamataEngine.h>
-
-class Boss;
-
-/// <summary>
-/// Boss 専用 UI。画面上部の HP バーと WARNING 演出を管理する。
-/// </summary>
-class BossUIManager {
-public:
-	void Initialize();
-	void Update(const Boss* boss, float warningRate, bool showHpBar, bool showWarning);
-	void Draw();
-
-private:
-	std::unique_ptr<KamataEngine::Sprite> hpBackBar_;
-	std::unique_ptr<KamataEngine::Sprite> hpFrontBar_;
-	std::unique_ptr<KamataEngine::Sprite> hpFrameBar_;
-	std::unique_ptr<KamataEngine::Sprite> warningBar_;
-	uint32_t textureHandle_ = 0u;
-	bool showHpBar_ = false;
-	bool showWarning_ = false;
-};
-
-
-============================================================
-File Path: DirectXGame/Managers/BulletManager/BulletManager.cpp
-============================================================
-#include "BulletManager.h"
-
-#include <algorithm>
-
-#include "Managers/EnemyManager/EnemyManager.h"
-
-using namespace KamataEngine;
-
-namespace {
-constexpr Vector3 kForward{0.0f, 0.0f, 1.0f};
-} // namespace
-
-void BulletManager::Initialize() {
-	audio_ = Audio::GetInstance();
-	shotSeHandle_ = audio_ ? audio_->LoadWave("./Resources/SE/shot.wav") : 0;
-	missileSeHandle_ = audio_ ? audio_->LoadWave("./Resources/SE/missile.wav") : 0;
-
-	bullets_.clear();
-	homingMissiles_.clear();
-	lockedTargets_.clear();
-
-	// Object Pool Pattern:
-	// 通常弾は連射で頻繁に生成・破棄されるため、最初に一定数を生成してプールとして保持する。
-	// 発射時はこの中から未使用(isDead_)の弾を取り出して再利用し、毎回 new/delete しないようにする。
-	bullets_.reserve(kInitialBulletPoolSize);
-	for (int32_t i = 0; i < kInitialBulletPoolSize; ++i) {
-		auto bullet = std::make_unique<Bullet>();
-		bullet->Initialize();
-		bullet->Deactivate();
-		bullets_.push_back(std::move(bullet));
-	}
-
-	fireCooldownFrames_ = 0;
-	burstShotsRemaining_ = 0;
-	isHomingLocking_ = false;
-	homingLockFrame_ = 0;
-	homingCooldownFrames_ = 0;
-	wasHomingPressing_ = false;
-}
-
-float BulletManager::GetHomingCooldownRate() const {
-	const float rate = 1.0f - static_cast<float>(homingCooldownFrames_) / static_cast<float>(kHomingCooldownMaxFrame);
-	return std::clamp(rate, 0.0f, 1.0f);
-}
-
-void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager) {
-	if (!input || !player || countDown.IsInputLocked()) {
-		return;
-	}
-
-	// クールダウン経過
-	if (fireCooldownFrames_ > 0) {
-		--fireCooldownFrames_;
-	}
-
-	if (input->IsTriggerMouse(0) && burstShotsRemaining_ <= 0 && fireCooldownFrames_ <= 0) {
-		burstShotsRemaining_ = kBurstShotCount;
-	}
-
-	if (burstShotsRemaining_ <= 0 || fireCooldownFrames_ > 0) {
-		HandleHomingMissile_(input, player, countDown, enemyManager);
-		return;
-	}
-
-	Vector3 dir = shootDir;
-	const float lenSq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
-	if (lenSq <= 0.000001f) {
-		dir = kForward;
-	}
-
-	// Object Pool Pattern:
-	// 新しい弾を直接生成せず、プールから再利用できる弾を取得して発射する。
-	Bullet* bullet = AcquireBullet_();
-	if (bullet) {
-		bullet->FireFrom(player->GetWorldTranslation(), dir);
-	}
-
-	--burstShotsRemaining_;
-	fireCooldownFrames_ = (burstShotsRemaining_ > 0) ? kBurstIntervalFrames : kBurstCooldownFrames;
-
-	if (audio_ && shotSeHandle_ != 0) {
-		audio_->PlayWave(shotSeHandle_);
-	}
-
-	HandleHomingMissile_(input, player, countDown, enemyManager);
-}
-
-void BulletManager::HandleHomingMissile_(KamataEngine::Input* input, Player* player, const CountDown& countDown, EnemyManager* enemyManager) {
-	if (!input || !player || !enemyManager || countDown.IsInputLocked()) {
-		isHomingLocking_ = false;
-		lockedTargets_.clear();
-		homingLockFrame_ = 0;
-		wasHomingPressing_ = false;
-		return;
-	}
-
-	if (homingCooldownFrames_ > 0) {
-		--homingCooldownFrames_;
-	}
-
-	// 右クリック押下でロック開始
-	if (input->IsTriggerMouse(1) && homingCooldownFrames_ <= 0) {
-		isHomingLocking_ = true;
-		homingLockFrame_ = 0;
-		lockedTargets_.clear();
-	}
-
-	if (!isHomingLocking_) {
-		return;
-	}
-
-	++homingLockFrame_;
-	if (homingLockFrame_ >= kHomingLockStartFrame) {
-		lockedTargets_ = enemyManager->GetNearestEnemies(player->GetWorldTranslation(), kHomingMaxLockCount);
-	}
-
-	const bool isPressing = input->IsPressMouse(1);
-	const bool released = wasHomingPressing_ && !isPressing;
-	wasHomingPressing_ = isPressing;
-	const bool lockCompleted = homingLockFrame_ >= kHomingLockMaxFrame;
-	if (!released && !lockCompleted) {
-		return;
-	}
-
-	bool firedMissile = false;
-	for (CharacterBase* target : lockedTargets_) {
-		if (!target || target->IsDead()) {
-			continue;
-		}
-
-		auto missile = std::make_unique<HomingMissile>();
-		missile->Initialize();
-		missile->FireFrom(player->GetWorldTranslation(), target);
-		homingMissiles_.push_back(std::move(missile));
-		firedMissile = true;
-	}
-
-	if (firedMissile && audio_ && missileSeHandle_ != 0) {
-		audio_->PlayWave(missileSeHandle_);
-	}
-
-	homingCooldownFrames_ = kHomingCooldownMaxFrame;
-	isHomingLocking_ = false;
-	homingLockFrame_ = 0;
-	lockedTargets_.clear();
-}
-
-void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager) {
-	if (!enemyManager) {
-		for (auto& m : homingMissiles_) {
-			if (m) {
-				m->ClearTarget();
-			}
-		}
-		return;
-	}
-
-	auto& enemies = enemyManager->GetEnemies();
-	for (auto& m : homingMissiles_) {
-		if (!m || m->IsDead()) {
-			continue;
-		}
-
-		CharacterBase* target = m->GetTarget();
-		if (!target) {
-			continue;
-		}
-
-		const bool exists = std::any_of(enemies.begin(), enemies.end(), [target](const std::unique_ptr<CharacterBase>& e) { return e && e.get() == target && !e->IsDead(); });
-
-		if (!exists) {
-			m->ClearTarget();
-		}
-	}
-}
-
-void BulletManager::UpdateBullets_(EnemyManager* enemyManager) {
-	// 通常弾更新
-	for (auto& b : bullets_) {
-		if (b) {
-			b->Update();
-		}
-	}
-
-	// ホーミング対象の安全性を事前確認
-	ValidateHomingTargets_(enemyManager);
-
-	// ホーミングミサイル更新
-	for (auto& m : homingMissiles_) {
-		if (m) {
-			m->Update();
-		}
-	}
-
-	// 死亡した弾を削除
-	RemoveDeadBullets_();
-}
-
-void BulletManager::RemoveDeadBullets_() {
-	// Object Pool Pattern:
-	// 通常弾は死んでも vector から削除しない。isDead_ == true の弾として残し、
-	// 次の発射時に AcquireBullet_() で再利用する。
-
-	homingMissiles_.erase(std::remove_if(homingMissiles_.begin(), homingMissiles_.end(), [](const std::unique_ptr<HomingMissile>& m) { return !m || m->IsDead(); }), homingMissiles_.end());
-}
-
-Bullet* BulletManager::AcquireBullet_() {
-	// Object Pool Pattern:
-	// まずプール内の未使用弾を探す。見つかればそのインスタンスを再利用する。
-	for (auto& bullet : bullets_) {
-		if (bullet && bullet->IsDead()) {
-			return bullet.get();
-		}
-	}
-
-	// プールが足りない場合だけ追加生成する。通常時のメモリ確保回数を抑えつつ、
-	// 弾数が一時的に増えた場合にも対応できるようにしている。
-	auto bullet = std::make_unique<Bullet>();
-	bullet->Initialize();
-	bullet->Deactivate();
-	Bullet* result = bullet.get();
-	bullets_.push_back(std::move(bullet));
-	return result;
-}
-
-void BulletManager::Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager) {
-	HandleShooting_(input, player, countDown, shootDir, enemyManager);
-	UpdateBullets_(enemyManager);
-}
-
-void BulletManager::Draw(const Camera* camera) {
-	// 通常弾
-	for (auto& b : bullets_) {
-		b->Draw(camera);
-	}
-
-	// ホーミングミサイル
-	for (auto& m : homingMissiles_) {
-		m->Draw(camera);
-	}
-}
-
-
-============================================================
-File Path: DirectXGame/Managers/BulletManager/BulletManager.h
-============================================================
-#pragma once
-
-#include <KamataEngine.h>
-#include <memory>
-#include <vector>
-
-#include "Application/Characters/Player/Bullet.h"
-#include "Application/Characters/Player/HomingMissile.h"
-#include "Application/Characters/Player/Player.h"
-#include "UI/CountDown/CountDown.h"
-
-class EnemyManager;
-
-/// <summary>
-/// プレイヤーの通常弾、ホーミングミサイル、ロックオン状態を管理する。
-/// </summary>
-class BulletManager {
-public:
-	BulletManager() = default;
-	~BulletManager() = default;
-
-	/// <summary>
-	/// 初期化処理
-	/// </summary>
-	void Initialize();
-
-	/// <summary>
-	/// 更新処理
-	/// </summary>
-	/// <param name="input">入力情報</param>
-	/// <param name="player">プレイヤー情報</param>
-	/// <param name="countDown">カウントダウン情報</param>
-	void Update(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
-
-	/// <summary>
-	/// 描画処理
-	/// </summary>
-	/// <param name="camera">描画に使用するカメラ</param>
-	void Draw(const KamataEngine::Camera* camera);
-
-	/// <summary>
-	/// 現在管理している通常団のコンテナを参照で返す
-	/// CollisionManagerなど、外部で当たり判定を行う用途で使用する
-	/// </summary>
-	/// <returns>通常弾のコンテナ</returns>
-	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
-
-	/// <summary>
-	/// 現在管理しているホーミングミサイルのコンテナを参照で返す
-	/// CollisionManagerなど、外部で当たり判定を行う用途で使用する
-	/// </summary>
-	/// <returns>ホーミングミサイルのコンテナ</returns>
-	std::vector<std::unique_ptr<HomingMissile>>& GetHomingMissiles() { return homingMissiles_; }
-
-	/// <summary>
-	/// ホーミングロックのクールダウン率（0.0～1.0）を返す
-	/// </summary>
-	float GetHomingCooldownRate() const;
-
-	/// <summary>
-	/// 現在ロックしている敵の数を返す
-	/// </summary>
-	/// <returns>現在ロックしている敵の数</returns>
-	int32_t GetCurrentLockCount() const { return static_cast<int32_t>(lockedTargets_.size()); }
-
-	/// <summary>
-	/// 最大ロック可能な敵の数を返す
-	/// </summary>
-	/// <returns>最大ロック可能な敵の数</returns>
-	int32_t GetMaxLockCount() const { return kHomingMaxLockCount; }
-
-	/// <summary>
-	/// ホーミングロック中かどうかを返す
-	/// </summary>
-	/// <returns>ホーミングロック中かどうか</returns>
-	bool IsHomingLocking() const { return isHomingLocking_; }
-
-	/// <summary>
-	/// 現在ロックしている敵のリストを返す
-	/// </summary>
-	/// <returns>現在ロックしている敵のリスト</returns>
-	const std::vector<CharacterBase*>& GetLockedTargets() const { return lockedTargets_; }
-
-private:
-	/// <summary>
-	/// プレイヤーの入力に応じて通常弾を発射する処理 
-	/// </summary>
-	void HandleShooting_(KamataEngine::Input* input, Player* player, const CountDown& countDown, const KamataEngine::Vector3& shootDir, EnemyManager* enemyManager);
-
-	/// <summary>
-	/// プレイヤーの入力に応じてホーミングミサイルを発射する処理
-	/// </summary>
-	void HandleHomingMissile_(KamataEngine::Input* input, Player* player, const CountDown& countDown, EnemyManager* enemyManager);
-
-	/// <summary>
-	/// 通常弾の位置更新と寿命管理
-	/// </summary>
-	void UpdateBullets_(EnemyManager* enemyManager);
-
-	/// <summary>
-	/// ホーミングミサイルの位置更新と寿命管理
-	/// </summary>
-	void ValidateHomingTargets_(EnemyManager* enemyManager);
-
-	/// <summary>
-	/// 寿命が尽きた通常弾をリストから削除する処理
-	/// </summary>
-	void RemoveDeadBullets_();
-
-	/// <summary>
-	/// 寿命が尽きたホーミングミサイルをリストから削除する処理
-	/// </summary>
-	Bullet* AcquireBullet_();
-
-private:
-	std::vector<std::unique_ptr<Bullet>> bullets_;
-	std::vector<std::unique_ptr<HomingMissile>> homingMissiles_;
-
-	// 通常弾の発射管理
-	int32_t fireCooldownFrames_ = 0;
-	int32_t burstShotsRemaining_ = 0;
-	static constexpr int32_t kBurstShotCount = 3;
-	static constexpr int32_t kBurstIntervalFrames = 3;  // バースト内の連射間隔
-	static constexpr int32_t kBurstCooldownFrames = 18; // バースト終了後のクールダウン
-	static constexpr int32_t kInitialBulletPoolSize = 64;
-
-	bool isHomingLocking_ = false;
-	int32_t homingLockFrame_ = 0;
-	int32_t homingCooldownFrames_ = 0;
-	std::vector<CharacterBase*> lockedTargets_;
-	bool wasHomingPressing_ = false;
-
-	static constexpr int32_t kHomingLockStartFrame = 30; // 0.5s
-	static constexpr int32_t kHomingLockMaxFrame = 60;   // 1.0s
-	static constexpr int32_t kHomingMaxLockCount = 5;
-	static constexpr int32_t kHomingCooldownMaxFrame = 600; // 10s
-
-	KamataEngine::Audio* audio_ = nullptr;
-	uint32_t shotSeHandle_ = 0;
-	uint32_t missileSeHandle_ = 0;
-};
-
-
-============================================================
-File Path: DirectXGame/Managers/CollisionManager/CollisionManager.cpp
-============================================================
-#include "CollisionManager.h"
-
-using namespace KamataEngine;
-
-void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
-	// 無効条件（入力ロック中、プレイヤー不在、プレイヤー爆散演出終了まちetc...）
-	if (!player || countDown.IsInputLocked() || player->IsExplosionFinished()) {
-		return;
-	}
-
-	// プレイヤー側コライダー取得
-	Collider* playerCollider = player->GetCollider();
-	if (!playerCollider) {
-		return;
-	}
-
-	const auto p = playerCollider->GetTranslate();
-	const float pr = playerCollider->GetRadius();
-
-	// 各敵との衝突判定ループ
-	for (auto& e : enemies) {
-		if (!e) {
-			continue;
-		}
-		Collider* enemyCollider = e->GetCollider();
-		if (!enemyCollider) {
-			continue;
-		}
-
-		const auto q = enemyCollider->GetTranslate();
-		const float er = enemyCollider->GetRadius();
-
-		// 距離チェック
-		const float dx = p.x - q.x;
-		const float dy = p.y - q.y;
-		const float dz = p.z - q.z;
-		const float dist2 = dx * dx + dy * dy + dz * dz;
-		const float r = pr + er;
-
-		// 半径の合計より近ければ衝突
-		if (dist2 <= r * r) {
-			player->SetLastDamageSource(CharacterBase::DamageSource::Collision);
-			e->SetLastDamageSource(CharacterBase::DamageSource::Collision);
-			player->OnCollision(e.get());
-			e->OnCollision(player);
-		}
-	}
-}
-
-void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
-	// カウントダウン中は無効
-	if (countDown.IsInputLocked()) {
-		return;
-	}
-
-	// 全弾ループ
-	for (auto& b : bullets) {
-		if (!b || b->IsDead()) {
-			continue;
-		}
-
-		Collider* bc = b->GetCollider();
-		if (!bc) {
-			continue;
-		}
-
-		const auto bp = bc->GetTranslate();
-		const float br = bc->GetRadius();
-
-		// 各敵と衝突チェック
-		for (auto& e : enemies) {
-			if (!e) {
-				continue;
-			}
-
-			// 既に死んだ敵は飛ばす
-			if (e->IsDead()) {
-				continue;
-			}
-
-			Collider* enemyCollider = e->GetCollider();
-			if (!enemyCollider) {
-				continue;
-			}
-
-			const auto ep = enemyCollider->GetTranslate();
-			const float er = enemyCollider->GetRadius();
-
-			// 球判定
-			const float dx = bp.x - ep.x;
-			const float dy = bp.y - ep.y;
-			const float dz = bp.z - ep.z;
-			const float dist2 = dx * dx + dy * dy + dz * dz;
-			const float rr = br + er;
-
-			if (dist2 <= rr * rr) {
-				// 相互通知：敵は死に、弾は消える
-				e->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
-				e->OnCollision(b.get());
-				b->OnCollision(e.get());
-				// 1発で1体想定
-				break;
-			}
-		}
-	}
-}
-
-void CollisionManager::ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
-	if (countDown.IsInputLocked()) {
-		return;
-	}
-
-	for (auto& m : missiles) {
-		if (!m || m->IsDead()) {
-			continue;
-		}
-
-		Collider* missileCollider = m->GetCollider();
-		if (!missileCollider) {
-			continue;
-		}
-
-		const auto mp = missileCollider->GetTranslate();
-		const float mr = missileCollider->GetRadius();
-
-		for (auto& e : enemies) {
-			if (!e || e->IsDead()) {
-				continue;
-			}
-
-			Collider* enemyCollider = e->GetCollider();
-			if (!enemyCollider) {
-				continue;
-			}
-
-			const auto ep = enemyCollider->GetTranslate();
-			const float er = enemyCollider->GetRadius();
-
-			const float dx = mp.x - ep.x;
-			const float dy = mp.y - ep.y;
-			const float dz = mp.z - ep.z;
-			const float dist2 = dx * dx + dy * dy + dz * dz;
-			const float rr = mr + er;
-
-			if (dist2 <= rr * rr) {
-				e->SetLastDamageSource(CharacterBase::DamageSource::HomingMissile);
-				e->OnCollision(m.get());
-				m->OnCollision(e.get());
-				break;
-			}
-		}
-	}
-}
-
-void CollisionManager::ResolvePlayerTurretBulletCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
-	if (!player || countDown.IsInputLocked() || player->IsExplosionFinished()) {
-		return;
-	}
-
-	Collider* playerCollider = player->GetCollider();
-	if (!playerCollider) {
-		return;
-	}
-
-	const auto pp = playerCollider->GetTranslate();
-	const float pr = playerCollider->GetRadius();
-
-	for (auto& e : enemies) {
-		auto* turret = dynamic_cast<TurretEnemy*>(e.get());
-		if (!turret || turret->IsDead()) {
-			continue;
-		}
-
-		for (auto& tb : turret->GetBullets()) {
-			if (!tb || tb->IsDead()) {
-				continue;
-			}
-
-			Collider* bulletCollider = tb->GetCollider();
-			if (!bulletCollider) {
-				continue;
-			}
-
-			const auto bp = bulletCollider->GetTranslate();
-			const float br = bulletCollider->GetRadius();
-
-			const float dx = pp.x - bp.x;
-			const float dy = pp.y - bp.y;
-			const float dz = pp.z - bp.z;
-			const float dist2 = dx * dx + dy * dy + dz * dz;
-			const float rr = pr + br;
-
-			if (dist2 <= rr * rr) {
-				player->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
-				player->OnCollision(tb.get());
-				tb->OnCollision(player);
-			}
-		}
-	}
-}
-
-void CollisionManager::ResolvePlayerBulletTurretBulletCollisions(
-    std::vector<std::unique_ptr<Bullet>>& playerBullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
-	if (countDown.IsInputLocked()) {
-		return;
-	}
-
-	for (auto& pb : playerBullets) {
-		if (!pb || pb->IsDead()) {
-			continue;
-		}
-
-		Collider* playerBulletCollider = pb->GetCollider();
-		if (!playerBulletCollider) {
-			continue;
-		}
-
-		const auto pp = playerBulletCollider->GetTranslate();
-		const float pr = playerBulletCollider->GetRadius();
-
-		bool hit = false;
-		for (auto& e : enemies) {
-			auto* turret = dynamic_cast<TurretEnemy*>(e.get());
-			if (!turret || turret->IsDead()) {
-				continue;
-			}
-
-			for (auto& tb : turret->GetBullets()) {
-				if (!tb || tb->IsDead()) {
-					continue;
-				}
-
-				Collider* turretBulletCollider = tb->GetCollider();
-				if (!turretBulletCollider) {
-					continue;
-				}
-
-				const auto tp = turretBulletCollider->GetTranslate();
-				const float tr = turretBulletCollider->GetRadius();
-
-				const float dx = pp.x - tp.x;
-				const float dy = pp.y - tp.y;
-				const float dz = pp.z - tp.z;
-				const float dist2 = dx * dx + dy * dy + dz * dz;
-				const float rr = pr + tr;
-
-				if (dist2 <= rr * rr) {
-					pb->OnCollision(tb.get());
-					tb->OnCollision(pb.get());
-					hit = true;
-					break;
-				}
-			}
-
-			if (hit) {
-				break;
-			}
-		}
-	}
-}
-
-
-============================================================
-File Path: DirectXGame/Managers/CollisionManager/CollisionManager.h
-============================================================
-#pragma once
-
-#include <memory>
-#include <vector>
-
-#include "Application/Characters/Collider.h"
-#include "Application/Characters/Enemy/SeekerEnemy.h"
-#include "Application/Characters/Enemy/TurretEnemy.h"
-#include "Application/Characters/Player/Bullet.h"
-#include "Application/Characters/Player/HomingMissile.h"
-#include "Application/Characters/Player/Player.h"
-
-#include "UI/CountDown/CountDown.h"
-
-/// <summary>
-/// プレイヤー、敵、弾、ミサイルの当たり判定をまとめる。
-/// 各オブジェクトへの通知だけを行い、HPやスコアの処理は個別クラスへ任せる。
-/// </summary>
-class CollisionManager {
-public:
-	/// <summary>
-	/// プレイヤーと複数の敵の衝突判定を行う
-	/// 衝突が発生した場合、双方の OnCollision を呼び出す
-	/// </summary>
-	/// <param name="player">衝突対象のプレイヤー</param>
-	/// <param name="enemies">衝突対象の敵リスト</param>
-	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
-	static void ResolvePlayerEnemyCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
-
-	/// <summary>
-	/// 通常弾と複数の敵との衝突判定を行う。
-	/// 衝突が発生した場合、敵に OnCollision、弾に OnCollision を通知する。
-	/// 1発の弾が複数の敵へ同時に命中しないよう、命中後は処理を中断する。
-	/// </summary>
-	/// <param name="bullets">衝突対象の通常弾リスト。</param>
-	/// <param name="enemies">衝突対象の敵リスト。</param>
-	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する。</param>
-	static void ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<Bullet>>& bullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
-
-	/// <summary>
-	/// ホーミングミサイルと複数の敵との衝突判定を行う
-	/// </summary>
-	/// <param name="missiles">衝突対象のホーミングミサイルリスト</param>
-	/// <param name="enemies">衝突対象の敵リスト</param>
-	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
-	static void ResolveHomingMissileEnemyCollisions(std::vector<std::unique_ptr<HomingMissile>>& missiles, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
-
-	/// <summary>
-	/// プレイヤーとターレット弾の衝突判定を行う
-	/// </summary>
-	/// <param name="player">衝突対象のプレイヤー</param>
-	/// <param name="enemies">ターレットを含む敵リスト</param>
-	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
-	static void ResolvePlayerTurretBulletCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
-
-	/// <summary>
-	/// プレイヤー弾とターレット弾の衝突判定を行う
-	/// </summary>
-	/// <param name="playerBullets">プレイヤーの通常弾リスト</param>
-	/// <param name="enemies">ターレットを含む敵リスト</param>
-	/// <param name="countDown">カウントダウン中は衝突を無効化するために使用する</param>
-	static void ResolvePlayerBulletTurretBulletCollisions(std::vector<std::unique_ptr<Bullet>>& playerBullets, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown);
-};
-
-
-============================================================
-File Path: DirectXGame/Managers/EnemyManager/EnemyManager.cpp
-============================================================
-#include "EnemyManager.h"
-
-#include <cmath>
-
-#include <fstream>
-#include <random>
-
-#include <json.hpp>
-using json = nlohmann::json;
-
-using namespace KamataEngine;
-
-namespace {
-// Strategy Pattern:
-// 難易度ごとの敵パラメータ補正を共通インターフェースにする。
-// EnemyManager は「どの難易度か」を意識せず、Apply() を呼ぶだけで補正を適用できる。
-class IEnemySpawnStrategy {
-public:
-	virtual ~IEnemySpawnStrategy() = default;
-	virtual void Apply(EnemyManager::EnemySpawnData& spawnData) const = 0;
-};
-
-// Tutorial は最初の練習用なので、敵速度と弾速を下げ、射撃間隔を長くする。
-class TutorialEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 0.85f;
-		spawnData.bulletSpeed *= 0.85f;
-		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.25f);
-	}
-};
-
-// Easy は Normal より少しだけ易しくするため、敵速度と弾速を抑える。
-class EasyEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 0.9f;
-		spawnData.bulletSpeed *= 0.9f;
-		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.15f);
-	}
-};
-
-// Normal は JSON の設定値をそのまま使う標準戦略。
-class NormalEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData&) const override {}
-};
-
-// Hard は敵を強くする戦略。速度、弾速、HP を上げ、射撃間隔を短くする。
-class HardEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 1.15f;
-		spawnData.bulletSpeed *= 1.15f;
-		spawnData.hp = (std::max)(spawnData.hp, spawnData.hp + 1);
-		spawnData.shootIntervalFrames = (std::max)(1, static_cast<int32_t>(spawnData.shootIntervalFrames * 0.8f));
-	}
-};
-
-std::unique_ptr<IEnemySpawnStrategy> CreateEnemySpawnStrategy(const std::string& path) {
-	// Strategy Pattern: difficulty-specific enemy tuning is selected by the level file.
-	// レベルファイル名から使用する戦略を選択する。新しい難易度を増やす場合は、
-	// IEnemySpawnStrategy の派生クラスと、この分岐を追加すればよい。
-	if (path.find("Tutorial") != std::string::npos) {
-		return std::make_unique<TutorialEnemySpawnStrategy>();
-	}
-	if (path.find("Easy") != std::string::npos) {
-		return std::make_unique<EasyEnemySpawnStrategy>();
-	}
-	if (path.find("Hard") != std::string::npos) {
-		return std::make_unique<HardEnemySpawnStrategy>();
-	}
-	return std::make_unique<NormalEnemySpawnStrategy>();
-}
-} // namespace
-
-void EnemyManager::Initialize() {
-	enemies_.clear();
-	enemySpawnList_.clear();
-
-	enemySpawnTimer_ = 0.0f;
-}
-
-void EnemyManager::ClearAllEnemies() {
-	enemies_.clear();
-	enemySpawnList_.clear();
-}
-
-void EnemyManager::ClearPendingSpawns() { enemySpawnList_.clear(); }
-
-void EnemyManager::LoadEnemyCsv(const std::string& path) {
-	enemySpawnList_.clear();
-
-	std::ifstream ifs(path);
-	if (!ifs) {
-		return;
-	}
-
-	json root;
-	ifs >> root;
-
-	if (!root.contains("randomAreas")) {
-		return;
-	}
-
-	static std::mt19937_64 rng{123456789ull};
-	// Strategy Pattern:
-	// このロード処理内では具体的な難易度クラスを直接扱わず、
-	// 選択済みの戦略に敵データ補正を任せる。
-	const std::unique_ptr<IEnemySpawnStrategy> spawnStrategy = CreateEnemySpawnStrategy(path);
-
-	for (auto& r : root["randomAreas"]) {
-		const int32_t count = r.value("count", 0);
-		const float timeMin = r.value("timeMin", 0.0f);
-		const float timeMax = r.value("timeMax", timeMin);
-
-		const auto centerNode = r["posCenter"];
-		const Vector3 center{centerNode[0].get<float>(), centerNode[1].get<float>(), centerNode[2].get<float>()};
-
-		const auto rangeNode = r["posRange"];
-		const Vector3 range{rangeNode[0].get<float>(), rangeNode[1].get<float>(), rangeNode[2].get<float>()};
-
-		const std::string type = r.value("type", std::string("seeker"));
-
-		// Seeker
-		const float baseSpeed = r.value("speed", kDefaultSeekerSpeed);
-		const float speedRange = r.value("speedRange", 0.0f);
-		const float turnRate = r.value("turnRate", kDefaultSeekerTurnRate);
-
-		// 共通
-		const int32_t hp = r.value("hp", kDefaultHp);
-		const float radius = r.value("radius", kDefaultColliderRadius);
-		const float lifeTime = r.value("lifeTime", kDefaultLifeTime);
-
-		// Turret
-		const int32_t shootIntervalFrames = r.value("shootIntervalFrames", kDefaultShootIntervalFrames);
-		const float bulletSpeed = r.value("bulletSpeed", kDefaultBulletSpeed);
-		const float bulletLifeTime = r.value("bulletLifeTime", kDefaultBulletLifeTime);
-
-		std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
-		std::uniform_real_distribution<float> dx(-range.x, range.x);
-		std::uniform_real_distribution<float> dy(-range.y, range.y);
-		std::uniform_real_distribution<float> dz(-range.z, range.z);
-		std::uniform_real_distribution<float> speedDist(baseSpeed - speedRange, baseSpeed + speedRange);
-
-		for (int32_t i = 0; i < count; ++i) {
-			EnemySpawnData d;
-			d.time = timeDist(rng);
-			d.pos = {center.x + dx(rng), center.y + dy(rng), center.z + dz(rng)};
-			d.type = type;
-
-			d.speed = speedDist(rng);
-			d.turnRate = turnRate;
-
-			d.hp = hp;
-			d.radius = radius;
-			d.lifeTime = lifeTime;
-
-			d.shootIntervalFrames = shootIntervalFrames;
-			d.bulletSpeed = bulletSpeed;
-			d.bulletLifeTime = bulletLifeTime;
-
-			// Strategy Pattern:
-			// JSON から作った基本出現データに、難易度ごとの補正を適用する。
-			spawnStrategy->Apply(d);
-			enemySpawnList_.push_back(d);
-		}
-	}
-
-	std::sort(enemySpawnList_.begin(), enemySpawnList_.end(), [](const EnemySpawnData& a, const EnemySpawnData& b) { return a.time < b.time; });
-}
-
-void EnemyManager::SpawnEnemiesByCsv(const Vector3& playerPos) {
-	const float currentTime = enemySpawnTimer_;
-
-	while (!enemySpawnList_.empty()) {
-		const EnemySpawnData& d = enemySpawnList_.front();
-		if (currentTime < d.time) {
-			break;
-		}
-
-		const Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
-
-		auto enemy = CreateEnemy_(d, spawnPos);
-		if (enemy) {
-			enemies_.push_back(std::move(enemy));
-		}
-
-		enemySpawnList_.erase(enemySpawnList_.begin());
-	}
-}
-
-std::unique_ptr<CharacterBase> EnemyManager::CreateEnemy_(const EnemySpawnData& spawnData, const Vector3& spawnPos) const {
-	// Factory Method Pattern:
-	// EnemyManager requests creation, and each enemy type setup is centralized here.
-	if (spawnData.type == "turret") {
-		auto turret = std::make_unique<TurretEnemy>();
-		turret->GetWorldTransform().translation_ = spawnPos;
-
-		turret->SetInitialHP(spawnData.hp);
-		turret->SetColliderRadius(spawnData.radius);
-		turret->SetShootIntervalFrames(spawnData.shootIntervalFrames);
-		turret->SetBulletSpeed(spawnData.bulletSpeed);
-		turret->SetBulletLifeTime(spawnData.bulletLifeTime);
-
-		turret->Initialize();
-		return turret;
-	}
-
-	auto seeker = std::make_unique<SeekerEnemy>();
-	seeker->SetInitialPosition(spawnPos);
-	seeker->SetSpeed(spawnData.speed);
-	seeker->SetTurnRate(spawnData.turnRate);
-	seeker->SetInitialHP(spawnData.hp);
-	seeker->SetColliderRadius(spawnData.radius);
-	seeker->SetLifeTime(spawnData.lifeTime);
-
-	seeker->Initialize();
-	return seeker;
-}
-
-void EnemyManager::Update(float dt, const Vector3& playerPos) {
-	enemySpawnTimer_ += dt;
-	SpawnEnemiesByCsv(playerPos);
-
-	// 敵更新
-	for (auto& enemy : enemies_) {
-		// 敵タイプごとにターゲット設定
-		// dynamic_cast を使用している理由：
-		// EnemyManager は CharacterBase のみを保持し、
-		// 各敵固有の機能は派生クラスに委譲する設計のため
-		if (auto* seeker = dynamic_cast<SeekerEnemy*>(enemy.get())) {
-			seeker->SetTarget(playerPos);
-		} else if (auto* turret = dynamic_cast<TurretEnemy*>(enemy.get())) {
-			turret->SetTarget(playerPos);
-		}
-
-		enemy->Update();
-	}
-}
-
-void EnemyManager::Draw(const Camera* camera) {
-	for (auto& enemy : enemies_) {
-		enemy->Draw(camera);
-	}
-}
-
-std::vector<CharacterBase*> EnemyManager::GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const {
-	std::vector<std::pair<float, CharacterBase*>> distances;
-	distances.reserve(enemies_.size());
-
-	for (const auto& enemy : enemies_) {
-		if (!enemy || enemy->IsDead()) {
-			continue;
-		}
-		const KamataEngine::Vector3 pos = enemy->GetWorldTranslation();
-		const float dx = pos.x - from.x;
-		const float dy = pos.y - from.y;
-		const float dz = pos.z - from.z;
-		const float distSq = dx * dx + dy * dy + dz * dz;
-		distances.emplace_back(distSq, enemy.get());
-	}
-
-	std::sort(distances.begin(), distances.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
-
-	if (maxCount <= 0) {
-		return {};
-	}
-
-	const size_t count = (std::min)(distances.size(), static_cast<size_t>(maxCount));
-	std::vector<CharacterBase*> result;
-	result.reserve(count);
-	for (size_t i = 0; i < count; ++i) {
-		result.push_back(distances[i].second);
-	}
-	return result;
-}
-
-void EnemyManager::RemoveDeadEnemies() {
-	enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
-}
-
-
-============================================================
-File Path: DirectXGame/Managers/EnemyManager/EnemyManager.h
-============================================================
-#pragma once
-
-#include <algorithm>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include <KamataEngine.h>
-
-#include "Application/Characters/Enemy/SeekerEnemy.h"
-#include "Application/Characters/Enemy/TurretEnemy.h"
-
-/// <summary>
-/// JSON の出現データを読み込み、敵の生成、更新、描画、破棄を管理する。
-/// </summary>
-class EnemyManager {
-public:
-	/// <summary>
-	/// 謨ｵ蜃ｺ迴ｾ繝・・繧ｿ・・SON 1莉ｶ蛻・ｼ・
-	/// </summary>
-	struct EnemySpawnData {
-		float time = 0.0f;
-		KamataEngine::Vector3 pos{0.0f, 0.0f, 0.0f};
-
-		// 敵のタイプ（seeker" / "turret"）
-		std::string type = "seeker";
-
-		// ===== Enemy共通 =====
-		int32_t hp = kDefaultHp;
-		float radius = kDefaultColliderRadius;
-		float lifeTime = kDefaultLifeTime;
-
-		// ===== Seeker用 =====
-		float speed = kDefaultSeekerSpeed;
-		float turnRate = kDefaultSeekerTurnRate;	
-
-		// ===== Turret用 =====
-		int32_t shootIntervalFrames = kDefaultShootIntervalFrames;
-		float bulletSpeed = kDefaultBulletSpeed;
-		float bulletLifeTime = kDefaultBulletLifeTime;
-	};
-
-public:
-	/// <summary>
-	/// 初期化処理
-	/// </summary>
-	void Initialize();
-
-	/// <summary>
-	/// JSON形式の敵出現データを読み込む
-	/// </summary>
-	void LoadEnemyCsv(const std::string& path);
-
-	/// <summary>
-	/// 更新処理
-	/// </summary>
-	/// <param name="dt">デルタタイム</param>
-	/// <param name="playerPos">プレイヤーの位置</param>
-	void Update(float dt, const KamataEngine::Vector3& playerPos);
-
-	/// <summary>
-	/// 描画処理
-	/// </summary>
-	void Draw(const KamataEngine::Camera* camera);
-
-	/// <summary>
-	/// 衝突判定用の敵リストを取得する
-	/// </summary>
-	std::vector<std::unique_ptr<CharacterBase>>& GetEnemies() { return enemies_; }
-
-	/// <summary>
-	/// 指定位置から近い順に生存中の敵を取得する。CollisionManager などで使用する
-	/// </summary>
-	std::vector<CharacterBase*> GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const;
-
-	/// <summary>
-	/// 死亡した敵をリストから削除する
-	/// </summary>
-	void RemoveDeadEnemies();
-
-	/// <summary>
-	/// 出現待ちを含めて敵が残っていないかを返す
-	/// </summary>
-	bool IsAllEnemyDestroyed() const { return enemies_.empty() && enemySpawnList_.empty(); }
-
-	/// <summary>
-	/// Boss戦への切り替え時に、出現中・出現待ちの通常敵をすべて破棄する
-	/// </summary>
-	void ClearAllEnemies();
-	void ClearPendingSpawns();
-
-private:
-	/// <summary>
-	/// CSVの出現データに基づいて敵を出現させる
-	/// </summary>
-	void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
-
-	/// <summary>
-	/// 出現データに基づいて敵を生成する
-	/// </summary>
-	std::unique_ptr<CharacterBase> CreateEnemy_(const EnemySpawnData& spawnData, const KamataEngine::Vector3& spawnPos) const;
-
-private:
-	// ===== 定数（デフォルト値） ====
-	static constexpr float kDefaultSeekerSpeed = 0.2f;
-	static constexpr float kDefaultSeekerTurnRate = 0.15f;
-	static constexpr int32_t kDefaultHp = 1;
-	static constexpr float kDefaultColliderRadius = 1.0f;
-	static constexpr float kDefaultLifeTime = 30.0f;
-
-	static constexpr int32_t kDefaultShootIntervalFrames = 60;
-	static constexpr float kDefaultBulletSpeed = 2.8f;
-	static constexpr float kDefaultBulletLifeTime = 3.0f;
-
-private:
-	// 生存中の敵リスト
-	std::vector<std::unique_ptr<CharacterBase>> enemies_;
-
-	// 出現町の敵データ
-	std::vector<EnemySpawnData> enemySpawnList_;
-
-	// 経過時間
-	float enemySpawnTimer_ = 0.0f;
-};
-
-
-============================================================
-File Path: DirectXGame/Managers/UIManager/UIManager.cpp
-============================================================
-#include "UIManager.h"
-
-#include <algorithm>
-
-using namespace KamataEngine;
-
-namespace {
-constexpr float kUiMaxHp = 100.0f;
-constexpr Vector2 kCoolPos{24.0f, 84.0f};
-constexpr Vector2 kCoolSize{200.0f, 10.0f};
-constexpr Vector2 kLockPos{24.0f, 98.0f};
-constexpr Vector2 kLockBaseSize{200.0f, 6.0f};
-} // namespace
-
-void UIManager::Initialize(Player* player) {
-	player_ = player;
-
-	// HPバー（Graph）
-	graph_ = std::make_unique<Graph>();
-	graph_->Initialize();
-
-	// スコア
-	score_ = std::make_unique<Score>();
-	score_->Initialize();
-
-	homingBarTexHandle_ = TextureManager::Load("./Resources/white1x1.png");
-	homingCooldownBack_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, {0.1f, 0.1f, 0.1f, 0.9f}));
-	homingCooldownFront_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, {0.2f, 0.8f, 1.0f, 0.9f}));
-	lockProgressBar_.reset(Sprite::Create(homingBarTexHandle_, kLockPos, {1.0f, 0.85f, 0.2f, 0.9f}));
-
-	homingCooldownBack_->SetSize(kCoolSize);
-	homingCooldownFront_->SetSize(kCoolSize);
-	lockProgressBar_->SetSize({0.0f, kLockBaseSize.y});
-}
-
-void UIManager::SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking) {
-	homingLockCount_ = (std::max)(currentLockCount, 0);
-	homingMaxLockCount_ = (std::max)(maxLockCount, 1);
-	isHomingLocking_ = isLocking;
-}
-
-void UIManager::Update() {
-	// HPバー更新
-	if (player_ && graph_) {
-		// HP(0〜100想定) を 0.0〜1.0 に変換してGraphに渡す
-		float hpRate = static_cast<float>(player_->GetHP()) / kUiMaxHp;
-
-		graph_->SetValue(hpRate);
-		graph_->Update();
-	}
-
-	// スコア更新
-	if (score_) {
-		score_->Update();
-	}
-
-	if (homingCooldownFront_) {
-		homingCooldownFront_->SetSize({kCoolSize.x * homingCooldownRate_, kCoolSize.y});
-	}
-
-	if (lockProgressBar_) {
-		const float lockRate = static_cast<float>(homingLockCount_) / static_cast<float>(homingMaxLockCount_);
-		lockProgressBar_->SetSize({kLockBaseSize.x * std::clamp(lockRate, 0.0f, 1.0f), kLockBaseSize.y});
-	}
-}
-
-void UIManager::Draw() {
-	if (graph_) {
-		graph_->Draw();
-	}
-	if (score_) {
-		score_->Draw();
-	}
-	if (homingCooldownBack_) {
-		homingCooldownBack_->Draw();
-	}
-	if (homingCooldownFront_) {
-		homingCooldownFront_->Draw();
-	}
-	if (isHomingLocking_ && lockProgressBar_) {
-		lockProgressBar_->Draw();
-	}
-}
-
-
-============================================================
-File Path: DirectXGame/Managers/UIManager/UIManager.h
-============================================================
-#pragma once
-
-#include <KamataEngine.h>
-#include <algorithm>
-#include <memory>
-
-#include "Application/Characters/Player/Player.h"
-#include "UI/HPBar/Graph.h"
-#include "UI/Score/Score.h"
-
-/// <summary>
-/// HPバー、スコア、ホーミング関連ゲージなどの画面UIをまとめて管理する。
-/// </summary>
-class UIManager {
-public:
-	UIManager() = default;
-	~UIManager() = default;
-
-	/// <summary>
-	/// 初期化処理
-	/// </summary>
-	/// <param name="player">HPバーの対象となるプレイヤー</param>
-	void Initialize(Player* player);
-
-	/// <summary>
-	/// 更新処理
-	/// </summary>
-	void Update();
-
-	/// <summary>
-	/// 描画処理	
-	/// </summary>
-	void Draw();
-
-	/// <summary>
-	/// スコア情報を取得する
-	/// </summary>
-	Score* GetScore() { return score_.get(); }
-
-	/// <summary>
-	/// ホーミングミサイルのクールダウン率を設定する
-	/// </summary>
-	void SetHomingCooldownRate(float rate) { homingCooldownRate_ = std::clamp(rate, 0.0f, 1.0f); }
-
-	/// <summary>
-	/// ホーミングミサイルのロックオン数と情報を設定する。
-	/// </summary>
-	void SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking);
-
-private:
-	// HP参照用。所有権は持たない
-	Player* player_ = nullptr;
-
-	// HPバー
-	std::unique_ptr<Graph> graph_;
-
-	// スコア
-	std::unique_ptr<Score> score_;
-
-	std::unique_ptr<KamataEngine::Sprite> homingCooldownBack_;
-	std::unique_ptr<KamataEngine::Sprite> homingCooldownFront_;
-	std::unique_ptr<KamataEngine::Sprite> lockProgressBar_;
-	uint32_t homingBarTexHandle_ = 0;
-
-	float homingCooldownRate_ = 1.0f;
-	int32_t homingLockCount_ = 0;
-	int32_t homingMaxLockCount_ = 5;
-	bool isHomingLocking_ = false;
-};
 
 
 ============================================================
@@ -8329,7 +8338,7 @@ File Path: DirectXGame/Scenes/Clear/ClearScene.h
 
 #include "Application/Background/Skydome/Skydome.h"
 #include "Application/Objects/Asteroid/AsteroidField.h"
-#include "UI/Score/Score.h"
+#include "Application/UI/Score/Score.h"
 
 #include "Scenes/IScene.h"
 class TitleScene;
@@ -8426,7 +8435,7 @@ File Path: DirectXGame/Scenes/Finish/FinishScene.cpp
 #include "FinishScene.h"
 
 #include "Application/Utility/GameTime.h"
-#include "TitleScene.h"
+#include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
 
@@ -9192,11 +9201,11 @@ File Path: DirectXGame/Scenes/InGame/GameScene.h
 #include "Application/UI/PauseMenu/PauseMenu.h"
 #include "Application/UI/Score/Score.h"
 
-#include "Managers/BulletManager/BulletManager.h"
-#include "Managers/BossManager/BossManager.h"
-#include "Managers/CollisionManager/CollisionManager.h"
-#include "Managers/EnemyManager/EnemyManager.h"
-#include "Managers/UIManager/UIManager.h"
+#include "Application/Managers/BulletManager/BulletManager.h"
+#include "Application/Managers/BossManager/BossManager.h"
+#include "Application/Managers/CollisionManager/CollisionManager.h"
+#include "Application/Managers/EnemyManager/EnemyManager.h"
+#include "Application/Managers/UIManager/UIManager.h"
 
 #include "Scenes/IScene.h"
 class FinishScene;
@@ -10388,8 +10397,8 @@ File Path: DirectXGame/Scenes/Introduction/IntroductionScene.cpp
 ============================================================
 #include "IntroductionScene.h"
 
-#include "GameScene.h"
-#include "TitleScene.h"
+#include "Scenes/InGame/GameScene.h"
+#include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
 
