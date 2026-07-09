@@ -13,53 +13,53 @@
 /// </summary>
 class Score {
 public:
-	/// <summary>
-	/// デストラクタ
-	/// </summary>
-	~Score() = default;
+    /// <summary>
+    /// デストラクタ
+    /// </summary>
+    ~Score() = default;
 
-	/// <summary>
-	/// 初期化処理
-	/// </summary>
-	void Initialize();
+    /// <summary>
+    /// 初期化処理
+    /// </summary>
+    void Initialize();
 
-	/// <summary>
-	/// 更新処理
-	/// </summary>
-	void Update();
+    /// <summary>
+    /// 更新処理
+    /// </summary>
+    void Update();
 
-	/// <summary>
-	/// 描画処理
-	/// </summary>
-	void Draw();
+    /// <summary>
+    /// 描画処理
+    /// </summary>
+    void Draw();
 
-	/// <summary>
-	/// スコアを加算する
-	/// </summary>
-	void Add(int value);
+    /// <summary>
+    /// スコアを加算する
+    /// </summary>
+    void Add(int value);
 
-	/// <summary>
-	/// 現在のスコアを取得する
-	/// </summary>
-	int GetScore() const { return score_; }
+    /// <summary>
+    /// 現在のスコアを取得する
+    /// </summary>
+    int GetScore() const { return score_; }
 
-	/// <summary>
-	/// スプライトの表示位置を設定する
-	/// </summary>
-	void SetPosition(float x, float y);
+    /// <summary>
+    /// スプライトの表示位置を設定する
+    /// </summary>
+    void SetPosition(float x, float y);
 
 private:
-	uint32_t textureHandle_ = 0;
-	KamataEngine::Vector2 size_ = {32.0f, 64.0f}; // 1文字のサイズ
+    uint32_t textureHandle_ = 0;
+    KamataEngine::Vector2 size_ = { 32.0f, 64.0f }; // 1文字のサイズ
 
-	float startX_ = 0.0f; // 表示位置（x座標）
-	float startY_ = 5.0f; // 表示位置（y座標）
+    float startX_ = 0.0f; // 表示位置（x座標）
+    float startY_ = 5.0f; // 表示位置（y座標）
 
-	int score_ = 0;
-	float displayedScore_ = 0.0f; // 表示中のスコア
+    int score_ = 0;
+    float displayedScore_ = 0.0f; // 表示中のスコア
 
-	float scorePopTimer_ = 0.0f;
+    float scorePopTimer_ = 0.0f;
 
-	static const int kDigitCount = 5;                                               // 最大桁数（99999まで）
-	std::array<std::unique_ptr<KamataEngine::Sprite>, kDigitCount> digitSprites_{}; // 各桁ごとのスプライト
+    static const int kDigitCount = 5;                                               // 最大桁数（99999まで）
+    std::array<std::unique_ptr<KamataEngine::Sprite>, kDigitCount> digitSprites_{}; // 各桁ごとのスプライト
 };

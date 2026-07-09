@@ -25,152 +25,152 @@ class TurretEnemyShootingState;
 
 class TurretEnemy : public CharacterBase {
 public:
-	/// <summary>
-	/// 
-	/// </summary>
-	TurretEnemy();
-	~TurretEnemy()override;
+    /// <summary>
+    /// 
+    /// </summary>
+    TurretEnemy();
+    ~TurretEnemy()override;
 
-	/// <summary>
-	/// 初期化処理
-	/// </summary>
-	void Initialize() override;
+    /// <summary>
+    /// 初期化処理
+    /// </summary>
+    void Initialize() override;
 
-	/// <summary>
-	/// 更新処理
-	/// </summary>
-	void Update() override;
+    /// <summary>
+    /// 更新処理
+    /// </summary>
+    void Update() override;
 
-	/// <summary>
-	/// 描画処理
-	/// </summary>
-	void Draw(const KamataEngine::Camera* camera) override;
+    /// <summary>
+    /// 描画処理
+    /// </summary>
+    void Draw(const KamataEngine::Camera* camera) override;
 
-	/// <summary>
-	/// 当たり判定時の処理
-	/// </summary>
-	void OnCollision(CharacterBase* other) override;
+    /// <summary>
+    /// 当たり判定時の処理
+    /// </summary>
+    void OnCollision(CharacterBase* other) override;
 
-	/// <summary>
-	/// 死亡判定
-	/// HP枯渇によって判定する。
-	/// </summary>
-	bool IsDead() const override { return isDead_ || hp_ <= 0; }
+    /// <summary>
+    /// 死亡判定
+    /// HP枯渇によって判定する。
+    /// </summary>
+    bool IsDead() const override { return isDead_ || hp_ <= 0; }
 
-	/// <summary>
-	/// 砲台が保持している弾コンテナを取得
-	/// （CollisionManager で当たり判定を行う用途）
-	/// </summary>
-	std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
-	const std::vector<std::unique_ptr<Bullet>>& GetBullets() const { return bullets_; }
+    /// <summary>
+    /// 砲台が保持している弾コンテナを取得
+    /// （CollisionManager で当たり判定を行う用途）
+    /// </summary>
+    std::vector<std::unique_ptr<Bullet>>& GetBullets() { return bullets_; }
+    const std::vector<std::unique_ptr<Bullet>>& GetBullets() const { return bullets_; }
 
 public: // ---- 外部設定 ----
-	/// <summary>
-	/// 砲台が狙うターゲット位置
-	/// </summary>
-	void SetTarget(const KamataEngine::Vector3& worldTarget) {
-		targetPos_ = worldTarget;
-		hasTarget_ = true;
-	}
+    /// <summary>
+    /// 砲台が狙うターゲット位置
+    /// </summary>
+    void SetTarget(const KamataEngine::Vector3& worldTarget) {
+        targetPos_ = worldTarget;
+        hasTarget_ = true;
+    }
 
-	/// <summary>
-	/// 射撃間隔（フレーム）
-	/// </summary>
-	void SetShootIntervalFrames(int32_t frames) { shootIntervalFrames_ = frames; }
+    /// <summary>
+    /// 射撃間隔（フレーム）
+    /// </summary>
+    void SetShootIntervalFrames(int32_t frames) { shootIntervalFrames_ = frames; }
 
-	/// <summary>
-	/// 弾速度
-	/// </summary>
-	void SetBulletSpeed(float speed) { bulletSpeed_ = speed; }
+    /// <summary>
+    /// 弾速度
+    /// </summary>
+    void SetBulletSpeed(float speed) { bulletSpeed_ = speed; }
 
-	/// <summary>
-	/// 弾寿命（秒）
-	/// </summary>
-	void SetBulletLifeTime(float sec) { bulletLifeTimeSec_ = sec; }
+    /// <summary>
+    /// 弾寿命（秒）
+    /// </summary>
+    void SetBulletLifeTime(float sec) { bulletLifeTimeSec_ = sec; }
 
-	/// <summary>
-	/// 初期HP
-	/// </summary>
-	void SetInitialHP(int32_t hp) { initialHP_ = hp; }
+    /// <summary>
+    /// 初期HP
+    /// </summary>
+    void SetInitialHP(int32_t hp) { initialHP_ = hp; }
 
-	/// <summary>
-	/// コライダー半径
-	/// </summary>
-	void SetColliderRadius(float radius);
-
-private:
-	// ===== 定数 =====
-	static constexpr int32_t kDefaultHP = 3;
-	static constexpr float kDefaultColliderRadius = 1.2f;
-
-	static constexpr int32_t kDefaultShootIntervalFrames = 60; // 1秒@60fps
-	static constexpr float kDefaultBulletSpeed = 2.8f;
-	static constexpr float kDefaultBulletLifeTimeSec = 3.0f;
-
-	// 見た目スケール
-	static constexpr KamataEngine::Vector3 kTurretScale{1.2f, 1.2f, 1.2f};
-
-	// 砲口オフセット（砲身表現用）
-	static constexpr float kMuzzleForward = 1.0f;
+    /// <summary>
+    /// コライダー半径
+    /// </summary>
+    void SetColliderRadius(float radius);
 
 private:
-	// ---- 見た目 ----
-	std::unique_ptr<KamataEngine::Model> model_;
-	KamataEngine::ObjectColor objectColor_;
-	KamataEngine::ObjectColor flashColor_;
-	uint32_t textureHandle_ = 0u;
-	uint32_t flashTextureHandle_ = 0u;
+    // ===== 定数 =====
+    static constexpr int32_t kDefaultHP = 3;
+    static constexpr float kDefaultColliderRadius = 1.2f;
 
-	// ---- 砲台パラメータ ----
-	std::unique_ptr<TurretEnemyStateBase> state_;
-	std::unique_ptr<TurretEnemyStateBase> pendingState_;
+    static constexpr int32_t kDefaultShootIntervalFrames = 60; // 1秒@60fps
+    static constexpr float kDefaultBulletSpeed = 2.8f;
+    static constexpr float kDefaultBulletLifeTimeSec = 3.0f;
 
-	int32_t initialHP_ = kDefaultHP;
-	float colliderRadius_ = kDefaultColliderRadius;
+    // 見た目スケール
+    static constexpr KamataEngine::Vector3 kTurretScale{ 1.2f, 1.2f, 1.2f };
 
-	// ターゲット
-	KamataEngine::Vector3 targetPos_{};
-	bool hasTarget_ = false;
-
-	// 射撃タイマー
-	int32_t shootTimerFrames_ = 0;
-	int32_t shootIntervalFrames_ = kDefaultShootIntervalFrames;
-
-	// 弾パラメータ
-	float bulletSpeed_ = kDefaultBulletSpeed;
-	float bulletLifeTimeSec_ = kDefaultBulletLifeTimeSec;
-
-	// 弾コンテナ（砲台が所有）
-	std::vector<std::unique_ptr<Bullet>> bullets_;
-
-	// 被弾フィードバック
-	float flashTimer_ = 0.0f;
-	float shakeTimer_ = 0.0f;
-	KamataEngine::Vector3 baseTranslation_{0.0f, 0.0f, 0.0f};
-
-	static constexpr float kFlashDuration = 0.1f;
-	static constexpr float kShakeDuration = 0.12f;
-	static constexpr float kShakePower = 0.22f;
-
-	// 死亡フラグ
-	bool isDead_ = false;
+    // 砲口オフセット（砲身表現用）
+    static constexpr float kMuzzleForward = 1.0f;
 
 private:
-	/// <summary>ターゲット方向へ向く（Yawのみ）</summary>
-	void AimToTarget_();
+    // ---- 見た目 ----
+    std::unique_ptr<KamataEngine::Model> model_;
+    KamataEngine::ObjectColor objectColor_;
+    KamataEngine::ObjectColor flashColor_;
+    uint32_t textureHandle_ = 0u;
+    uint32_t flashTextureHandle_ = 0u;
 
-	/// <summary>弾の発射処理</summary>
-	void Fire_();
+    // ---- 砲台パラメータ ----
+    std::unique_ptr<TurretEnemyStateBase> state_;
+    std::unique_ptr<TurretEnemyStateBase> pendingState_;
 
-	/// <summary>弾の更新と不要弾の削除</summary>
-	void UpdateBullets_();
+    int32_t initialHP_ = kDefaultHP;
+    float colliderRadius_ = kDefaultColliderRadius;
 
-	void UpdateBodyFeedback_(float dt);
-	void SyncCollider_();
-	void ChangeState_(std::unique_ptr<TurretEnemyStateBase> nextState);
-	void RequestStateChange_(std::unique_ptr<TurretEnemyStateBase> nextState);
-	void ApplyPendingStateChange_();
+    // ターゲット
+    KamataEngine::Vector3 targetPos_{};
+    bool hasTarget_ = false;
 
-	friend class TurretEnemyActiveState;
-	friend class TurretEnemyShootingState;
+    // 射撃タイマー
+    int32_t shootTimerFrames_ = 0;
+    int32_t shootIntervalFrames_ = kDefaultShootIntervalFrames;
+
+    // 弾パラメータ
+    float bulletSpeed_ = kDefaultBulletSpeed;
+    float bulletLifeTimeSec_ = kDefaultBulletLifeTimeSec;
+
+    // 弾コンテナ（砲台が所有）
+    std::vector<std::unique_ptr<Bullet>> bullets_;
+
+    // 被弾フィードバック
+    float flashTimer_ = 0.0f;
+    float shakeTimer_ = 0.0f;
+    KamataEngine::Vector3 baseTranslation_{ 0.0f, 0.0f, 0.0f };
+
+    static constexpr float kFlashDuration = 0.1f;
+    static constexpr float kShakeDuration = 0.12f;
+    static constexpr float kShakePower = 0.22f;
+
+    // 死亡フラグ
+    bool isDead_ = false;
+
+private:
+    /// <summary>ターゲット方向へ向く（Yawのみ）</summary>
+    void AimToTarget_();
+
+    /// <summary>弾の発射処理</summary>
+    void Fire_();
+
+    /// <summary>弾の更新と不要弾の削除</summary>
+    void UpdateBullets_();
+
+    void UpdateBodyFeedback_(float dt);
+    void SyncCollider_();
+    void ChangeState_(std::unique_ptr<TurretEnemyStateBase> nextState);
+    void RequestStateChange_(std::unique_ptr<TurretEnemyStateBase> nextState);
+    void ApplyPendingStateChange_();
+
+    friend class TurretEnemyActiveState;
+    friend class TurretEnemyShootingState;
 };

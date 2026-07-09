@@ -10,24 +10,24 @@
 /// </summary>
 class Skydome {
 public:
-	/// <summary>
-	/// 初期化処理
-	/// </summary>
-	/// <param name="camera">描画に使用するカメラ</param>
-	void Initialize(KamataEngine::Camera* camera);
+    /// <summary>
+    /// 初期化処理
+    /// </summary>
+    /// <param name="camera">描画に使用するカメラ</param>
+    void Initialize(KamataEngine::Camera* camera);
 
-	/// <summary>
-	/// 更新処理
-	/// </summary>
-	void Update();
+    /// <summary>
+    /// 更新処理
+    /// </summary>
+    void Update();
 
-	/// <summary>
-	/// 描画処理
-	/// </summary>
-	void Draw();
+    /// <summary>
+    /// 描画処理
+    /// </summary>
+    void Draw();
 
 private:
-	KamataEngine::WorldTransform worldTransform_; // ワールド変換
-	KamataEngine::Model* model_ = nullptr;        // モデルデータ
-	KamataEngine::Camera* camera_ = nullptr;      // カメラ
+    KamataEngine::WorldTransform worldTransform_; // ワールド変換
+    KamataEngine::Model* model_ = nullptr;        // モデルデータ
+    KamataEngine::Camera* camera_ = nullptr;      // カメラ
 };

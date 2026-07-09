@@ -13,64 +13,64 @@
 
 class GpuSmokeEmitter {
 public:
-	struct SmokeParticle {
-		KamataEngine::Vector3 position;
-		float scale = 0.0f;
+    struct SmokeParticle {
+        KamataEngine::Vector3 position;
+        float scale = 0.0f;
 
-		KamataEngine::Vector3 velocity;
-		float life = 0.0f;
+        KamataEngine::Vector3 velocity;
+        float life = 0.0f;
 
-		float age = 0.0f;
-		float startScale = 0.0f;
-		float endScale = 0.0f;
-		float active = 0.0f;
+        float age = 0.0f;
+        float startScale = 0.0f;
+        float endScale = 0.0f;
+        float active = 0.0f;
 
-		KamataEngine::Vector4 startColor{0.65f, 0.65f, 0.65f, 0.7f};
-		KamataEngine::Vector4 endColor{0.12f, 0.12f, 0.12f, 0.0f};
-	};
+        KamataEngine::Vector4 startColor{ 0.65f, 0.65f, 0.65f, 0.7f };
+        KamataEngine::Vector4 endColor{ 0.12f, 0.12f, 0.12f, 0.0f };
+    };
 
-	GpuSmokeEmitter() = default;
-	~GpuSmokeEmitter() = default;
+    GpuSmokeEmitter() = default;
+    ~GpuSmokeEmitter() = default;
 
-	void Initialize(uint32_t maxParticles);
-	void Update(float dt);
-	void Draw(const KamataEngine::Camera* camera);
+    void Initialize(uint32_t maxParticles);
+    void Update(float dt);
+    void Draw(const KamataEngine::Camera* camera);
 
-	void Emit(const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale);
-	void Emit(
-	    const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale, const KamataEngine::Vector4& startColor,
-	    const KamataEngine::Vector4& endColor);
-
-private:
-	void CreatePipeline_();
-	void CreateVertexBuffer_();
-	void CreateParticleBuffer_();
-	void CreateConstantBuffer_();
+    void Emit(const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale);
+    void Emit(
+        const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, float life, float startScale, float endScale, const KamataEngine::Vector4& startColor,
+        const KamataEngine::Vector4& endColor);
 
 private:
-	struct Constants {
-		KamataEngine::Matrix4x4 view;
-		KamataEngine::Matrix4x4 projection;
-	};
+    void CreatePipeline_();
+    void CreateVertexBuffer_();
+    void CreateParticleBuffer_();
+    void CreateConstantBuffer_();
 
-	uint32_t maxParticles_ = 0;
-	uint32_t nextSpawnIndex_ = 0;
+private:
+    struct Constants {
+        KamataEngine::Matrix4x4 view;
+        KamataEngine::Matrix4x4 projection;
+    };
 
-	std::vector<SmokeParticle> particles_;
+    uint32_t maxParticles_ = 0;
+    uint32_t nextSpawnIndex_ = 0;
 
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+    std::vector<SmokeParticle> particles_;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> particleBuffer_;
-	SmokeParticle* mappedParticles_ = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_;
+    Microsoft::WRL::ComPtr<ID3D12Resource> particleBuffer_;
+    SmokeParticle* mappedParticles_ = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-	Constants* mappedConstants_ = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_;
 
-	uint32_t constantBufferSize_ = 0;
+    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
+    Constants* mappedConstants_ = nullptr;
+
+    uint32_t constantBufferSize_ = 0;
 };

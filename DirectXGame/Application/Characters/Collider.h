@@ -13,61 +13,61 @@
 /// </summary>
 class Collider {
 public:
-	/// <summary>
-	/// 初期化処理
-	/// ワールド変換および可視コライダーモデルを生成する。
-	/// </summary>
-	void Initialize();
+    /// <summary>
+    /// 初期化処理
+    /// ワールド変換および可視コライダーモデルを生成する。
+    /// </summary>
+    void Initialize();
 
-	/// <summary>
-	/// 更新処理
-	/// ワールド行列の更新を行う。
-	/// </summary>
-	void Update();
+    /// <summary>
+    /// 更新処理
+    /// ワールド行列の更新を行う。
+    /// </summary>
+    void Update();
 
-	/// <summary>
-	/// デバッグ描画処理
-	/// </summary>
-	/// <param name="camera">描画に使用するカメラ</param>
-	void Draw(const KamataEngine::Camera& camera);
+    /// <summary>
+    /// デバッグ描画処理
+    /// </summary>
+    /// <param name="camera">描画に使用するカメラ</param>
+    void Draw(const KamataEngine::Camera& camera);
 
 public: /// === Getters === ///
-	/// <summary>
-	/// ローカル座標の取得
-	/// </summary>
-	KamataEngine::Vector3 GetTranslate() const { return worldTransform_.translation_; }
+    /// <summary>
+    /// ローカル座標の取得
+    /// </summary>
+    KamataEngine::Vector3 GetTranslate() const { return worldTransform_.translation_; }
 
-	/// <summary>
-	/// 半径の取得
-	/// </summary>
-	float GetRadius() const { return radius_; }
+    /// <summary>
+    /// 半径の取得
+    /// </summary>
+    float GetRadius() const { return radius_; }
 
 public: /// === Setters === ///
-	/// <summary>
-	/// 座標の設定
-	/// </summary>
-	void SetTranslate(const KamataEngine::Vector3& translate) { worldTransform_.translation_ = translate; }
+    /// <summary>
+    /// 座標の設定
+    /// </summary>
+    void SetTranslate(const KamataEngine::Vector3& translate) { worldTransform_.translation_ = translate; }
 
-	/// <summary>
-	/// 半径の設定
-	/// 半径変更時は見た目（scale）にも反映する。
-	/// </summary>
-	void SetRadius(float radius);
-
-private:
-	// ===== 定数 =====
-	static constexpr float kDefaultRadius = 1.0f; // デフォルト半径
+    /// <summary>
+    /// 半径の設定
+    /// 半径変更時は見た目（scale）にも反映する。
+    /// </summary>
+    void SetRadius(float radius);
 
 private:
-	// ワールド変換情報
-	KamataEngine::WorldTransform worldTransform_;
+    // ===== 定数 =====
+    static constexpr float kDefaultRadius = 1.0f; // デフォルト半径
 
-	// 球コライダーの半径
-	float radius_ = kDefaultRadius;
+private:
+    // ワールド変換情報
+    KamataEngine::WorldTransform worldTransform_;
 
-	// デバッグ表示用モデル
-	std::unique_ptr<KamataEngine::Model> model_;
+    // 球コライダーの半径
+    float radius_ = kDefaultRadius;
 
-	// デバッグ描画用テクスチャ（未使用時は 0）
-	uint32_t textureHandle_ = 0u;
+    // デバッグ表示用モデル
+    std::unique_ptr<KamataEngine::Model> model_;
+
+    // デバッグ描画用テクスチャ（未使用時は 0）
+    uint32_t textureHandle_ = 0u;
 };
