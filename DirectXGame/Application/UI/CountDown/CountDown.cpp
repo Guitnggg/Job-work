@@ -78,21 +78,12 @@ void CountDown::Update(float dt) {
 
 	// フェース開始のタイミングのSE
 	if (phaseTimer_ == dt) {
-		// 3/2/1開始時のSE
-		if (phase_ == Phase::Count3 || phase_ == Phase::Count2 || phase_ == Phase::Count1) {
-			if (seBeep_) {
-				KamataEngine::Audio::GetInstance()->PlayWave(seBeep_);
-			}
-		}
+		const int phaseIndex = static_cast<int>(phase_);
+		static constexpr bool kPlaysBeep[kPhaseCount] = { false, false, true, true, true, false, false };
 
-		// Go開始時のSEと入力解放
-		if (phase_ == Phase::Go) {
-			if (!goPlayed_ && seGo_) {
-				KamataEngine::Audio::GetInstance()->PlayWave(seGo_);
-				goPlayed_ = true;
-			}
+		if (kPlaysBeep[phaseIndex] && seBeep_) {
+			KamataEngine::Audio::GetInstance()->PlayWave(seBeep_);
 
-			// Go表示開始と同時に入力ロック解除
 			inputLocked_ = false;
 		}
 	}
@@ -135,46 +126,15 @@ float CountDown::EaseOutBack(float t, float s) const {
 }
 
 float CountDown::CurrentPhaseDuration() const {
-	// 現在フェーズに対応する表示時間を返す
-	switch (phase_) {
-	case Phase::ReadyDelay:
-		return readyDelay_;
-
-	case Phase::Count3:
-		return countUnit_;
-
-	case Phase::Count2:
-		return countUnit_;
-
-	case Phase::Count1:
-		return countUnit_;
-
-	case Phase::Go:
-		return goDuration_;
-
-	default:
-		return 0.0f;
-	}
+	// フェーズごとの表示時間をテーブル化し、同じ処理で値だけを切り替える
+	const float durations[kPhaseCount] = { 0.0f, readyDelay_, countUnit_, countUnit_, countUnit_, goDuration_, 0.0f };
+	return durations[static_cast<int>(phase_)];
 }
 
 KamataEngine::Sprite* CountDown::CurrentPhaseSprite() const {
-	// 現在フェーズで表示すべきスプライトを返す
-	switch (phase_) {
-	case Phase::Count3:
-		return count3Sprite_.get();
-
-	case Phase::Count2:
-		return count2Sprite_.get();
-
-	case Phase::Count1:
-		return count1Sprite_.get();
-
-	case Phase::Go:
-		return goSprite_.get();
-
-	default:
-		return nullptr;
-	}
+	// フェーズごとの表示スプライトをテーブル化し、switch を不要にする
+	KamataEngine::Sprite* sprites[kPhaseCount] = { nullptr, nullptr, count3Sprite_.get(), count2Sprite_.get(), count1Sprite_.get(), goSprite_.get(), nullptr };
+	return sprites[static_cast<int>(phase_)];
 }
 
 float CountDown::CurrentPhaseAlpha(float t01) const {
@@ -197,29 +157,11 @@ void CountDown::AdvancePhase() {
 	// タイマーをリセットして次フェーズへ移行
 	phaseTimer_ = 0.0f;
 
-	switch (phase_) {
-	case Phase::ReadyDelay:
-		phase_ = Phase::Count3;
-		break;
+	static constexpr Phase kNextPhases[kPhaseCount] = { Phase::Inactive, Phase::Count3, Phase::Count2, Phase::Count1, Phase::Go, Phase::Done, Phase::Done };
+	const Phase previousPhase = phase_;
+	phase_ = kNextPhases[static_cast<int>(phase_)];
 
-	case Phase::Count3:
-		phase_ = Phase::Count2;
-		break;
-
-	case Phase::Count2:
-		phase_ = Phase::Count1;
-		break;
-
-	case Phase::Count1:
-		phase_ = Phase::Go;
-		goPlayed_ = false;
-		break;
-
-	case Phase::Go:
+	if (previousPhase == Phase::Count1) {
 		phase_ = Phase::Done;
-		break;
-
-	default:
-		break;
 	}
 }

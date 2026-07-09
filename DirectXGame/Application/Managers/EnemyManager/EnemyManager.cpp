@@ -11,271 +11,262 @@ using json = nlohmann::json;
 using namespace KamataEngine;
 
 namespace {
-// Strategy Pattern:
-// 難易度ごとの敵パラメータ補正を共通インターフェースにする。
-// EnemyManager は「どの難易度か」を意識せず、Apply() を呼ぶだけで補正を適用できる。
-class IEnemySpawnStrategy {
-public:
-	virtual ~IEnemySpawnStrategy() = default;
-	virtual void Apply(EnemyManager::EnemySpawnData& spawnData) const = 0;
-};
+    // 難易度ごとの敵パラメータ補正値。
+    // 処理は DataDrivenEnemySpawnStrategy::Apply に集約し、値の違いだけをテーブルで管理する。
+    struct EnemySpawnTuning {
+        const char* levelName;
+        float speedScale;
+        float bulletSpeedScale;
+        float shootIntervalScale;
+        int32_t hpBonus;
+        bool clampShootInterval;
+    };
 
-// Tutorial は最初の練習用なので、敵速度と弾速を下げ、射撃間隔を長くする。
-class TutorialEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 0.85f;
-		spawnData.bulletSpeed *= 0.85f;
-		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.25f);
-	}
-};
+    class IEnemySpawnStrategy {
+    public:
+        virtual ~IEnemySpawnStrategy() = default;
+        virtual void Apply(EnemyManager::EnemySpawnData& spawnData) const = 0;
+    };
 
-// Easy は Normal より少しだけ易しくするため、敵速度と弾速を抑える。
-class EasyEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 0.9f;
-		spawnData.bulletSpeed *= 0.9f;
-		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.15f);
-	}
-};
+    // Tutorial は最初の練習用なので、敵速度と弾速を下げ、射撃間隔を長くする。
+    class DataDrivenEnemySpawnStrategy : public IEnemySpawnStrategy {
+    public:
+        explicit DataDrivenEnemySpawnStrategy(const EnemySpawnTuning& tuning) : tuning_(tuning) {}
 
-// Normal は JSON の設定値をそのまま使う標準戦略。
-class NormalEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData&) const override {}
-};
+        void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+            spawnData.speed *= tuning_.speedScale;
+            spawnData.bulletSpeed *= tuning_.bulletSpeedScale;
+            spawnData.hp += tuning_.hpBonus;
 
-// Hard は敵を強くする戦略。速度、弾速、HP を上げ、射撃間隔を短くする。
-class HardEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 1.15f;
-		spawnData.bulletSpeed *= 1.15f;
-		spawnData.hp = (std::max)(spawnData.hp, spawnData.hp + 1);
-		spawnData.shootIntervalFrames = (std::max)(1, static_cast<int32_t>(spawnData.shootIntervalFrames * 0.8f));
-	}
-};
+            const int32_t shootInterval = static_cast<int32_t>(spawnData.shootIntervalFrames * tuning_.shootIntervalScale);
+            spawnData.shootIntervalFrames = tuning_.clampShootInterval ? (std::max)(1, shootInterval) : shootInterval;
+        }
 
-std::unique_ptr<IEnemySpawnStrategy> CreateEnemySpawnStrategy(const std::string& path) {
-	// Strategy Pattern: difficulty-specific enemy tuning is selected by the level file.
-	// レベルファイル名から使用する戦略を選択する。新しい難易度を増やす場合は、
-	// IEnemySpawnStrategy の派生クラスと、この分岐を追加すればよい。
-	if (path.find("Tutorial") != std::string::npos) {
-		return std::make_unique<TutorialEnemySpawnStrategy>();
-	}
-	if (path.find("Easy") != std::string::npos) {
-		return std::make_unique<EasyEnemySpawnStrategy>();
-	}
-	if (path.find("Hard") != std::string::npos) {
-		return std::make_unique<HardEnemySpawnStrategy>();
-	}
-	return std::make_unique<NormalEnemySpawnStrategy>();
-}
+    private:
+        EnemySpawnTuning tuning_;
+    };
+
+    constexpr EnemySpawnTuning kNormalEnemySpawnTuning = { "", 1.0f, 1.0f, 1.0f, 0, false };
+
+    constexpr EnemySpawnTuning kEnemySpawnTunings[] = {
+        {"Tutorial", 0.85f, 0.85f, 1.25f, 0, false},
+        {"Easy", 0.9f, 0.9f, 1.15f, 0, false},
+        {"Hard", 1.15f, 1.15f, 0.8f, 1, true},
+    };
+
+    std::unique_ptr<IEnemySpawnStrategy> CreateEnemySpawnStrategy(const std::string& path) {
+        for (const EnemySpawnTuning& tuning : kEnemySpawnTunings) {
+            if (path.find(tuning.levelName) != std::string::npos) {
+                return std::make_unique<DataDrivenEnemySpawnStrategy>(tuning);
+            }
+        }
+        return std::make_unique<DataDrivenEnemySpawnStrategy>(kNormalEnemySpawnTuning);
+    }
 } // namespace
 
 void EnemyManager::Initialize() {
-	enemies_.clear();
-	enemySpawnList_.clear();
+    enemies_.clear();
+    enemySpawnList_.clear();
 
-	enemySpawnTimer_ = 0.0f;
+    enemySpawnTimer_ = 0.0f;
 }
 
 void EnemyManager::ClearAllEnemies() {
-	enemies_.clear();
-	enemySpawnList_.clear();
+    enemies_.clear();
+    enemySpawnList_.clear();
 }
 
 void EnemyManager::ClearPendingSpawns() { enemySpawnList_.clear(); }
 
 void EnemyManager::LoadEnemyCsv(const std::string& path) {
-	enemySpawnList_.clear();
+    enemySpawnList_.clear();
 
-	std::ifstream ifs(path);
-	if (!ifs) {
-		return;
-	}
+    std::ifstream ifs(path);
+    if (!ifs) {
+        return;
+    }
 
-	json root;
-	ifs >> root;
+    json root;
+    ifs >> root;
 
-	if (!root.contains("randomAreas")) {
-		return;
-	}
+    if (!root.contains("randomAreas")) {
+        return;
+    }
 
-	static std::mt19937_64 rng{123456789ull};
-	// Strategy Pattern:
-	// このロード処理内では具体的な難易度クラスを直接扱わず、
-	// 選択済みの戦略に敵データ補正を任せる。
-	const std::unique_ptr<IEnemySpawnStrategy> spawnStrategy = CreateEnemySpawnStrategy(path);
+    static std::mt19937_64 rng{ 123456789ull };
+    // Strategy Pattern:
+    // このロード処理内では具体的な難易度クラスを直接扱わず、
+    // 選択済みの戦略に敵データ補正を任せる。
+    const std::unique_ptr<IEnemySpawnStrategy> spawnStrategy = CreateEnemySpawnStrategy(path);
 
-	for (auto& r : root["randomAreas"]) {
-		const int32_t count = r.value("count", 0);
-		const float timeMin = r.value("timeMin", 0.0f);
-		const float timeMax = r.value("timeMax", timeMin);
+    for (auto& r : root["randomAreas"]) {
+        const int32_t count = r.value("count", 0);
+        const float timeMin = r.value("timeMin", 0.0f);
+        const float timeMax = r.value("timeMax", timeMin);
 
-		const auto centerNode = r["posCenter"];
-		const Vector3 center{centerNode[0].get<float>(), centerNode[1].get<float>(), centerNode[2].get<float>()};
+        const auto centerNode = r["posCenter"];
+        const Vector3 center{ centerNode[0].get<float>(), centerNode[1].get<float>(), centerNode[2].get<float>() };
 
-		const auto rangeNode = r["posRange"];
-		const Vector3 range{rangeNode[0].get<float>(), rangeNode[1].get<float>(), rangeNode[2].get<float>()};
+        const auto rangeNode = r["posRange"];
+        const Vector3 range{ rangeNode[0].get<float>(), rangeNode[1].get<float>(), rangeNode[2].get<float>() };
 
-		const std::string type = r.value("type", std::string("seeker"));
+        const std::string type = r.value("type", std::string("seeker"));
 
-		// Seeker
-		const float baseSpeed = r.value("speed", kDefaultSeekerSpeed);
-		const float speedRange = r.value("speedRange", 0.0f);
-		const float turnRate = r.value("turnRate", kDefaultSeekerTurnRate);
+        // Seeker
+        const float baseSpeed = r.value("speed", kDefaultSeekerSpeed);
+        const float speedRange = r.value("speedRange", 0.0f);
+        const float turnRate = r.value("turnRate", kDefaultSeekerTurnRate);
 
-		// 共通
-		const int32_t hp = r.value("hp", kDefaultHp);
-		const float radius = r.value("radius", kDefaultColliderRadius);
-		const float lifeTime = r.value("lifeTime", kDefaultLifeTime);
+        // 共通
+        const int32_t hp = r.value("hp", kDefaultHp);
+        const float radius = r.value("radius", kDefaultColliderRadius);
+        const float lifeTime = r.value("lifeTime", kDefaultLifeTime);
 
-		// Turret
-		const int32_t shootIntervalFrames = r.value("shootIntervalFrames", kDefaultShootIntervalFrames);
-		const float bulletSpeed = r.value("bulletSpeed", kDefaultBulletSpeed);
-		const float bulletLifeTime = r.value("bulletLifeTime", kDefaultBulletLifeTime);
+        // Turret
+        const int32_t shootIntervalFrames = r.value("shootIntervalFrames", kDefaultShootIntervalFrames);
+        const float bulletSpeed = r.value("bulletSpeed", kDefaultBulletSpeed);
+        const float bulletLifeTime = r.value("bulletLifeTime", kDefaultBulletLifeTime);
 
-		std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
-		std::uniform_real_distribution<float> dx(-range.x, range.x);
-		std::uniform_real_distribution<float> dy(-range.y, range.y);
-		std::uniform_real_distribution<float> dz(-range.z, range.z);
-		std::uniform_real_distribution<float> speedDist(baseSpeed - speedRange, baseSpeed + speedRange);
+        std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
+        std::uniform_real_distribution<float> dx(-range.x, range.x);
+        std::uniform_real_distribution<float> dy(-range.y, range.y);
+        std::uniform_real_distribution<float> dz(-range.z, range.z);
+        std::uniform_real_distribution<float> speedDist(baseSpeed - speedRange, baseSpeed + speedRange);
 
-		for (int32_t i = 0; i < count; ++i) {
-			EnemySpawnData d;
-			d.time = timeDist(rng);
-			d.pos = {center.x + dx(rng), center.y + dy(rng), center.z + dz(rng)};
-			d.type = type;
+        for (int32_t i = 0; i < count; ++i) {
+            EnemySpawnData d;
+            d.time = timeDist(rng);
+            d.pos = { center.x + dx(rng), center.y + dy(rng), center.z + dz(rng) };
+            d.type = type;
 
-			d.speed = speedDist(rng);
-			d.turnRate = turnRate;
+            d.speed = speedDist(rng);
+            d.turnRate = turnRate;
 
-			d.hp = hp;
-			d.radius = radius;
-			d.lifeTime = lifeTime;
+            d.hp = hp;
+            d.radius = radius;
+            d.lifeTime = lifeTime;
 
-			d.shootIntervalFrames = shootIntervalFrames;
-			d.bulletSpeed = bulletSpeed;
-			d.bulletLifeTime = bulletLifeTime;
+            d.shootIntervalFrames = shootIntervalFrames;
+            d.bulletSpeed = bulletSpeed;
+            d.bulletLifeTime = bulletLifeTime;
 
-			// Strategy Pattern:
-			// JSON から作った基本出現データに、難易度ごとの補正を適用する。
-			spawnStrategy->Apply(d);
-			enemySpawnList_.push_back(d);
-		}
-	}
+            // Strategy Pattern:
+            // JSON から作った基本出現データに、難易度ごとの補正を適用する。
+            spawnStrategy->Apply(d);
+            enemySpawnList_.push_back(d);
+        }
+    }
 
-	std::sort(enemySpawnList_.begin(), enemySpawnList_.end(), [](const EnemySpawnData& a, const EnemySpawnData& b) { return a.time < b.time; });
+    std::sort(enemySpawnList_.begin(), enemySpawnList_.end(), [](const EnemySpawnData& a, const EnemySpawnData& b) { return a.time < b.time; });
 }
 
 void EnemyManager::SpawnEnemiesByCsv(const Vector3& playerPos) {
-	const float currentTime = enemySpawnTimer_;
+    const float currentTime = enemySpawnTimer_;
 
-	while (!enemySpawnList_.empty()) {
-		const EnemySpawnData& d = enemySpawnList_.front();
-		if (currentTime < d.time) {
-			break;
-		}
+    while (!enemySpawnList_.empty()) {
+        const EnemySpawnData& d = enemySpawnList_.front();
+        if (currentTime < d.time) {
+            break;
+        }
 
-		const Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
+        const Vector3 spawnPos{ playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z };
 
-		auto enemy = CreateEnemy_(d, spawnPos);
-		if (enemy) {
-			enemies_.push_back(std::move(enemy));
-		}
+        auto enemy = CreateEnemy_(d, spawnPos);
+        if (enemy) {
+            enemies_.push_back(std::move(enemy));
+        }
 
-		enemySpawnList_.erase(enemySpawnList_.begin());
-	}
+        enemySpawnList_.erase(enemySpawnList_.begin());
+    }
 }
 
 std::unique_ptr<CharacterBase> EnemyManager::CreateEnemy_(const EnemySpawnData& spawnData, const Vector3& spawnPos) const {
-	// Factory Method Pattern:
-	// EnemyManager requests creation, and each enemy type setup is centralized here.
-	if (spawnData.type == "turret") {
-		auto turret = std::make_unique<TurretEnemy>();
-		turret->GetWorldTransform().translation_ = spawnPos;
+    // Factory Method Pattern:
+    // EnemyManager requests creation, and each enemy type setup is centralized here.
+    if (spawnData.type == "turret") {
+        auto turret = std::make_unique<TurretEnemy>();
+        turret->GetWorldTransform().translation_ = spawnPos;
 
-		turret->SetInitialHP(spawnData.hp);
-		turret->SetColliderRadius(spawnData.radius);
-		turret->SetShootIntervalFrames(spawnData.shootIntervalFrames);
-		turret->SetBulletSpeed(spawnData.bulletSpeed);
-		turret->SetBulletLifeTime(spawnData.bulletLifeTime);
+        turret->SetInitialHP(spawnData.hp);
+        turret->SetColliderRadius(spawnData.radius);
+        turret->SetShootIntervalFrames(spawnData.shootIntervalFrames);
+        turret->SetBulletSpeed(spawnData.bulletSpeed);
+        turret->SetBulletLifeTime(spawnData.bulletLifeTime);
 
-		turret->Initialize();
-		return turret;
-	}
+        turret->Initialize();
+        return turret;
+    }
 
-	auto seeker = std::make_unique<SeekerEnemy>();
-	seeker->SetInitialPosition(spawnPos);
-	seeker->SetSpeed(spawnData.speed);
-	seeker->SetTurnRate(spawnData.turnRate);
-	seeker->SetInitialHP(spawnData.hp);
-	seeker->SetColliderRadius(spawnData.radius);
-	seeker->SetLifeTime(spawnData.lifeTime);
+    auto seeker = std::make_unique<SeekerEnemy>();
+    seeker->SetInitialPosition(spawnPos);
+    seeker->SetSpeed(spawnData.speed);
+    seeker->SetTurnRate(spawnData.turnRate);
+    seeker->SetInitialHP(spawnData.hp);
+    seeker->SetColliderRadius(spawnData.radius);
+    seeker->SetLifeTime(spawnData.lifeTime);
 
-	seeker->Initialize();
-	return seeker;
+    seeker->Initialize();
+    return seeker;
 }
 
 void EnemyManager::Update(float dt, const Vector3& playerPos) {
-	enemySpawnTimer_ += dt;
-	SpawnEnemiesByCsv(playerPos);
+    enemySpawnTimer_ += dt;
+    SpawnEnemiesByCsv(playerPos);
 
-	// 敵更新
-	for (auto& enemy : enemies_) {
-		// 敵タイプごとにターゲット設定
-		// dynamic_cast を使用している理由：
-		// EnemyManager は CharacterBase のみを保持し、
-		// 各敵固有の機能は派生クラスに委譲する設計のため
-		if (auto* seeker = dynamic_cast<SeekerEnemy*>(enemy.get())) {
-			seeker->SetTarget(playerPos);
-		} else if (auto* turret = dynamic_cast<TurretEnemy*>(enemy.get())) {
-			turret->SetTarget(playerPos);
-		}
+    // 敵更新
+    for (auto& enemy : enemies_) {
+        // 敵タイプごとにターゲット設定
+        // dynamic_cast を使用している理由：
+        // EnemyManager は CharacterBase のみを保持し、
+        // 各敵固有の機能は派生クラスに委譲する設計のため
+        if (auto* seeker = dynamic_cast<SeekerEnemy*>(enemy.get())) {
+            seeker->SetTarget(playerPos);
+        }
+        else if (auto* turret = dynamic_cast<TurretEnemy*>(enemy.get())) {
+            turret->SetTarget(playerPos);
+        }
 
-		enemy->Update();
-	}
+        enemy->Update();
+    }
 }
 
 void EnemyManager::Draw(const Camera* camera) {
-	for (auto& enemy : enemies_) {
-		enemy->Draw(camera);
-	}
+    for (auto& enemy : enemies_) {
+        enemy->Draw(camera);
+    }
 }
 
 std::vector<CharacterBase*> EnemyManager::GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const {
-	std::vector<std::pair<float, CharacterBase*>> distances;
-	distances.reserve(enemies_.size());
+    std::vector<std::pair<float, CharacterBase*>> distances;
+    distances.reserve(enemies_.size());
 
-	for (const auto& enemy : enemies_) {
-		if (!enemy || enemy->IsDead()) {
-			continue;
-		}
-		const KamataEngine::Vector3 pos = enemy->GetWorldTranslation();
-		const float dx = pos.x - from.x;
-		const float dy = pos.y - from.y;
-		const float dz = pos.z - from.z;
-		const float distSq = dx * dx + dy * dy + dz * dz;
-		distances.emplace_back(distSq, enemy.get());
-	}
+    for (const auto& enemy : enemies_) {
+        if (!enemy || enemy->IsDead()) {
+            continue;
+        }
+        const KamataEngine::Vector3 pos = enemy->GetWorldTranslation();
+        const float dx = pos.x - from.x;
+        const float dy = pos.y - from.y;
+        const float dz = pos.z - from.z;
+        const float distSq = dx * dx + dy * dy + dz * dz;
+        distances.emplace_back(distSq, enemy.get());
+    }
 
-	std::sort(distances.begin(), distances.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+    std::sort(distances.begin(), distances.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
 
-	if (maxCount <= 0) {
-		return {};
-	}
+    if (maxCount <= 0) {
+        return {};
+    }
 
-	const size_t count = (std::min)(distances.size(), static_cast<size_t>(maxCount));
-	std::vector<CharacterBase*> result;
-	result.reserve(count);
-	for (size_t i = 0; i < count; ++i) {
-		result.push_back(distances[i].second);
-	}
-	return result;
+    const size_t count = (std::min)(distances.size(), static_cast<size_t>(maxCount));
+    std::vector<CharacterBase*> result;
+    result.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        result.push_back(distances[i].second);
+    }
+    return result;
 }
 
 void EnemyManager::RemoveDeadEnemies() {
-	enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
+    enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
 }

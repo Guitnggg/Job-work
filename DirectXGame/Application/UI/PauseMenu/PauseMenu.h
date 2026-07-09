@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -91,6 +92,16 @@ private:
 	static constexpr float kBackgroundAlpha = 0.6f;
 
 	static constexpr int kMenuCount = 4;
+
+	struct MenuAction {
+		Result result;
+		bool opensHowTo;
+	};
+
+	static constexpr std::array<MenuTex, kMenuCount> kMenuTexOrder = { MenuTex::Resume, MenuTex::HowTo, MenuTex::Restart, MenuTex::ToTitle };
+
+	static constexpr std::array<MenuAction, kMenuCount> kMenuActions = {
+		MenuAction{Result::Resume, false}, MenuAction{Result::None, true}, MenuAction{Result::Retry, false}, MenuAction{Result::ToTitle, false} };
 
 	// ===== アニメーション定数 =====
 	static constexpr float kAnimDuration = 0.25f;

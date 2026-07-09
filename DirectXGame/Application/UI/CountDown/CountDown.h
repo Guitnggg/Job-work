@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <memory>
 
 #include "2d/Sprite.h"
@@ -25,6 +26,8 @@ public:
 		Go,         // GO
 		Done        // 完了
 	};
+
+	static constexpr int kPhaseCount = 7;
 
 	CountDown() = default;
 	~CountDown() = default;
