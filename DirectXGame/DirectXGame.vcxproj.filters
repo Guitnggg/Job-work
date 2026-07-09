@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Filter Include="Application">
@@ -64,19 +64,22 @@
     <Filter Include="Application\Utility\MyMath">
       <UniqueIdentifier>{0ca6f6c3-565c-47f3-91b8-fbf1d487dab3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers">
+    <Filter Include="Application\Managers">
       <UniqueIdentifier>{1fe0d41f-64e0-4887-9b77-f6ba36a88b64}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\BulletManager">
+    <Filter Include="Application\Managers\BossManager">
+      <UniqueIdentifier>{6fbe6e41-84c3-4f65-b183-706e583f24a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application\Managers\BulletManager">
       <UniqueIdentifier>{bd9b6c75-ecc1-4202-b014-51c92d27db12}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\CollisionManager">
+    <Filter Include="Application\Managers\CollisionManager">
       <UniqueIdentifier>{5cab915b-87da-4b48-b9c8-e9960fb73b81}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\EnemyManager">
+    <Filter Include="Application\Managers\EnemyManager">
       <UniqueIdentifier>{c6795cba-24ff-4e2d-8a0d-d3424d14cf21}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\UIManager">
+    <Filter Include="Application\Managers\UIManager">
       <UniqueIdentifier>{cf669c1c-304f-47f2-9a65-812b8655c2e6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources">
@@ -126,9 +129,6 @@
     <ClCompile Include="Application\Effects\SpeedLine\SpeedLine.cpp">
       <Filter>Application\Effects\SpeedLine</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Effects\Smoke\Smoke.cpp">
-      <Filter>Application\Effects\Smoke</Filter>
-    </ClCompile>
     <ClCompile Include="Application\Objects\Asteroid\AsteroidField.cpp">
       <Filter>Application\Objects\Asteroid</Filter>
     </ClCompile>
@@ -153,17 +153,23 @@
     <ClCompile Include="Application\Characters\Player\HomingMissile.cpp">
       <Filter>Application\Characters\Player</Filter>
     </ClCompile>
-    <ClCompile Include="Managers\BulletManager\BulletManager.cpp">
-      <Filter>Managers\BulletManager</Filter>
+    <ClCompile Include="Application\Managers\BossManager\BossManager.cpp">
+      <Filter>Application\Managers\BossManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Managers\BossManager\BossUIManager.cpp">
+      <Filter>Application\Managers\BossManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Managers\BulletManager\BulletManager.cpp">
+      <Filter>Application\Managers\BulletManager</Filter>
     </ClCompile>
     <ClCompile Include="Scenes\Clear\ClearScene.cpp">
       <Filter>Scenes\Clear</Filter>
     </ClCompile>
-    <ClCompile Include="Managers\CollisionManager\CollisionManager.cpp">
-      <Filter>Managers\CollisionManager</Filter>
+    <ClCompile Include="Application\Managers\CollisionManager\CollisionManager.cpp">
+      <Filter>Application\Managers\CollisionManager</Filter>
     </ClCompile>
-    <ClCompile Include="Managers\EnemyManager\EnemyManager.cpp">
-      <Filter>Managers\EnemyManager</Filter>
+    <ClCompile Include="Application\Managers\EnemyManager\EnemyManager.cpp">
+      <Filter>Application\Managers\EnemyManager</Filter>
     </ClCompile>
     <ClCompile Include="Scenes\Finish\FinishScene.cpp">
       <Filter>Scenes\Finish</Filter>
@@ -204,8 +210,8 @@
     <ClCompile Include="Application\UI\Score\Score.cpp">
       <Filter>Application\UI\Score</Filter>
     </ClCompile>
-    <ClCompile Include="Managers\UIManager\UIManager.cpp">
-      <Filter>Managers\UIManager</Filter>
+    <ClCompile Include="Application\Managers\UIManager\UIManager.cpp">
+      <Filter>Application\Managers\UIManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -226,9 +232,6 @@
     </ClInclude>
     <ClInclude Include="Application\Effects\SpeedLine\SpeedLine.h">
       <Filter>Application\Effects\SpeedLine</Filter>
-    </ClInclude>
-    <ClInclude Include="Application\Effects\Smoke\Smoke.h">
-      <Filter>Application\Effects\Smoke</Filter>
     </ClInclude>
     <ClInclude Include="Application\Objects\Asteroid\AsteroidField.h">
       <Filter>Application\Objects\Asteroid</Filter>
@@ -254,17 +257,23 @@
     <ClInclude Include="Application\Characters\Player\HomingMissile.h">
       <Filter>Application\Characters\Player</Filter>
     </ClInclude>
-    <ClInclude Include="Managers\BulletManager\BulletManager.h">
-      <Filter>Managers\BulletManager</Filter>
+    <ClInclude Include="Application\Managers\BossManager\BossManager.h">
+      <Filter>Application\Managers\BossManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Managers\BossManager\BossUIManager.h">
+      <Filter>Application\Managers\BossManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Managers\BulletManager\BulletManager.h">
+      <Filter>Application\Managers\BulletManager</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\Clear\ClearScene.h">
       <Filter>Scenes\Clear</Filter>
     </ClInclude>
-    <ClInclude Include="Managers\CollisionManager\CollisionManager.h">
-      <Filter>Managers\CollisionManager</Filter>
+    <ClInclude Include="Application\Managers\CollisionManager\CollisionManager.h">
+      <Filter>Application\Managers\CollisionManager</Filter>
     </ClInclude>
-    <ClInclude Include="Managers\EnemyManager\EnemyManager.h">
-      <Filter>Managers\EnemyManager</Filter>
+    <ClInclude Include="Application\Managers\EnemyManager\EnemyManager.h">
+      <Filter>Application\Managers\EnemyManager</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\Finish\FinishScene.h">
       <Filter>Scenes\Finish</Filter>
@@ -308,8 +317,8 @@
     <ClInclude Include="Application\UI\Score\Score.h">
       <Filter>Application\UI\Score</Filter>
     </ClInclude>
-    <ClInclude Include="Managers\UIManager\UIManager.h">
-      <Filter>Managers\UIManager</Filter>
+    <ClInclude Include="Application\Managers\UIManager\UIManager.h">
+      <Filter>Application\Managers\UIManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

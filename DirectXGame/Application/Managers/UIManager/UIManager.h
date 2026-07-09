@@ -5,8 +5,8 @@
 #include <memory>
 
 #include "Application/Characters/Player/Player.h"
-#include "UI/HPBar/Graph.h"
-#include "UI/Score/Score.h"
+#include "Application/UI/HPBar/Graph.h"
+#include "Application/UI/Score/Score.h"
 
 /// <summary>
 /// HPバー、スコア、ホーミング関連ゲージなどの画面UIをまとめて管理する。
