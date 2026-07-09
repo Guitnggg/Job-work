@@ -45,7 +45,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
     KamataEngine::Finalize();
 
     // アプリ終了時にOSカーソルを元に戻す
-    //while (ShowCursor(TRUE) < 0) {}
+    while (ShowCursor(TRUE) < 0) {}
 
     return 0;
 }
