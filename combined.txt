@@ -5119,273 +5119,264 @@ using json = nlohmann::json;
 using namespace KamataEngine;
 
 namespace {
-// Strategy Pattern:
-// 難易度ごとの敵パラメータ補正を共通インターフェースにする。
-// EnemyManager は「どの難易度か」を意識せず、Apply() を呼ぶだけで補正を適用できる。
-class IEnemySpawnStrategy {
-public:
-	virtual ~IEnemySpawnStrategy() = default;
-	virtual void Apply(EnemyManager::EnemySpawnData& spawnData) const = 0;
-};
+    // 難易度ごとの敵パラメータ補正値。
+    // 処理は DataDrivenEnemySpawnStrategy::Apply に集約し、値の違いだけをテーブルで管理する。
+    struct EnemySpawnTuning {
+        const char* levelName;
+        float speedScale;
+        float bulletSpeedScale;
+        float shootIntervalScale;
+        int32_t hpBonus;
+        bool clampShootInterval;
+    };
 
-// Tutorial は最初の練習用なので、敵速度と弾速を下げ、射撃間隔を長くする。
-class TutorialEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 0.85f;
-		spawnData.bulletSpeed *= 0.85f;
-		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.25f);
-	}
-};
+    class IEnemySpawnStrategy {
+    public:
+        virtual ~IEnemySpawnStrategy() = default;
+        virtual void Apply(EnemyManager::EnemySpawnData& spawnData) const = 0;
+    };
 
-// Easy は Normal より少しだけ易しくするため、敵速度と弾速を抑える。
-class EasyEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 0.9f;
-		spawnData.bulletSpeed *= 0.9f;
-		spawnData.shootIntervalFrames = static_cast<int32_t>(spawnData.shootIntervalFrames * 1.15f);
-	}
-};
+    // Tutorial は最初の練習用なので、敵速度と弾速を下げ、射撃間隔を長くする。
+    class DataDrivenEnemySpawnStrategy : public IEnemySpawnStrategy {
+    public:
+        explicit DataDrivenEnemySpawnStrategy(const EnemySpawnTuning& tuning) : tuning_(tuning) {}
 
-// Normal は JSON の設定値をそのまま使う標準戦略。
-class NormalEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData&) const override {}
-};
+        void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
+            spawnData.speed *= tuning_.speedScale;
+            spawnData.bulletSpeed *= tuning_.bulletSpeedScale;
+            spawnData.hp += tuning_.hpBonus;
 
-// Hard は敵を強くする戦略。速度、弾速、HP を上げ、射撃間隔を短くする。
-class HardEnemySpawnStrategy : public IEnemySpawnStrategy {
-public:
-	void Apply(EnemyManager::EnemySpawnData& spawnData) const override {
-		spawnData.speed *= 1.15f;
-		spawnData.bulletSpeed *= 1.15f;
-		spawnData.hp = (std::max)(spawnData.hp, spawnData.hp + 1);
-		spawnData.shootIntervalFrames = (std::max)(1, static_cast<int32_t>(spawnData.shootIntervalFrames * 0.8f));
-	}
-};
+            const int32_t shootInterval = static_cast<int32_t>(spawnData.shootIntervalFrames * tuning_.shootIntervalScale);
+            spawnData.shootIntervalFrames = tuning_.clampShootInterval ? (std::max)(1, shootInterval) : shootInterval;
+        }
 
-std::unique_ptr<IEnemySpawnStrategy> CreateEnemySpawnStrategy(const std::string& path) {
-	// Strategy Pattern: difficulty-specific enemy tuning is selected by the level file.
-	// レベルファイル名から使用する戦略を選択する。新しい難易度を増やす場合は、
-	// IEnemySpawnStrategy の派生クラスと、この分岐を追加すればよい。
-	if (path.find("Tutorial") != std::string::npos) {
-		return std::make_unique<TutorialEnemySpawnStrategy>();
-	}
-	if (path.find("Easy") != std::string::npos) {
-		return std::make_unique<EasyEnemySpawnStrategy>();
-	}
-	if (path.find("Hard") != std::string::npos) {
-		return std::make_unique<HardEnemySpawnStrategy>();
-	}
-	return std::make_unique<NormalEnemySpawnStrategy>();
-}
+    private:
+        EnemySpawnTuning tuning_;
+    };
+
+    constexpr EnemySpawnTuning kNormalEnemySpawnTuning = { "", 1.0f, 1.0f, 1.0f, 0, false };
+
+    constexpr EnemySpawnTuning kEnemySpawnTunings[] = {
+        {"Tutorial", 0.85f, 0.85f, 1.25f, 0, false},
+        {"Easy", 0.9f, 0.9f, 1.15f, 0, false},
+        {"Hard", 1.15f, 1.15f, 0.8f, 1, true},
+    };
+
+    std::unique_ptr<IEnemySpawnStrategy> CreateEnemySpawnStrategy(const std::string& path) {
+        for (const EnemySpawnTuning& tuning : kEnemySpawnTunings) {
+            if (path.find(tuning.levelName) != std::string::npos) {
+                return std::make_unique<DataDrivenEnemySpawnStrategy>(tuning);
+            }
+        }
+        return std::make_unique<DataDrivenEnemySpawnStrategy>(kNormalEnemySpawnTuning);
+    }
 } // namespace
 
 void EnemyManager::Initialize() {
-	enemies_.clear();
-	enemySpawnList_.clear();
+    enemies_.clear();
+    enemySpawnList_.clear();
 
-	enemySpawnTimer_ = 0.0f;
+    enemySpawnTimer_ = 0.0f;
 }
 
 void EnemyManager::ClearAllEnemies() {
-	enemies_.clear();
-	enemySpawnList_.clear();
+    enemies_.clear();
+    enemySpawnList_.clear();
 }
 
 void EnemyManager::ClearPendingSpawns() { enemySpawnList_.clear(); }
 
 void EnemyManager::LoadEnemyCsv(const std::string& path) {
-	enemySpawnList_.clear();
+    enemySpawnList_.clear();
 
-	std::ifstream ifs(path);
-	if (!ifs) {
-		return;
-	}
+    std::ifstream ifs(path);
+    if (!ifs) {
+        return;
+    }
 
-	json root;
-	ifs >> root;
+    json root;
+    ifs >> root;
 
-	if (!root.contains("randomAreas")) {
-		return;
-	}
+    if (!root.contains("randomAreas")) {
+        return;
+    }
 
-	static std::mt19937_64 rng{123456789ull};
-	// Strategy Pattern:
-	// このロード処理内では具体的な難易度クラスを直接扱わず、
-	// 選択済みの戦略に敵データ補正を任せる。
-	const std::unique_ptr<IEnemySpawnStrategy> spawnStrategy = CreateEnemySpawnStrategy(path);
+    static std::mt19937_64 rng{ 123456789ull };
+    // Strategy Pattern:
+    // このロード処理内では具体的な難易度クラスを直接扱わず、
+    // 選択済みの戦略に敵データ補正を任せる。
+    const std::unique_ptr<IEnemySpawnStrategy> spawnStrategy = CreateEnemySpawnStrategy(path);
 
-	for (auto& r : root["randomAreas"]) {
-		const int32_t count = r.value("count", 0);
-		const float timeMin = r.value("timeMin", 0.0f);
-		const float timeMax = r.value("timeMax", timeMin);
+    for (auto& r : root["randomAreas"]) {
+        const int32_t count = r.value("count", 0);
+        const float timeMin = r.value("timeMin", 0.0f);
+        const float timeMax = r.value("timeMax", timeMin);
 
-		const auto centerNode = r["posCenter"];
-		const Vector3 center{centerNode[0].get<float>(), centerNode[1].get<float>(), centerNode[2].get<float>()};
+        const auto centerNode = r["posCenter"];
+        const Vector3 center{ centerNode[0].get<float>(), centerNode[1].get<float>(), centerNode[2].get<float>() };
 
-		const auto rangeNode = r["posRange"];
-		const Vector3 range{rangeNode[0].get<float>(), rangeNode[1].get<float>(), rangeNode[2].get<float>()};
+        const auto rangeNode = r["posRange"];
+        const Vector3 range{ rangeNode[0].get<float>(), rangeNode[1].get<float>(), rangeNode[2].get<float>() };
 
-		const std::string type = r.value("type", std::string("seeker"));
+        const std::string type = r.value("type", std::string("seeker"));
 
-		// Seeker
-		const float baseSpeed = r.value("speed", kDefaultSeekerSpeed);
-		const float speedRange = r.value("speedRange", 0.0f);
-		const float turnRate = r.value("turnRate", kDefaultSeekerTurnRate);
+        // Seeker
+        const float baseSpeed = r.value("speed", kDefaultSeekerSpeed);
+        const float speedRange = r.value("speedRange", 0.0f);
+        const float turnRate = r.value("turnRate", kDefaultSeekerTurnRate);
 
-		// 共通
-		const int32_t hp = r.value("hp", kDefaultHp);
-		const float radius = r.value("radius", kDefaultColliderRadius);
-		const float lifeTime = r.value("lifeTime", kDefaultLifeTime);
+        // 共通
+        const int32_t hp = r.value("hp", kDefaultHp);
+        const float radius = r.value("radius", kDefaultColliderRadius);
+        const float lifeTime = r.value("lifeTime", kDefaultLifeTime);
 
-		// Turret
-		const int32_t shootIntervalFrames = r.value("shootIntervalFrames", kDefaultShootIntervalFrames);
-		const float bulletSpeed = r.value("bulletSpeed", kDefaultBulletSpeed);
-		const float bulletLifeTime = r.value("bulletLifeTime", kDefaultBulletLifeTime);
+        // Turret
+        const int32_t shootIntervalFrames = r.value("shootIntervalFrames", kDefaultShootIntervalFrames);
+        const float bulletSpeed = r.value("bulletSpeed", kDefaultBulletSpeed);
+        const float bulletLifeTime = r.value("bulletLifeTime", kDefaultBulletLifeTime);
 
-		std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
-		std::uniform_real_distribution<float> dx(-range.x, range.x);
-		std::uniform_real_distribution<float> dy(-range.y, range.y);
-		std::uniform_real_distribution<float> dz(-range.z, range.z);
-		std::uniform_real_distribution<float> speedDist(baseSpeed - speedRange, baseSpeed + speedRange);
+        std::uniform_real_distribution<float> timeDist(timeMin, timeMax);
+        std::uniform_real_distribution<float> dx(-range.x, range.x);
+        std::uniform_real_distribution<float> dy(-range.y, range.y);
+        std::uniform_real_distribution<float> dz(-range.z, range.z);
+        std::uniform_real_distribution<float> speedDist(baseSpeed - speedRange, baseSpeed + speedRange);
 
-		for (int32_t i = 0; i < count; ++i) {
-			EnemySpawnData d;
-			d.time = timeDist(rng);
-			d.pos = {center.x + dx(rng), center.y + dy(rng), center.z + dz(rng)};
-			d.type = type;
+        for (int32_t i = 0; i < count; ++i) {
+            EnemySpawnData d;
+            d.time = timeDist(rng);
+            d.pos = { center.x + dx(rng), center.y + dy(rng), center.z + dz(rng) };
+            d.type = type;
 
-			d.speed = speedDist(rng);
-			d.turnRate = turnRate;
+            d.speed = speedDist(rng);
+            d.turnRate = turnRate;
 
-			d.hp = hp;
-			d.radius = radius;
-			d.lifeTime = lifeTime;
+            d.hp = hp;
+            d.radius = radius;
+            d.lifeTime = lifeTime;
 
-			d.shootIntervalFrames = shootIntervalFrames;
-			d.bulletSpeed = bulletSpeed;
-			d.bulletLifeTime = bulletLifeTime;
+            d.shootIntervalFrames = shootIntervalFrames;
+            d.bulletSpeed = bulletSpeed;
+            d.bulletLifeTime = bulletLifeTime;
 
-			// Strategy Pattern:
-			// JSON から作った基本出現データに、難易度ごとの補正を適用する。
-			spawnStrategy->Apply(d);
-			enemySpawnList_.push_back(d);
-		}
-	}
+            // Strategy Pattern:
+            // JSON から作った基本出現データに、難易度ごとの補正を適用する。
+            spawnStrategy->Apply(d);
+            enemySpawnList_.push_back(d);
+        }
+    }
 
-	std::sort(enemySpawnList_.begin(), enemySpawnList_.end(), [](const EnemySpawnData& a, const EnemySpawnData& b) { return a.time < b.time; });
+    std::sort(enemySpawnList_.begin(), enemySpawnList_.end(), [](const EnemySpawnData& a, const EnemySpawnData& b) { return a.time < b.time; });
 }
 
 void EnemyManager::SpawnEnemiesByCsv(const Vector3& playerPos) {
-	const float currentTime = enemySpawnTimer_;
+    const float currentTime = enemySpawnTimer_;
 
-	while (!enemySpawnList_.empty()) {
-		const EnemySpawnData& d = enemySpawnList_.front();
-		if (currentTime < d.time) {
-			break;
-		}
+    while (!enemySpawnList_.empty()) {
+        const EnemySpawnData& d = enemySpawnList_.front();
+        if (currentTime < d.time) {
+            break;
+        }
 
-		const Vector3 spawnPos{playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z};
+        const Vector3 spawnPos{ playerPos.x + d.pos.x, playerPos.y + d.pos.y, playerPos.z + d.pos.z };
 
-		auto enemy = CreateEnemy_(d, spawnPos);
-		if (enemy) {
-			enemies_.push_back(std::move(enemy));
-		}
+        auto enemy = CreateEnemy_(d, spawnPos);
+        if (enemy) {
+            enemies_.push_back(std::move(enemy));
+        }
 
-		enemySpawnList_.erase(enemySpawnList_.begin());
-	}
+        enemySpawnList_.erase(enemySpawnList_.begin());
+    }
 }
 
 std::unique_ptr<CharacterBase> EnemyManager::CreateEnemy_(const EnemySpawnData& spawnData, const Vector3& spawnPos) const {
-	// Factory Method Pattern:
-	// EnemyManager requests creation, and each enemy type setup is centralized here.
-	if (spawnData.type == "turret") {
-		auto turret = std::make_unique<TurretEnemy>();
-		turret->GetWorldTransform().translation_ = spawnPos;
+    // Factory Method Pattern:
+    // EnemyManager requests creation, and each enemy type setup is centralized here.
+    if (spawnData.type == "turret") {
+        auto turret = std::make_unique<TurretEnemy>();
+        turret->GetWorldTransform().translation_ = spawnPos;
 
-		turret->SetInitialHP(spawnData.hp);
-		turret->SetColliderRadius(spawnData.radius);
-		turret->SetShootIntervalFrames(spawnData.shootIntervalFrames);
-		turret->SetBulletSpeed(spawnData.bulletSpeed);
-		turret->SetBulletLifeTime(spawnData.bulletLifeTime);
+        turret->SetInitialHP(spawnData.hp);
+        turret->SetColliderRadius(spawnData.radius);
+        turret->SetShootIntervalFrames(spawnData.shootIntervalFrames);
+        turret->SetBulletSpeed(spawnData.bulletSpeed);
+        turret->SetBulletLifeTime(spawnData.bulletLifeTime);
 
-		turret->Initialize();
-		return turret;
-	}
+        turret->Initialize();
+        return turret;
+    }
 
-	auto seeker = std::make_unique<SeekerEnemy>();
-	seeker->SetInitialPosition(spawnPos);
-	seeker->SetSpeed(spawnData.speed);
-	seeker->SetTurnRate(spawnData.turnRate);
-	seeker->SetInitialHP(spawnData.hp);
-	seeker->SetColliderRadius(spawnData.radius);
-	seeker->SetLifeTime(spawnData.lifeTime);
+    auto seeker = std::make_unique<SeekerEnemy>();
+    seeker->SetInitialPosition(spawnPos);
+    seeker->SetSpeed(spawnData.speed);
+    seeker->SetTurnRate(spawnData.turnRate);
+    seeker->SetInitialHP(spawnData.hp);
+    seeker->SetColliderRadius(spawnData.radius);
+    seeker->SetLifeTime(spawnData.lifeTime);
 
-	seeker->Initialize();
-	return seeker;
+    seeker->Initialize();
+    return seeker;
 }
 
 void EnemyManager::Update(float dt, const Vector3& playerPos) {
-	enemySpawnTimer_ += dt;
-	SpawnEnemiesByCsv(playerPos);
+    enemySpawnTimer_ += dt;
+    SpawnEnemiesByCsv(playerPos);
 
-	// 敵更新
-	for (auto& enemy : enemies_) {
-		// 敵タイプごとにターゲット設定
-		// dynamic_cast を使用している理由：
-		// EnemyManager は CharacterBase のみを保持し、
-		// 各敵固有の機能は派生クラスに委譲する設計のため
-		if (auto* seeker = dynamic_cast<SeekerEnemy*>(enemy.get())) {
-			seeker->SetTarget(playerPos);
-		} else if (auto* turret = dynamic_cast<TurretEnemy*>(enemy.get())) {
-			turret->SetTarget(playerPos);
-		}
+    // 敵更新
+    for (auto& enemy : enemies_) {
+        // 敵タイプごとにターゲット設定
+        // dynamic_cast を使用している理由：
+        // EnemyManager は CharacterBase のみを保持し、
+        // 各敵固有の機能は派生クラスに委譲する設計のため
+        if (auto* seeker = dynamic_cast<SeekerEnemy*>(enemy.get())) {
+            seeker->SetTarget(playerPos);
+        }
+        else if (auto* turret = dynamic_cast<TurretEnemy*>(enemy.get())) {
+            turret->SetTarget(playerPos);
+        }
 
-		enemy->Update();
-	}
+        enemy->Update();
+    }
 }
 
 void EnemyManager::Draw(const Camera* camera) {
-	for (auto& enemy : enemies_) {
-		enemy->Draw(camera);
-	}
+    for (auto& enemy : enemies_) {
+        enemy->Draw(camera);
+    }
 }
 
 std::vector<CharacterBase*> EnemyManager::GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const {
-	std::vector<std::pair<float, CharacterBase*>> distances;
-	distances.reserve(enemies_.size());
+    std::vector<std::pair<float, CharacterBase*>> distances;
+    distances.reserve(enemies_.size());
 
-	for (const auto& enemy : enemies_) {
-		if (!enemy || enemy->IsDead()) {
-			continue;
-		}
-		const KamataEngine::Vector3 pos = enemy->GetWorldTranslation();
-		const float dx = pos.x - from.x;
-		const float dy = pos.y - from.y;
-		const float dz = pos.z - from.z;
-		const float distSq = dx * dx + dy * dy + dz * dz;
-		distances.emplace_back(distSq, enemy.get());
-	}
+    for (const auto& enemy : enemies_) {
+        if (!enemy || enemy->IsDead()) {
+            continue;
+        }
+        const KamataEngine::Vector3 pos = enemy->GetWorldTranslation();
+        const float dx = pos.x - from.x;
+        const float dy = pos.y - from.y;
+        const float dz = pos.z - from.z;
+        const float distSq = dx * dx + dy * dy + dz * dz;
+        distances.emplace_back(distSq, enemy.get());
+    }
 
-	std::sort(distances.begin(), distances.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+    std::sort(distances.begin(), distances.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
 
-	if (maxCount <= 0) {
-		return {};
-	}
+    if (maxCount <= 0) {
+        return {};
+    }
 
-	const size_t count = (std::min)(distances.size(), static_cast<size_t>(maxCount));
-	std::vector<CharacterBase*> result;
-	result.reserve(count);
-	for (size_t i = 0; i < count; ++i) {
-		result.push_back(distances[i].second);
-	}
-	return result;
+    const size_t count = (std::min)(distances.size(), static_cast<size_t>(maxCount));
+    std::vector<CharacterBase*> result;
+    result.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        result.push_back(distances[i].second);
+    }
+    return result;
 }
 
 void EnemyManager::RemoveDeadEnemies() {
-	enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
+    enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const std::unique_ptr<CharacterBase>& e) { return e->IsDead(); }), enemies_.end());
 }
 
 
@@ -6032,21 +6023,12 @@ void CountDown::Update(float dt) {
 
 	// フェース開始のタイミングのSE
 	if (phaseTimer_ == dt) {
-		// 3/2/1開始時のSE
-		if (phase_ == Phase::Count3 || phase_ == Phase::Count2 || phase_ == Phase::Count1) {
-			if (seBeep_) {
-				KamataEngine::Audio::GetInstance()->PlayWave(seBeep_);
-			}
-		}
+		const int phaseIndex = static_cast<int>(phase_);
+		static constexpr bool kPlaysBeep[kPhaseCount] = { false, false, true, true, true, false, false };
 
-		// Go開始時のSEと入力解放
-		if (phase_ == Phase::Go) {
-			if (!goPlayed_ && seGo_) {
-				KamataEngine::Audio::GetInstance()->PlayWave(seGo_);
-				goPlayed_ = true;
-			}
+		if (kPlaysBeep[phaseIndex] && seBeep_) {
+			KamataEngine::Audio::GetInstance()->PlayWave(seBeep_);
 
-			// Go表示開始と同時に入力ロック解除
 			inputLocked_ = false;
 		}
 	}
@@ -6089,46 +6071,15 @@ float CountDown::EaseOutBack(float t, float s) const {
 }
 
 float CountDown::CurrentPhaseDuration() const {
-	// 現在フェーズに対応する表示時間を返す
-	switch (phase_) {
-	case Phase::ReadyDelay:
-		return readyDelay_;
-
-	case Phase::Count3:
-		return countUnit_;
-
-	case Phase::Count2:
-		return countUnit_;
-
-	case Phase::Count1:
-		return countUnit_;
-
-	case Phase::Go:
-		return goDuration_;
-
-	default:
-		return 0.0f;
-	}
+	// フェーズごとの表示時間をテーブル化し、同じ処理で値だけを切り替える
+	const float durations[kPhaseCount] = { 0.0f, readyDelay_, countUnit_, countUnit_, countUnit_, goDuration_, 0.0f };
+	return durations[static_cast<int>(phase_)];
 }
 
 KamataEngine::Sprite* CountDown::CurrentPhaseSprite() const {
-	// 現在フェーズで表示すべきスプライトを返す
-	switch (phase_) {
-	case Phase::Count3:
-		return count3Sprite_.get();
-
-	case Phase::Count2:
-		return count2Sprite_.get();
-
-	case Phase::Count1:
-		return count1Sprite_.get();
-
-	case Phase::Go:
-		return goSprite_.get();
-
-	default:
-		return nullptr;
-	}
+	// フェーズごとの表示スプライトをテーブル化し、switch を不要にする
+	KamataEngine::Sprite* sprites[kPhaseCount] = { nullptr, nullptr, count3Sprite_.get(), count2Sprite_.get(), count1Sprite_.get(), goSprite_.get(), nullptr };
+	return sprites[static_cast<int>(phase_)];
 }
 
 float CountDown::CurrentPhaseAlpha(float t01) const {
@@ -6151,30 +6102,12 @@ void CountDown::AdvancePhase() {
 	// タイマーをリセットして次フェーズへ移行
 	phaseTimer_ = 0.0f;
 
-	switch (phase_) {
-	case Phase::ReadyDelay:
-		phase_ = Phase::Count3;
-		break;
+	static constexpr Phase kNextPhases[kPhaseCount] = { Phase::Inactive, Phase::Count3, Phase::Count2, Phase::Count1, Phase::Go, Phase::Done, Phase::Done };
+	const Phase previousPhase = phase_;
+	phase_ = kNextPhases[static_cast<int>(phase_)];
 
-	case Phase::Count3:
-		phase_ = Phase::Count2;
-		break;
-
-	case Phase::Count2:
-		phase_ = Phase::Count1;
-		break;
-
-	case Phase::Count1:
-		phase_ = Phase::Go;
-		goPlayed_ = false;
-		break;
-
-	case Phase::Go:
+	if (previousPhase == Phase::Count1) {
 		phase_ = Phase::Done;
-		break;
-
-	default:
-		break;
 	}
 }
 
@@ -6185,6 +6118,7 @@ File Path: DirectXGame/Application/UI/CountDown/CountDown.h
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <memory>
 
 #include "2d/Sprite.h"
@@ -6209,6 +6143,8 @@ public:
 		Go,         // GO
 		Done        // 完了
 	};
+
+	static constexpr int kPhaseCount = 7;
 
 	CountDown() = default;
 	~CountDown() = default;
@@ -6495,15 +6431,15 @@ using namespace KamataEngine;
 // イージング関数
 // =========================　
 float EaseOutBack(float t) {
-	const float c1 = 1.70158f;
-	const float c3 = c1 + 1.0f;
-	return 1.0f + c3 * powf(t - 1.0f, 3) + c1 * powf(t - 1.0f, 2);
+    const float c1 = 1.70158f;
+    const float c3 = c1 + 1.0f;
+    return 1.0f + c3 * powf(t - 1.0f, 3) + c1 * powf(t - 1.0f, 2);
 }
 
 float EaseInBack(float t) {
-	const float c1 = 1.70158f;
-	const float c3 = c1 + 1.0f;
-	return c3 * t * t * t - c1 * t * t;
+    const float c1 = 1.70158f;
+    const float c3 = c1 + 1.0f;
+    return c3 * t * t * t - c1 * t * t;
 }
 
 // =========================
@@ -6511,61 +6447,56 @@ float EaseInBack(float t) {
 // =========================
 void PauseMenu::Initialize() {
 
-	// --- テクスチャロード ---
-	uint32_t texHandles[static_cast<int>(MenuTex::Count)]{};
-	for (int i = 0; i < static_cast<int>(MenuTex::Count); ++i) {
-		texHandles[i] = TextureManager::Load(kMenuTexPaths[i]);
-	}
+    // --- テクスチャロード ---
+    uint32_t texHandles[static_cast<int>(MenuTex::Count)]{};
+    for (int i = 0; i < static_cast<int>(MenuTex::Count); ++i) {
+        texHandles[i] = TextureManager::Load(kMenuTexPaths[i]);
+    }
 
-	const uint32_t resumeTex = texHandles[static_cast<int>(MenuTex::Resume)];
-	const uint32_t howToTex = texHandles[static_cast<int>(MenuTex::HowTo)];
-	const uint32_t restartTex = texHandles[static_cast<int>(MenuTex::Restart)];
-	const uint32_t titleTex = texHandles[static_cast<int>(MenuTex::ToTitle)];
-	const uint32_t howToPlayTex = texHandles[static_cast<int>(MenuTex::HowToPlay)];
-	const uint32_t whiteTex = texHandles[static_cast<int>(MenuTex::White)];
+    const uint32_t howToPlayTex = texHandles[static_cast<int>(MenuTex::HowToPlay)];
+    const uint32_t whiteTex = texHandles[static_cast<int>(MenuTex::White)];
 
-	// --- 背景 ---
-	bgSprite_.reset(Sprite::Create(whiteTex, {0.0f, 0.0f}, {0, 0, 0, kBackgroundAlpha}));
-	bgSprite_->SetSize({kScreenWidth, kScreenHeight});
+    // --- 背景 ---
+    bgSprite_.reset(Sprite::Create(whiteTex, { 0.0f, 0.0f }, { 0, 0, 0, kBackgroundAlpha }));
+    bgSprite_->SetSize({ kScreenWidth, kScreenHeight });
 
-	// --- メニュー ---
-	menuSprites_.resize(kMenuCount);
+    // --- メニュー ---
+    menuSprites_.resize(kMenuCount);
 
-	const uint32_t menuTex[kMenuCount] = {resumeTex, howToTex, restartTex, titleTex};
+    for (int i = 0; i < kMenuCount; ++i) {
+        Vector2 pos = basePos_;
+        pos.y += kMenuSpacing * i;
 
-	for (int i = 0; i < kMenuCount; ++i) {
-		Vector2 pos = basePos_;
-		pos.y += kMenuSpacing * i;
+        const uint32_t menuTex = texHandles[static_cast<int>(kMenuTexOrder[i])];
+        menuSprites_[i].reset(Sprite::Create(menuTex, pos, { 1, 1, 1, 1 }));
+        menuSprites_[i]->SetSize(kMenuBaseSize);
+    }
 
-		menuSprites_[i].reset(Sprite::Create(menuTex[i], pos, {1, 1, 1, 1}));
-		menuSprites_[i]->SetSize(kMenuBaseSize);
-	}
+    // --- カーソル ---
+    cursorSprite_.reset(Sprite::Create(whiteTex, basePos_, { 1, 1, 0, 1 }));
+    cursorSprite_->SetSize(kCursorBaseSize);
 
-	// --- カーソル ---
-	cursorSprite_.reset(Sprite::Create(whiteTex, basePos_, {1, 1, 0, 1}));
-	cursorSprite_->SetSize(kCursorBaseSize);
-
-	howToSprite_.reset(Sprite::Create(howToPlayTex, {kScreenWidth * 0.5f, kScreenHeight * 0.5f}, {1, 1, 1, 1}));
-	howToSprite_->SetAnchorPoint({0.5f, 0.5f});
-	howToSprite_->SetSize(kHowToSize);
+    howToSprite_.reset(Sprite::Create(howToPlayTex, { kScreenWidth * 0.5f, kScreenHeight * 0.5f }, { 1, 1, 1, 1 }));
+    howToSprite_->SetAnchorPoint({ 0.5f, 0.5f });
+    howToSprite_->SetSize(kHowToSize);
 }
 
 // =========================
 // アニメーション開始
 // =========================
 void PauseMenu::StartOpenAnimation() {
-	animTimer_ = 0.0f;
-	scale_ = kStartScale;
-	isOpening_ = true;
-	isClosing_ = false;
-	isHowToOpen_ = false;
+    animTimer_ = 0.0f;
+    scale_ = kStartScale;
+    isOpening_ = true;
+    isClosing_ = false;
+    isHowToOpen_ = false;
 }
 
 void PauseMenu::StartCloseAnimation() {
-	animTimer_ = 0.0f;
-	isClosing_ = true;
-	isOpening_ = false;
-	isHowToOpen_ = false;
+    animTimer_ = 0.0f;
+    isClosing_ = true;
+    isOpening_ = false;
+    isHowToOpen_ = false;
 }
 
 // =========================
@@ -6573,60 +6504,51 @@ void PauseMenu::StartCloseAnimation() {
 // =========================
 void PauseMenu::Update() {
 
-	// --- 開く ---
-	if (isOpening_) {
-		animTimer_ += GameTime::kDeltaTime;
-		float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
-		scale_ = kStartScale + (1.0f - kStartScale) * EaseOutBack(t);
+    // --- 開く ---
+    if (isOpening_) {
+        animTimer_ += GameTime::kDeltaTime;
+        float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
+        scale_ = kStartScale + (1.0f - kStartScale) * EaseOutBack(t);
 
-		if (t >= 1.0f) {
-			scale_ = 1.0f;
-			isOpening_ = false;
-		}
-	}
+        if (t >= 1.0f) {
+            scale_ = 1.0f;
+            isOpening_ = false;
+        }
+    }
 
-	// --- 閉じる ---
-	if (isClosing_) {
-		animTimer_ += GameTime::kDeltaTime;
-		float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
-		scale_ = 1.0f - (1.0f - kStartScale) * EaseInBack(t);
+    // --- 閉じる ---
+    if (isClosing_) {
+        animTimer_ += GameTime::kDeltaTime;
+        float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
+        scale_ = 1.0f - (1.0f - kStartScale) * EaseInBack(t);
 
-		if (t >= 1.0f) {
-			scale_ = kStartScale;
-			isClosing_ = false;
-		}
-		return;
-	}
+        if (t >= 1.0f) {
+            scale_ = kStartScale;
+            isClosing_ = false;
+        }
+        return;
+    }
 
-	if (result_ != Result::None) {
-		return;
-	}
+    if (result_ != Result::None) {
+        return;
+    }
 
-	if (isHowToOpen_) {
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_ESCAPE)) {
-			isHowToOpen_ = false;
-		}
-		return;
-	}
+    if (isHowToOpen_) {
+        if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_ESCAPE)) {
+            isHowToOpen_ = false;
+        }
+        return;
+    }
 
-	MoveCursor();
+    MoveCursor();
 
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-		switch (selectIndex_) {
-		case 0:
-			result_ = Result::Resume;
-			break;
-		case 1:
-			isHowToOpen_ = true;
-			break;
-		case 2:
-			result_ = Result::Retry;
-			break;
-		case 3:
-			result_ = Result::ToTitle;
-			break;
-		}
-	}
+    if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+        const MenuAction& action = kMenuActions[selectIndex_];
+        if (action.opensHowTo) {
+            isHowToOpen_ = true;
+        }
+        result_ = action.result;
+    }
 }
 
 // =========================
@@ -6634,19 +6556,19 @@ void PauseMenu::Update() {
 // =========================
 void PauseMenu::MoveCursor() {
 
-	if (Input::GetInstance()->TriggerKey(DIK_W)) {
-		selectIndex_ = (selectIndex_ + kMenuCount - 1) % kMenuCount;
-	}
+    if (Input::GetInstance()->TriggerKey(DIK_W)) {
+        selectIndex_ = (selectIndex_ + kMenuCount - 1) % kMenuCount;
+    }
 
-	if (Input::GetInstance()->TriggerKey(DIK_S)) {
-		selectIndex_ = (selectIndex_ + 1) % kMenuCount;
-	}
+    if (Input::GetInstance()->TriggerKey(DIK_S)) {
+        selectIndex_ = (selectIndex_ + 1) % kMenuCount;
+    }
 
-	Vector2 pos = basePos_;
-	pos.y += kMenuSpacing * selectIndex_;
-	pos.x -= kCursorOffsetX;
+    Vector2 pos = basePos_;
+    pos.y += kMenuSpacing * selectIndex_;
+    pos.x -= kCursorOffsetX;
 
-	cursorSprite_->SetPosition(pos);
+    cursorSprite_->SetPosition(pos);
 }
 
 // =========================
@@ -6654,19 +6576,19 @@ void PauseMenu::MoveCursor() {
 // =========================
 void PauseMenu::Draw() {
 
-	bgSprite_->Draw();
+    bgSprite_->Draw();
 
-	for (auto& s : menuSprites_) {
-		s->SetSize({kMenuBaseSize.x * scale_, kMenuBaseSize.y * scale_});
-		s->Draw();
-	}
+    for (auto& s : menuSprites_) {
+        s->SetSize({ kMenuBaseSize.x * scale_, kMenuBaseSize.y * scale_ });
+        s->Draw();
+    }
 
-	cursorSprite_->SetSize({kCursorBaseSize.x * scale_, kCursorBaseSize.y * scale_});
-	cursorSprite_->Draw();
+    cursorSprite_->SetSize({ kCursorBaseSize.x * scale_, kCursorBaseSize.y * scale_ });
+    cursorSprite_->Draw();
 
-	if (isHowToOpen_ && howToSprite_) {
-		howToSprite_->Draw();
-	}
+    if (isHowToOpen_ && howToSprite_) {
+        howToSprite_->Draw();
+    }
 }
 
 
@@ -6675,6 +6597,7 @@ File Path: DirectXGame/Application/UI/PauseMenu/PauseMenu.h
 ============================================================
 #pragma once
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -6766,6 +6689,16 @@ private:
 	static constexpr float kBackgroundAlpha = 0.6f;
 
 	static constexpr int kMenuCount = 4;
+
+	struct MenuAction {
+		Result result;
+		bool opensHowTo;
+	};
+
+	static constexpr std::array<MenuTex, kMenuCount> kMenuTexOrder = { MenuTex::Resume, MenuTex::HowTo, MenuTex::Restart, MenuTex::ToTitle };
+
+	static constexpr std::array<MenuAction, kMenuCount> kMenuActions = {
+		MenuAction{Result::Resume, false}, MenuAction{Result::None, true}, MenuAction{Result::Retry, false}, MenuAction{Result::ToTitle, false} };
 
 	// ===== アニメーション定数 =====
 	static constexpr float kAnimDuration = 0.25f;
@@ -8771,57 +8704,80 @@ using namespace KamataEngine;
 using json = nlohmann::json;
 
 namespace {
-constexpr bool kEnableBossStage = false;
+    constexpr bool kEnableBossStage = false;
 
-int LoadClearScoreFromLevelJson(const std::string& path, int fallbackScore) {
-	std::ifstream ifs(path);
-	if (!ifs) {
-		return fallbackScore;
-	}
+    struct LevelDefaults {
+        const char* fileName;
+        int clearScore;
+        bool isTutorial;
+        bool enablesBossStage;
+    };
 
-	json root;
-	ifs >> root;
-	return root.value("clearScore", fallbackScore);
-}
+    constexpr LevelDefaults kLevelDefaults[] = {
+        {"Tutorial.json", 1000, true, false},
+        {"Easy.json", 5000, false, false},
+        {"Normal.json", 10000, false, true},
+        {"Hard.json", 15000, false, true},
+    };
 
-void ApplyPressedSpriteState(Sprite* sprite, const Vector2& basePosition, const Vector2& baseSize, bool isPressed) {
-	if (!sprite) {
-		return;
-	}
+    const LevelDefaults& FindLevelDefaults(const std::string& path) {
+        for (const LevelDefaults& defaults : kLevelDefaults) {
+            if (path.find(defaults.fileName) != std::string::npos) {
+                return defaults;
+            }
+        }
+        return kLevelDefaults[2];
+    }
 
-	const Vector4 normalColor = {1.0f, 1.0f, 1.0f, 0.88f};
-	const Vector4 pressedColor = {0.35f, 0.95f, 1.0f, 1.0f};
-	const float scale = isPressed ? 0.92f : 1.0f;
-	const float pressOffsetY = isPressed ? 4.0f : 0.0f;
-	const Vector2 size = {baseSize.x * scale, baseSize.y * scale};
-	const Vector2 position = {basePosition.x + (baseSize.x - size.x) * 0.5f, basePosition.y + (baseSize.y - size.y) * 0.5f + pressOffsetY};
+    int LoadClearScoreFromLevelJson(const std::string& path, int fallbackScore) {
+        std::ifstream ifs(path);
+        if (!ifs) {
+            return fallbackScore;
+        }
 
-	sprite->SetPosition(position);
-	sprite->SetSize(size);
-	sprite->SetColor(isPressed ? pressedColor : normalColor);
-}
+        json root;
+        ifs >> root;
+        return root.value("clearScore", fallbackScore);
+    }
 
-void DrawPopupNumber(Sprite* digitSprite, int value, const Vector2& center, float scale, float alpha) {
-	if (!digitSprite) {
-		return;
-	}
+    void ApplyPressedSpriteState(Sprite* sprite, const Vector2& basePosition, const Vector2& baseSize, bool isPressed) {
+        if (!sprite) {
+            return;
+        }
 
-	const int absValue = (std::max)(0, value);
-	const std::string text = std::to_string(absValue);
-	const Vector2 digitSize = {24.0f * scale, 40.0f * scale};
-	const float totalWidth = digitSize.x * static_cast<float>(text.size());
-	float x = center.x - totalWidth * 0.5f;
+        const Vector4 normalColor = { 1.0f, 1.0f, 1.0f, 0.88f };
+        const Vector4 pressedColor = { 0.35f, 0.95f, 1.0f, 1.0f };
+        const float scale = isPressed ? 0.92f : 1.0f;
+        const float pressOffsetY = isPressed ? 4.0f : 0.0f;
+        const Vector2 size = { baseSize.x * scale, baseSize.y * scale };
+        const Vector2 position = { basePosition.x + (baseSize.x - size.x) * 0.5f, basePosition.y + (baseSize.y - size.y) * 0.5f + pressOffsetY };
 
-	for (char c : text) {
-		const int digit = static_cast<int>(c - '0');
-		digitSprite->SetPosition({x, center.y});
-		digitSprite->SetSize(digitSize);
-		digitSprite->SetTextureRect({32.0f * static_cast<float>(digit), 0.0f}, {32.0f, 64.0f});
-		digitSprite->SetColor({1.0f, 0.95f, 0.35f, alpha});
-		digitSprite->Draw();
-		x += digitSize.x;
-	}
-}
+        sprite->SetPosition(position);
+        sprite->SetSize(size);
+        sprite->SetColor(isPressed ? pressedColor : normalColor);
+    }
+
+    void DrawPopupNumber(Sprite* digitSprite, int value, const Vector2& center, float scale, float alpha) {
+        if (!digitSprite) {
+            return;
+        }
+
+        const int absValue = (std::max)(0, value);
+        const std::string text = std::to_string(absValue);
+        const Vector2 digitSize = { 24.0f * scale, 40.0f * scale };
+        const float totalWidth = digitSize.x * static_cast<float>(text.size());
+        float x = center.x - totalWidth * 0.5f;
+
+        for (char c : text) {
+            const int digit = static_cast<int>(c - '0');
+            digitSprite->SetPosition({ x, center.y });
+            digitSprite->SetSize(digitSize);
+            digitSprite->SetTextureRect({ 32.0f * static_cast<float>(digit), 0.0f }, { 32.0f, 64.0f });
+            digitSprite->SetColor({ 1.0f, 0.95f, 0.35f, alpha });
+            digitSprite->Draw();
+            x += digitSize.x;
+        }
+    }
 } // namespace
 
 GameScene::GameScene(std::string levelJsonPath) : levelJsonPath_(std::move(levelJsonPath)) {}
@@ -8829,349 +8785,342 @@ GameScene::GameScene(std::string levelJsonPath) : levelJsonPath_(std::move(level
 GameScene::~GameScene() = default;
 
 void GameScene::Initialize() {
-	// ===== 基本システム =====
-	dxCommon_ = DirectXCommon::GetInstance();
-	input_ = Input::GetInstance();
-	audio_ = Audio::GetInstance();
+    // ===== 基本システム =====
+    dxCommon_ = DirectXCommon::GetInstance();
+    input_ = Input::GetInstance();
+    audio_ = Audio::GetInstance();
 
-	worldTransform_ = std::make_unique<WorldTransform>();
-	worldTransform_->Initialize();
-	camera_.Initialize();
+    worldTransform_ = std::make_unique<WorldTransform>();
+    worldTransform_->Initialize();
+    camera_.Initialize();
 
-	model_.reset(Model::Create());
+    model_.reset(Model::Create());
 
-	// =====レールカメラ =====
-	railCamera_ = std::make_unique<RailCamera>();
-	railCamera_->Initialize();
+    // =====レールカメラ =====
+    railCamera_ = std::make_unique<RailCamera>();
+    railCamera_->Initialize();
 
-	// ===== 天球 =====
-	skydome_ = std::make_unique<Skydome>();
-	skydome_->Initialize(&camera_);
+    // ===== 天球 =====
+    skydome_ = std::make_unique<Skydome>();
+    skydome_->Initialize(&camera_);
 
-	// ===== プレイヤー =====
-	player_ = std::make_unique<Player>();
-	player_->Initialize(&camera_);
-	player_->SetParent(&railCamera_->GetWorldTransform());
+    // ===== プレイヤー =====
+    player_ = std::make_unique<Player>();
+    player_->Initialize(&camera_);
+    player_->SetParent(&railCamera_->GetWorldTransform());
 
-	previousPlayerPos_ = player_->GetWorldTranslation(); // プレイヤー位置情報
+    previousPlayerPos_ = player_->GetWorldTranslation(); // プレイヤー位置情報
 
-	// ===== 操作UI =====
-	wasdTextureHandle_ = TextureManager::Load("./Resources/InGame/WASD.png");
-	const Vector2 keySize = {kWasdKeySize, kWasdKeySize};
-	const Vector2 keyUvSize = {96.0f, 96.0f};
-	wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY}));
-	wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing)}));
-	wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing)}));
-	wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, {kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing)}));
-	if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
-		wasdWSprite_->SetAnchorPoint({0.0f, 0.0f});
-		wasdASprite_->SetAnchorPoint({0.0f, 0.0f});
-		wasdSSprite_->SetAnchorPoint({0.0f, 0.0f});
-		wasdDSprite_->SetAnchorPoint({0.0f, 0.0f});
-		wasdWSprite_->SetSize(keySize);
-		wasdASprite_->SetSize(keySize);
-		wasdSSprite_->SetSize(keySize);
-		wasdDSprite_->SetSize(keySize);
-		wasdWSprite_->SetTextureRect({96.0f, 0.0f}, keyUvSize);
-		wasdASprite_->SetTextureRect({0.0f, 96.0f}, keyUvSize);
-		wasdSSprite_->SetTextureRect({96.0f, 96.0f}, keyUvSize);
-		wasdDSprite_->SetTextureRect({192.0f, 96.0f}, keyUvSize);
-	}
+    // ===== 操作UI =====
+    wasdTextureHandle_ = TextureManager::Load("./Resources/InGame/WASD.png");
+    const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
+    const Vector2 keyUvSize = { 96.0f, 96.0f };
+    wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY }));
+    wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) }));
+    wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) }));
+    wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) }));
+    if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
+        wasdWSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        wasdASprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        wasdSSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        wasdDSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        wasdWSprite_->SetSize(keySize);
+        wasdASprite_->SetSize(keySize);
+        wasdSSprite_->SetSize(keySize);
+        wasdDSprite_->SetSize(keySize);
+        wasdWSprite_->SetTextureRect({ 96.0f, 0.0f }, keyUvSize);
+        wasdASprite_->SetTextureRect({ 0.0f, 96.0f }, keyUvSize);
+        wasdSSprite_->SetTextureRect({ 96.0f, 96.0f }, keyUvSize);
+        wasdDSprite_->SetTextureRect({ 192.0f, 96.0f }, keyUvSize);
+    }
 
-	mouseTextureHandle_ = TextureManager::Load("./Resources/InGame/Mouse.png");
-	const Vector2 mouseSize = {kMouseSize, kMouseSize};
-	const Vector2 mouseButtonUvSize = {320.0f, 270.0f};
-	const Vector2 mouseButtonSize = {kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f};
-	mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX, kMouseBaseY}, {1.0f, 1.0f, 1.0f, 0.55f}));
-	mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX, kMouseBaseY}));
-	mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, {kMouseBaseX + mouseButtonSize.x, kMouseBaseY}));
-	if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
-		mouseBaseSprite_->SetAnchorPoint({0.0f, 0.0f});
-		mouseLeftSprite_->SetAnchorPoint({0.0f, 0.0f});
-		mouseRightSprite_->SetAnchorPoint({0.0f, 0.0f});
-		mouseBaseSprite_->SetSize(mouseSize);
-		mouseLeftSprite_->SetSize(mouseButtonSize);
-		mouseRightSprite_->SetSize(mouseButtonSize);
-		mouseBaseSprite_->SetTextureRect({0.0f, 0.0f}, {640.0f, 640.0f});
-		mouseLeftSprite_->SetTextureRect({0.0f, 0.0f}, mouseButtonUvSize);
-		mouseRightSprite_->SetTextureRect({320.0f, 0.0f}, mouseButtonUvSize);
-	}
+    mouseTextureHandle_ = TextureManager::Load("./Resources/InGame/Mouse.png");
+    const Vector2 mouseSize = { kMouseSize, kMouseSize };
+    const Vector2 mouseButtonUvSize = { 320.0f, 270.0f };
+    const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
+    mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }, { 1.0f, 1.0f, 1.0f, 0.55f }));
+    mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }));
+    mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }));
+    if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
+        mouseBaseSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        mouseLeftSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        mouseRightSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+        mouseBaseSprite_->SetSize(mouseSize);
+        mouseLeftSprite_->SetSize(mouseButtonSize);
+        mouseRightSprite_->SetSize(mouseButtonSize);
+        mouseBaseSprite_->SetTextureRect({ 0.0f, 0.0f }, { 640.0f, 640.0f });
+        mouseLeftSprite_->SetTextureRect({ 0.0f, 0.0f }, mouseButtonUvSize);
+        mouseRightSprite_->SetTextureRect({ 320.0f, 0.0f }, mouseButtonUvSize);
+    }
 
-	// ===== スピードライン初期化 =====
-	speedLine_.Initialize(&camera_, kSpeedLineCount);
+    // ===== スピードライン初期化 =====
+    speedLine_.Initialize(&camera_, kSpeedLineCount);
 
-	// ===== エンジンスモーク初期化 =====
-	engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
-	engineSmokeEmitter_->Initialize(256);
-	damageSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
-	damageSmokeEmitter_->Initialize(768);
-	missileAfterburnerEmitter_ = std::make_unique<GpuSmokeEmitter>();
-	missileAfterburnerEmitter_->Initialize(512);
-	smokeEmitTimer_ = 0.0f;
-	prevEnemyHpMap_.clear();
-	prevPlayerHp_ = player_->GetHP();
+    // ===== エンジンスモーク初期化 =====
+    engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
+    engineSmokeEmitter_->Initialize(256);
+    damageSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
+    damageSmokeEmitter_->Initialize(768);
+    missileAfterburnerEmitter_ = std::make_unique<GpuSmokeEmitter>();
+    missileAfterburnerEmitter_->Initialize(512);
+    smokeEmitTimer_ = 0.0f;
+    prevEnemyHpMap_.clear();
+    prevPlayerHp_ = player_->GetHP();
 
-	// ===== 通常時スモーク =====
-	normalSmokeParams_ = {
-	    0.08f, // emitInterval
-	    1.0f,  // lifeTime
-	    0.3f,  // startScale
-	    10,    // burstCount
-	    -3.0f  // baseZSpeed
-	};
+    // ===== 通常時スモーク =====
+    normalSmokeParams_ = {
+        0.08f, // emitInterval
+        1.0f,  // lifeTime
+        0.3f,  // startScale
+        10,    // burstCount
+        -3.0f  // baseZSpeed
+    };
 
-	// ===== クリア演出（ブースト） =====
-	boostSmokeParams_ = {
-	    0.01f, // emitInterval
-	    0.30f, // lifeTime
-	    0.20f, // startScale
-	    3,     // burstCount
-	    -1.6f  // baseZSpeed
-	};
+    // ===== クリア演出（ブースト） =====
+    boostSmokeParams_ = {
+        0.01f, // emitInterval
+        0.30f, // lifeTime
+        0.20f, // startScale
+        3,     // burstCount
+        -1.6f  // baseZSpeed
+    };
 
-	// ===== カウントダウン =====
-	countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/GO.png");
-	countDown_.SetTimings(kCountDownStartDelay, kCountDownNumberDuration, kCountDownGoDuration);
-	countDown_.SetScaleRange(kCountDownScaleStart, kCountDownScaleEnd);
-	countDown_.SetBackOvershoot(kCountDownBackOvershoot);
+    // ===== カウントダウン =====
+    countDown_.InitializeFromPaths("./Resources/InGame/3.png", "./Resources/InGame/2.png", "./Resources/InGame/1.png", "./Resources/InGame/GO.png");
+    countDown_.SetTimings(kCountDownStartDelay, kCountDownNumberDuration, kCountDownGoDuration);
+    countDown_.SetScaleRange(kCountDownScaleStart, kCountDownScaleEnd);
+    countDown_.SetBackOvershoot(kCountDownBackOvershoot);
 
-	countDown_.SetAudio(audio_->LoadWave("./Resources/SE/CountBeep.wav"), audio_->LoadWave("./Resources/SE/Start.wav"));
+    countDown_.SetAudio(audio_->LoadWave("./Resources/SE/CountBeep.wav"), audio_->LoadWave("./Resources/SE/Start.wav"));
 
-	// ===== UI（HPバー／スコア） =====
-	uiManager_.Initialize(player_.get());
+    // ===== UI（HPバー／スコア） =====
+    uiManager_.Initialize(player_.get());
 
-	// ===== 弾・敵 =====
-	bulletManager_.Initialize();
-	enemyManager_.Initialize();
-	bossManager_.Initialize();
-	enemyManager_.LoadEnemyCsv(levelJsonPath_);
-	int defaultClearScore = 10000;
-	isTutorialLevel_ = levelJsonPath_.find("Tutorial.json") != std::string::npos;
-	if (isTutorialLevel_) {
-		defaultClearScore = 1000;
-	} else if (levelJsonPath_.find("Easy.json") != std::string::npos) {
-		defaultClearScore = 5000;
-	} else if (levelJsonPath_.find("Hard.json") != std::string::npos) {
-		defaultClearScore = 15000;
-	}
-	isBossStageEnabled_ = kEnableBossStage && ((levelJsonPath_.find("Normal.json") != std::string::npos) || (levelJsonPath_.find("Hard.json") != std::string::npos));
-	hasBossBattleStarted_ = false;
+    // ===== 弾・敵 =====
+    bulletManager_.Initialize();
+    enemyManager_.Initialize();
+    bossManager_.Initialize();
+    enemyManager_.LoadEnemyCsv(levelJsonPath_);
+    const LevelDefaults& levelDefaults = FindLevelDefaults(levelJsonPath_);
+    isTutorialLevel_ = levelDefaults.isTutorial;
+    isBossStageEnabled_ = kEnableBossStage && levelDefaults.enablesBossStage;
+    hasBossBattleStarted_ = false;
 
-	// ===== 開始 =====
-	requiredClearScore_ = LoadClearScoreFromLevelJson(levelJsonPath_, defaultClearScore);
-	countDown_.Start();
+    // ===== 開始 =====
+    requiredClearScore_ = LoadClearScoreFromLevelJson(levelJsonPath_, levelDefaults.clearScore);
+    countDown_.Start();
 
-	// 開始　３カウントから
-	state_ = GameState::CountDown;
+    // 開始　３カウントから
+    state_ = GameState::CountDown;
 
-	// ===== 照準 =====
-	reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
-	lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png");
-	reticleSprite_.reset(Sprite::Create(reticleTexHandle_, reticlePos_));
-	if (reticleSprite_) {
-		reticleSprite_->SetAnchorPoint({0.5f, 0.5f});
-		reticleSprite_->SetSize({32.0f, 32.0f});
-	}
+    // ===== 照準 =====
+    reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
+    lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png");
+    reticleSprite_.reset(Sprite::Create(reticleTexHandle_, reticlePos_));
+    if (reticleSprite_) {
+        reticleSprite_->SetAnchorPoint({ 0.5f, 0.5f });
+        reticleSprite_->SetSize({ 32.0f, 32.0f });
+    }
 
-	// ===== Pause =====
-	pauseMenu_ = std::make_unique<PauseMenu>();
-	pauseMenu_->Initialize();
-	pauseTitleTexHandle_ = TextureManager::Load("./Resources/InGame/Pause.png");
-	pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, {kPauseTitlePosX, kPauseTitlePosY}));
-	pauseTitleSprite_->SetAnchorPoint({0.0f, 0.0f});
-	const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
-	pauseTitleSprite_->SetSize({pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f});
-	seExplosionHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
-	seEnemyHitHandle_ = audio_->LoadWave("./Resources/SE/shot.wav");
-	seEnemyKillHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
-	scorePopupTexHandle_ = TextureManager::Load("./Resources/InGame/number.png");
-	scorePopupDigitSprite_.reset(Sprite::Create(scorePopupTexHandle_, {0.0f, 0.0f}));
+    // ===== Pause =====
+    pauseMenu_ = std::make_unique<PauseMenu>();
+    pauseMenu_->Initialize();
+    pauseTitleTexHandle_ = TextureManager::Load("./Resources/InGame/Pause.png");
+    pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, { kPauseTitlePosX, kPauseTitlePosY }));
+    pauseTitleSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+    const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
+    pauseTitleSprite_->SetSize({ pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f });
+    seExplosionHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
+    seEnemyHitHandle_ = audio_->LoadWave("./Resources/SE/shot.wav");
+    seEnemyKillHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
+    scorePopupTexHandle_ = TextureManager::Load("./Resources/InGame/number.png");
+    scorePopupDigitSprite_.reset(Sprite::Create(scorePopupTexHandle_, { 0.0f, 0.0f }));
 
-	// ===== その他 =====
-	isEnd_ = false;
-	result_ = GameResult::None;
-	clearScore_ = 0;
+    // ===== その他 =====
+    isEnd_ = false;
+    result_ = GameResult::None;
+    clearScore_ = 0;
 
-	isClearAnimating_ = false;
-	isBossTransitionAnimating_ = false;
-	clearAnimTimer_ = 0.0f;
+    isClearAnimating_ = false;
+    isBossTransitionAnimating_ = false;
+    clearAnimTimer_ = 0.0f;
 
-	transitionPhase_ = SceneTransitionPhase::None;
-	transitionTimer_ = 0.0f;
-	timeScale_ = 1.0f;
-	transitionScoreBonus_ = 0;
-	failSecondExplosionDone_ = false;
-	hitStopFrames_ = 0;
-	hitStopRequestFrames_ = 0;
-	scorePopups_.clear();
+    transitionPhase_ = SceneTransitionPhase::None;
+    transitionTimer_ = 0.0f;
+    timeScale_ = 1.0f;
+    transitionScoreBonus_ = 0;
+    failSecondExplosionDone_ = false;
+    hitStopFrames_ = 0;
+    hitStopRequestFrames_ = 0;
+    scorePopups_.clear();
 }
 
 void GameScene::Update() {
-	//
-	GameSceneUpdateExecutor::Update(*this);
+    GameSceneUpdateExecutor::Update(*this);
 }
 
 void GameScene::Draw() {
-	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
-	const Camera* cam = railCamera_->GetCamera();
+    ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
+    const Camera* cam = railCamera_->GetCamera();
 
 #pragma region 背景スプライト
-	Sprite::PreDraw(commandList);
-	// 背景スプライトの描画があればここ
+    Sprite::PreDraw(commandList);
+    // 背景スプライトの描画があればここ
 
-	Sprite::PostDraw();
-	dxCommon_->ClearDepthBuffer();
+    Sprite::PostDraw();
+    dxCommon_->ClearDepthBuffer();
 #pragma endregion
 
 #pragma region 3Dオブジェクト描画
-	Model::PreDraw();
+    Model::PreDraw();
 
-	// 空/スカイドームは常に描く（雰囲気）
-	skydome_->Draw();
+    // 空/スカイドームは常に描く（雰囲気）
+    skydome_->Draw();
 
-	// （任意）CountDown中もプレイヤーだけ見せたいなら描く
-	if (state_ == GameState::Playing) {
-		player_->Draw(cam);
-	}
+    // （任意）CountDown中もプレイヤーだけ見せたいなら描く
+    if (state_ == GameState::Playing) {
+        player_->Draw(cam);
+    }
 
-	// ゲーム中だけ描きたいものは Playing に寄せる
-	if (state_ == GameState::Playing && (result_ == GameResult::None || transitionPhase_ == SceneTransitionPhase::FailCinematic)) {
+    // ゲーム中だけ描きたいものは Playing に寄せる
+    if (state_ == GameState::Playing && (result_ == GameResult::None || transitionPhase_ == SceneTransitionPhase::FailCinematic)) {
 
-		// スピードライン
-		speedLine_.Draw();
+        // スピードライン
+        speedLine_.Draw();
 
-		// 敵・弾・ボス
-		enemyManager_.Draw(cam);
-		bossManager_.Draw(cam);
-		bulletManager_.Draw(cam);
-	}
+        // 敵・弾・ボス
+        enemyManager_.Draw(cam);
+        bossManager_.Draw(cam);
+        bulletManager_.Draw(cam);
+    }
 
-	// エンジンスモークは通常時とクリア演出中に描画
-	const bool canDrawSmoke = (state_ == GameState::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
-	if (canDrawSmoke && engineSmokeEmitter_) {
-		engineSmokeEmitter_->Draw(cam);
-	}
+    // エンジンスモークは通常時とクリア演出中に描画
+    const bool canDrawSmoke = (state_ == GameState::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
+    if (canDrawSmoke && engineSmokeEmitter_) {
+        engineSmokeEmitter_->Draw(cam);
+    }
 
-	// GPU煙エフェクトは最後に描画（Model描画状態を壊さないため）
-	if (state_ == GameState::Playing && result_ == GameResult::None) {
-		if (damageSmokeEmitter_) {
-			damageSmokeEmitter_->Draw(cam);
-		}
-		if (missileAfterburnerEmitter_) {
-			missileAfterburnerEmitter_->Draw(cam);
-		}
-	}
+    // GPU煙エフェクトは最後に描画（Model描画状態を壊さないため）
+    if (state_ == GameState::Playing && result_ == GameResult::None) {
+        if (damageSmokeEmitter_) {
+            damageSmokeEmitter_->Draw(cam);
+        }
+        if (missileAfterburnerEmitter_) {
+            missileAfterburnerEmitter_->Draw(cam);
+        }
+    }
 
-	Model::PostDraw();
+    Model::PostDraw();
 #pragma endregion
 
 #pragma region 前景スプライト
-	Sprite::PreDraw(commandList);
+    Sprite::PreDraw(commandList);
 
-	// 3カウントは CountDown 中だけ
-	if (state_ == GameState::CountDown) {
-		countDown_.Draw();
-	}
+    // 3カウントは CountDown 中だけ
+    if (state_ == GameState::CountDown) {
+        countDown_.Draw();
+    }
 
-	// UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
-	if (state_ == GameState::Playing) {
-		uiManager_.Draw();
-		bossManager_.DrawUI();
+    // UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
+    if (state_ == GameState::Playing) {
+        uiManager_.Draw();
+        bossManager_.DrawUI();
 
-		if (reticleSprite_ && result_ == GameResult::None) {
-			reticleSprite_->Draw();
-		}
+        if (reticleSprite_ && result_ == GameResult::None) {
+            reticleSprite_->Draw();
+        }
 
-		// ロックオン演出
-		for (auto& marker : lockOnMarkers_) {
-			if (marker.sprite) {
-				marker.sprite->Draw();
-			}
-		}
+        // ロックオン演出
+        for (auto& marker : lockOnMarkers_) {
+            if (marker.sprite) {
+                marker.sprite->Draw();
+            }
+        }
 
-		const Camera* drawCam = railCamera_ ? railCamera_->GetCamera() : &camera_;
-		if (drawCam) {
-			const Matrix4x4 viewProj = MyMath::Multiply(drawCam->matView, drawCam->matProjection);
-			for (const auto& popup : scorePopups_) {
-				const Vector3 clip = MyMath::Transform(popup.worldPos, viewProj);
-				if (clip.z < 0.0f || clip.z > 1.0f) {
-					continue;
-				}
-				const Vector2 screenPos = {(clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight};
-				const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
-				const float scale = 0.85f + 0.35f * (1.0f - t);
-				const float alpha = (std::max)(0.0f, 1.0f - t);
-				DrawPopupNumber(scorePopupDigitSprite_.get(), popup.value, screenPos, scale, alpha);
-			}
-		}
-	}
+        const Camera* drawCam = railCamera_ ? railCamera_->GetCamera() : &camera_;
+        if (drawCam) {
+            const Matrix4x4 viewProj = MyMath::Multiply(drawCam->matView, drawCam->matProjection);
+            for (const auto& popup : scorePopups_) {
+                const Vector3 clip = MyMath::Transform(popup.worldPos, viewProj);
+                if (clip.z < 0.0f || clip.z > 1.0f) {
+                    continue;
+                }
+                const Vector2 screenPos = { (clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight };
+                const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
+                const float scale = 0.85f + 0.35f * (1.0f - t);
+                const float alpha = (std::max)(0.0f, 1.0f - t);
+                DrawPopupNumber(scorePopupDigitSprite_.get(), popup.value, screenPos, scale, alpha);
+            }
+        }
+    }
 
-	// Pauseメニュー
-	if (isPaused_) {
-		pauseMenu_->Draw();
-	}
+    // Pauseメニュー
+    if (isPaused_) {
+        pauseMenu_->Draw();
+    }
 
-	// 操作UI
-	if (!isPaused_) {
-		if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
-			const bool isWPressed = input_->PushKey(DIK_W);
-			const bool isAPressed = input_->PushKey(DIK_A);
-			const bool isSPressed = input_->PushKey(DIK_S);
-			const bool isDPressed = input_->PushKey(DIK_D);
-			const Vector2 keySize = {kWasdKeySize, kWasdKeySize};
+    // 操作UI
+    if (!isPaused_) {
+        if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
+            const bool isWPressed = input_->PushKey(DIK_W);
+            const bool isAPressed = input_->PushKey(DIK_A);
+            const bool isSPressed = input_->PushKey(DIK_S);
+            const bool isDPressed = input_->PushKey(DIK_D);
+            const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
 
-			ApplyPressedSpriteState(wasdWSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY}, keySize, isWPressed);
-			ApplyPressedSpriteState(wasdASprite_.get(), {kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isAPressed);
-			ApplyPressedSpriteState(wasdSSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isSPressed);
-			ApplyPressedSpriteState(wasdDSprite_.get(), {kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing)}, keySize, isDPressed);
+            ApplyPressedSpriteState(wasdWSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY }, keySize, isWPressed);
+            ApplyPressedSpriteState(wasdASprite_.get(), { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isAPressed);
+            ApplyPressedSpriteState(wasdSSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isSPressed);
+            ApplyPressedSpriteState(wasdDSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isDPressed);
 
-			wasdWSprite_->Draw();
-			wasdASprite_->Draw();
-			wasdSSprite_->Draw();
-			wasdDSprite_->Draw();
-		}
+            wasdWSprite_->Draw();
+            wasdASprite_->Draw();
+            wasdSSprite_->Draw();
+            wasdDSprite_->Draw();
+        }
 
-		if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
-			const bool isLeftPressed = input_->IsPressMouse(0);
-			const bool isRightPressed = input_->IsPressMouse(1);
-			const Vector2 mouseButtonSize = {kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f};
+        if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
+            const bool isLeftPressed = input_->IsPressMouse(0);
+            const bool isRightPressed = input_->IsPressMouse(1);
+            const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
 
-			ApplyPressedSpriteState(mouseLeftSprite_.get(), {kMouseBaseX, kMouseBaseY}, mouseButtonSize, isLeftPressed);
-			ApplyPressedSpriteState(mouseRightSprite_.get(), {kMouseBaseX + mouseButtonSize.x, kMouseBaseY}, mouseButtonSize, isRightPressed);
+            ApplyPressedSpriteState(mouseLeftSprite_.get(), { kMouseBaseX, kMouseBaseY }, mouseButtonSize, isLeftPressed);
+            ApplyPressedSpriteState(mouseRightSprite_.get(), { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }, mouseButtonSize, isRightPressed);
 
-			mouseBaseSprite_->Draw();
-			mouseLeftSprite_->Draw();
-			mouseRightSprite_->Draw();
-		}
-	}
+            mouseBaseSprite_->Draw();
+            mouseLeftSprite_->Draw();
+            mouseRightSprite_->Draw();
+        }
+    }
 
-	// Pauseガイド
-	if (!isPaused_ && state_ == GameState::Playing) {
-		if (pauseTitleSprite_) {
-			pauseTitleSprite_->Draw();
-		}
-	}
+    // Pauseガイド
+    if (!isPaused_ && state_ == GameState::Playing) {
+        if (pauseTitleSprite_) {
+            pauseTitleSprite_->Draw();
+        }
+    }
 
-	Sprite::PostDraw();
+    Sprite::PostDraw();
 #pragma endregion
 }
 
 std::unique_ptr<IScene> GameScene::NextScene() const {
-	// Pause 由来の遷移を最優先
-	if (requestRetry_) {
-		return std::make_unique<GameScene>(levelJsonPath_);
-	}
+    // Pause 由来の遷移を最優先
+    if (requestRetry_) {
+        return std::make_unique<GameScene>(levelJsonPath_);
+    }
 
-	if (requestToTitle_) {
-		return std::make_unique<TitleScene>();
-	}
+    if (requestToTitle_) {
+        return std::make_unique<TitleScene>();
+    }
 
-	// 結果に応じて遷移先を切り替える
-	if (result_ == GameResult::Clear) {
-		return std::make_unique<ClearScene>(clearScore_); // クリア時
-	} else {
-		return std::make_unique<FinishScene>(); // 失敗時（Fail or None）
-	}
+    // 結果に応じて遷移先を切り替える
+    if (result_ == GameResult::Clear) {
+        return std::make_unique<ClearScene>(clearScore_); // クリア時
+    }
+    else {
+        return std::make_unique<FinishScene>(); // 失敗時（Fail or None）
+    }
 }
 
 
