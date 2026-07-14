@@ -72,12 +72,14 @@ public:
 
 private:
 	/// <summary>
-	///
+	/// 現在のシーンに合わせて再生中のBGMを切り替える。
+	/// 既に同じシーン用BGMが再生中の場合は何もしない。
 	/// </summary>
 	void UpdateSceneBgm_();
 
 	/// <summary>
-	///
+	/// シーン名に対応するBGMハンドルを取得する。
+	/// BGMを持たないシーンの場合は 0 を返す。
 	/// </summary>
 	uint32_t GetBgmHandleForScene_(SceneName sceneName);
 
