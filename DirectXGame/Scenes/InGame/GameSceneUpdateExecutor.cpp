@@ -607,7 +607,11 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	if (gameScene.isTutorialLevel_ && reachedClearScore) {
 		gameScene.result_ = GameResult::Clear;
 		gameScene.clearScore_ = currentScore;
-		gameScene.isEnd_ = true;
+		gameScene.isClearAnimating_ = true;
+		gameScene.clearAnimTimer_ = 0.0f;
+		gameScene.transitionPhase_ = SceneTransitionPhase::ClearCinematic;
+		gameScene.transitionTimer_ = 0.0f;
+		gameScene.timeScale_ = 0.5f;
 		return;
 	}
 

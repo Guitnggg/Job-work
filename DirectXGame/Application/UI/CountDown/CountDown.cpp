@@ -83,8 +83,10 @@ void CountDown::Update(float dt) {
 
         if (kPlaysBeep[phaseIndex] && seBeep_) {
             KamataEngine::Audio::GetInstance()->PlayWave(seBeep_);
-
-            inputLocked_ = false;
+        }
+        if (phase_ == Phase::Go && seGo_ && !goPlayed_) {
+            KamataEngine::Audio::GetInstance()->PlayWave(seGo_);
+            goPlayed_ = true;
         }
     }
 
@@ -159,10 +161,9 @@ void CountDown::AdvancePhase() {
     phaseTimer_ = 0.0f;
 
     static constexpr Phase kNextPhases[kPhaseCount] = { Phase::Inactive, Phase::Count3, Phase::Count2, Phase::Count1, Phase::Go, Phase::Done, Phase::Done };
-    const Phase previousPhase = phase_;
     phase_ = kNextPhases[static_cast<int>(phase_)];
 
-    if (previousPhase == Phase::Count1) {
-        phase_ = Phase::Done;
+    if (phase_ == Phase::Done) {
+        inputLocked_ = false;
     }
 }
