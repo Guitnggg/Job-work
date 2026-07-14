@@ -174,6 +174,7 @@
     <ClCompile Include="Application\Managers\BossManager\BossManager.cpp" />
     <ClCompile Include="Application\Managers\BossManager\BossUIManager.cpp" />
     <ClCompile Include="Scenes\InGame\GameSceneUpdateExecutor.cpp" />
+    <ClCompile Include="Scenes\SceneHelper.cpp" />
     <ClCompile Include="Application\Managers\BulletManager\BulletManager.cpp" />
     <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
     <ClCompile Include="Application\Managers\CollisionManager\CollisionManager.cpp" />
@@ -328,6 +329,7 @@
     <ClInclude Include="Application\Managers\BossManager\BossManager.h" />
     <ClInclude Include="Application\Managers\BossManager\BossUIManager.h" />
     <ClInclude Include="Scenes\InGame\GameSceneUpdateExecutor.h" />
+    <ClInclude Include="Scenes\SceneHelper.h" />
     <ClInclude Include="Application\Managers\BulletManager\BulletManager.h" />
     <ClInclude Include="Scenes\Clear\ClearScene.h" />
     <ClInclude Include="Application\Managers\CollisionManager\CollisionManager.h" />

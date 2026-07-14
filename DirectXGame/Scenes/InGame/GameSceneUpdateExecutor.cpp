@@ -2,6 +2,7 @@
 #include "GameScene.h"
 
 #include "Application/Utility/GameTime.h"
+#include "Scenes/SceneHelper.h"
 
 #include <algorithm>
 #include <cmath>
@@ -423,7 +424,7 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 		}
 
 		// 画面内の対象だけマーカーを作る。
-		auto sprite = std::unique_ptr<Sprite>(Sprite::Create(gameScene.lockOnTexHandle_, screenPos));
+		auto sprite = SceneHelper::CreateSprite(gameScene.lockOnTexHandle_, screenPos);
 		if (!sprite) {
 			continue;
 		}

@@ -1,6 +1,7 @@
 #include "FinishScene.h"
 
 #include "Application/Utility/GameTime.h"
+#include "Scenes/SceneHelper.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
@@ -8,17 +9,6 @@ using namespace KamataEngine;
 namespace {
 constexpr float kTwoPi = 6.28318530717958647692f;
 
-constexpr int kAsteroidCount = 10;
-constexpr float kAsteroidSpawnZMin = 0.0f;
-constexpr float kAsteroidSpawnZMax = 140.0f;
-constexpr float kAsteroidRecycleZ = -50.0f;
-constexpr float kAsteroidSpawnInterval = 1.0f;
-constexpr float kAsteroidRangeX = 25.0f;
-constexpr float kAsteroidRangeY = 15.0f;
-constexpr float kAsteroidSpeedMin = -0.3f;
-constexpr float kAsteroidSpeedMax = -0.1f;
-constexpr float kAsteroidRotMin = 0.01f;
-constexpr float kAsteroidRotMax = 0.03f;
 } // namespace
 
 FinishScene::FinishScene() {}
@@ -36,29 +26,15 @@ void FinishScene::Initialize() {
 	input_ = Input::GetInstance();
 
 	// 各種テクスチャ
-	finishTextureHandle_ = TextureManager::Load("./Resources/finish/End.png");
-	finishSprite_.reset(Sprite::Create(finishTextureHandle_, {150.0f, 200.0f}));
+	finishSprite_ = SceneHelper::CreateSprite("./Resources/finish/End.png", {150.0f, 200.0f}, &finishTextureHandle_);
 
-	returnTextureHandle_ = TextureManager::Load("./Resources/finish/Return.png");
-	returnSprite_.reset(Sprite::Create(returnTextureHandle_, {120.0f, 550.0f}));
+	returnSprite_ = SceneHelper::CreateSprite("./Resources/finish/Return.png", {120.0f, 550.0f}, &returnTextureHandle_);
 
 	// 各種サウンド
 	changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
 
 	// 小惑星生成
-	AsteroidFieldConfig asteroidConfig{};
-	asteroidConfig.count = kAsteroidCount;
-	asteroidConfig.spawnZMin = kAsteroidSpawnZMin;
-	asteroidConfig.spawnZMax = kAsteroidSpawnZMax;
-	asteroidConfig.recycleZ = kAsteroidRecycleZ;
-	asteroidConfig.spawnInterval = kAsteroidSpawnInterval;
-	asteroidConfig.rangeX = kAsteroidRangeX;
-	asteroidConfig.rangeY = kAsteroidRangeY;
-	asteroidConfig.speedMin = kAsteroidSpeedMin;
-	asteroidConfig.speedMax = kAsteroidSpeedMax;
-	asteroidConfig.rotationMin = kAsteroidRotMin;
-	asteroidConfig.rotationMax = kAsteroidRotMax;
-	asteroidField_.Initialize(asteroidConfig);
+	asteroidField_.Initialize(SceneHelper::CreateMenuAsteroidFieldConfig());
 
 	// 天球
 	skydome_ = std::make_unique<Skydome>();
@@ -94,53 +70,21 @@ void FinishScene::Draw() {
 	// コマンドリストの取得
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-#pragma region 背景スプライト描画
-	// 背景スプライト描画前処理
-	Sprite::PreDraw(commandList);
-
-	/// <summary>
-	/// ここに背景スプライトの描画処理を追加できる
-	/// </summary>
-
-	// スプライト描画後処理
-	Sprite::PostDraw();
-
-	// 深度バッファクリア
-	dxCommon_->ClearDepthBuffer();
-#pragma endregion
+	SceneHelper::Begin3DDraw(dxCommon_, commandList);
 
 #pragma region 3Dオブジェクト描画
-	// 3Dオブジェクト描画前処理
-	Model::PreDraw();
-
-	/// <summary>
-	/// ここに3Dオブジェクトの描画処理を追加できる
-	/// </summary>
-
-	// 小惑星描画
-	asteroidField_.Draw(camera_);
-
-	// 天球描画
-	skydome_->Draw();
-
-	// 3Dオブジェクト描画後処理
-	Model::PostDraw();
+	SceneHelper::DrawModelLayer([this]() {
+		asteroidField_.Draw(camera_);
+		skydome_->Draw();
+	});
 
 #pragma endregion
 
 #pragma region 前景スプライト描画
-	// 背景スプライト描画前処理
-	Sprite::PreDraw(commandList);
-
-	/// <summary>
-	/// ここに背景スプライトの描画処理を追加できる
-	/// </summary>
-
-	finishSprite_->Draw();
-	returnSprite_->Draw();
-
-	// スプライト描画後処理
-	Sprite::PostDraw();
+	SceneHelper::DrawSpriteLayer(commandList, [this]() {
+		finishSprite_->Draw();
+		returnSprite_->Draw();
+	});
 #pragma endregion
 }
 

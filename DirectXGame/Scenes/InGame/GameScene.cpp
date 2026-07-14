@@ -13,6 +13,7 @@
 #include "GameSceneUpdateExecutor.h"
 #include "Scenes/Clear/ClearScene.h"
 #include "Scenes/Finish/FinishScene.h"
+#include "Scenes/SceneHelper.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
@@ -130,10 +131,10 @@ void GameScene::Initialize() {
     wasdTextureHandle_ = TextureManager::Load("./Resources/InGame/WASD.png");
     const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
     const Vector2 keyUvSize = { 96.0f, 96.0f };
-    wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY }));
-    wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) }));
-    wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) }));
-    wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) }));
+    wasdWSprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY });
+    wasdASprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) });
+    wasdSSprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) });
+    wasdDSprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) });
     if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
         wasdWSprite_->SetAnchorPoint({ 0.0f, 0.0f });
         wasdASprite_->SetAnchorPoint({ 0.0f, 0.0f });
@@ -153,9 +154,9 @@ void GameScene::Initialize() {
     const Vector2 mouseSize = { kMouseSize, kMouseSize };
     const Vector2 mouseButtonUvSize = { 320.0f, 270.0f };
     const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
-    mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }, { 1.0f, 1.0f, 1.0f, 0.55f }));
-    mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }));
-    mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }));
+    mouseBaseSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }, { 1.0f, 1.0f, 1.0f, 0.55f });
+    mouseLeftSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY });
+    mouseRightSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX + mouseButtonSize.x, kMouseBaseY });
     if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
         mouseBaseSprite_->SetAnchorPoint({ 0.0f, 0.0f });
         mouseLeftSprite_->SetAnchorPoint({ 0.0f, 0.0f });
@@ -231,7 +232,7 @@ void GameScene::Initialize() {
     // ===== 照準 =====
     reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
     lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png");
-    reticleSprite_.reset(Sprite::Create(reticleTexHandle_, reticlePos_));
+    reticleSprite_ = SceneHelper::CreateSprite(reticleTexHandle_, reticlePos_);
     if (reticleSprite_) {
         reticleSprite_->SetAnchorPoint({ 0.5f, 0.5f });
         reticleSprite_->SetSize({ 32.0f, 32.0f });
@@ -241,7 +242,7 @@ void GameScene::Initialize() {
     pauseMenu_ = std::make_unique<PauseMenu>();
     pauseMenu_->Initialize();
     pauseTitleTexHandle_ = TextureManager::Load("./Resources/InGame/Pause.png");
-    pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, { kPauseTitlePosX, kPauseTitlePosY }));
+    pauseTitleSprite_ = SceneHelper::CreateSprite(pauseTitleTexHandle_, { kPauseTitlePosX, kPauseTitlePosY });
     pauseTitleSprite_->SetAnchorPoint({ 0.0f, 0.0f });
     const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
     pauseTitleSprite_->SetSize({ pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f });
@@ -249,7 +250,7 @@ void GameScene::Initialize() {
     seEnemyHitHandle_ = audio_->LoadWave("./Resources/SE/shot.wav");
     seEnemyKillHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
     scorePopupTexHandle_ = TextureManager::Load("./Resources/InGame/number.png");
-    scorePopupDigitSprite_.reset(Sprite::Create(scorePopupTexHandle_, { 0.0f, 0.0f }));
+    scorePopupDigitSprite_ = SceneHelper::CreateSprite(scorePopupTexHandle_, { 0.0f, 0.0f });
 
     // ===== その他 =====
     isEnd_ = false;
@@ -278,16 +279,10 @@ void GameScene::Draw() {
     ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
     const Camera* cam = railCamera_->GetCamera();
 
-#pragma region 背景スプライト
-    Sprite::PreDraw(commandList);
-    // 背景スプライトの描画があればここ
-
-    Sprite::PostDraw();
-    dxCommon_->ClearDepthBuffer();
-#pragma endregion
+    SceneHelper::Begin3DDraw(dxCommon_, commandList);
 
 #pragma region 3Dオブジェクト描画
-    Model::PreDraw();
+    SceneHelper::DrawModelLayer([this, cam]() {
 
     // 空/スカイドームは常に描く（雰囲気）
     skydome_->Draw();
@@ -325,11 +320,11 @@ void GameScene::Draw() {
         }
     }
 
-    Model::PostDraw();
+    });
 #pragma endregion
 
 #pragma region 前景スプライト
-    Sprite::PreDraw(commandList);
+    SceneHelper::DrawSpriteLayer(commandList, [this]() {
 
     // 3カウントは CountDown 中だけ
     if (state_ == GameState::CountDown) {
@@ -415,7 +410,7 @@ void GameScene::Draw() {
         }
     }
 
-    Sprite::PostDraw();
+    });
 #pragma endregion
 }
 

@@ -1,6 +1,7 @@
 #include "ClearScene.h"
 
 #include "Application/Utility/GameTime.h"
+#include "Scenes/SceneHelper.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
@@ -21,17 +22,6 @@ constexpr float kResultCountSpeed = 500.0f;
 constexpr float kResultEndWaitTime = 0.5f;
 constexpr float kReturnBlinkSpeed = 4.0f;
 
-constexpr int kAsteroidCount = 10;
-constexpr float kAsteroidSpawnZMin = 0.0f;
-constexpr float kAsteroidSpawnZMax = 140.0f;
-constexpr float kAsteroidRecycleZ = -50.0f;
-constexpr float kAsteroidSpawnInterval = 1.0f;
-constexpr float kAsteroidRangeX = 25.0f;
-constexpr float kAsteroidRangeY = 15.0f;
-constexpr float kAsteroidSpeedMin = -0.3f;
-constexpr float kAsteroidSpeedMax = -0.1f;
-constexpr float kAsteroidRotMin = 0.01f;
-constexpr float kAsteroidRotMax = 0.03f;
 } // namespace
 
 ClearScene::ClearScene(int finalScore) : finalScore_(finalScore) {}
@@ -49,19 +39,7 @@ void ClearScene::Initialize() {
 	pointSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/point.wav");
 
 	// 小惑星を一定量生成
-	AsteroidFieldConfig asteroidConfig{};
-	asteroidConfig.count = kAsteroidCount;
-	asteroidConfig.spawnZMin = kAsteroidSpawnZMin;
-	asteroidConfig.spawnZMax = kAsteroidSpawnZMax;
-	asteroidConfig.recycleZ = kAsteroidRecycleZ;
-	asteroidConfig.spawnInterval = kAsteroidSpawnInterval;
-	asteroidConfig.rangeX = kAsteroidRangeX;
-	asteroidConfig.rangeY = kAsteroidRangeY;
-	asteroidConfig.speedMin = kAsteroidSpeedMin;
-	asteroidConfig.speedMax = kAsteroidSpeedMax;
-	asteroidConfig.rotationMin = kAsteroidRotMin;
-	asteroidConfig.rotationMax = kAsteroidRotMax;
-	asteroidField_.Initialize(asteroidConfig);
+	asteroidField_.Initialize(SceneHelper::CreateMenuAsteroidFieldConfig());
 
 	// 天球
 	skydome_ = std::make_unique<Skydome>();
@@ -75,15 +53,13 @@ void ClearScene::Initialize() {
 	scoreUI_.SetPosition(centerX, centerY);
 
 	// GAME CLEAR 表示
-	uint32_t clearTex = TextureManager::Load("./Resources/Clear/GameClear.png");
-	clearTextSprite_.reset(Sprite::Create(clearTex, {kScreenWidth * 0.5f, kClearTextPosY}));
+	clearTextSprite_ = SceneHelper::CreateSprite("./Resources/Clear/GameClear.png", {kScreenWidth * 0.5f, kClearTextPosY});
 	clearTextSprite_->SetAnchorPoint({0.5f, 0.5f});
 	clearTextSprite_->SetSize({0, 0});
 	clearTextSprite_->SetColor({1, 1, 1, 0});
 
 	// RETURN テキスト（最初は透明）
-	uint32_t returnTex = TextureManager::Load("./Resources/Clear/Return.png");
-	returnTextSprite_.reset(Sprite::Create(returnTex, {kScreenWidth * 0.5f, kReturnTextPosY}));
+	returnTextSprite_ = SceneHelper::CreateSprite("./Resources/Clear/Return.png", {kScreenWidth * 0.5f, kReturnTextPosY});
 	returnTextSprite_->SetAnchorPoint({0.5f, 0.5f});
 	returnTextSprite_->SetSize(returnTextBaseSize_);
 	returnTextSprite_->SetColor({1, 1, 1, 0});
@@ -180,41 +156,25 @@ void ClearScene::Draw() {
 	// コマンドリストの取得
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-#pragma region 背景スプライト描画
-	Sprite::PreDraw(commandList);
-
-	Sprite::PostDraw();
-	dxCommon_->ClearDepthBuffer();
-#pragma endregion
+	SceneHelper::Begin3DDraw(dxCommon_, commandList);
 
 #pragma region 3Dオブジェクト描画
-	Model::PreDraw();
-
-	// 小惑星描画
-	asteroidField_.Draw(camera_);
-
-	// 天球描画
-	skydome_->Draw();
-
-	Model::PostDraw();
+	SceneHelper::DrawModelLayer([this]() {
+		asteroidField_.Draw(camera_);
+		skydome_->Draw();
+	});
 #pragma endregion
 
 #pragma region 前景スプライト描画
-	Sprite::PreDraw(commandList);
-
-	// GAME CLEAR!! テキスト
-	if (clearTextSprite_) {
-		clearTextSprite_->Draw();
-	}
-
-	// スコア
-	scoreUI_.Draw();
-
-	if (returnTextSprite_) {
-		returnTextSprite_->Draw();
-	}
-
-	Sprite::PostDraw();
+	SceneHelper::DrawSpriteLayer(commandList, [this]() {
+		if (clearTextSprite_) {
+			clearTextSprite_->Draw();
+		}
+		scoreUI_.Draw();
+		if (returnTextSprite_) {
+			returnTextSprite_->Draw();
+		}
+	});
 #pragma endregion
 }
 

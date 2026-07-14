@@ -195,6 +195,9 @@
     <ClCompile Include="Scenes\SceneManager.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="Scenes\SceneHelper.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
     <ClCompile Include="Application\Background\Skydome\Skydome.cpp">
       <Filter>Application\Background\Skydome</Filter>
     </ClCompile>
@@ -300,6 +303,9 @@
       <Filter>Application\Cameras\RailCamera</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\SceneManager.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="Scenes\SceneHelper.h">
       <Filter>Scenes</Filter>
     </ClInclude>
     <ClInclude Include="Scenes\SceneName.h">
