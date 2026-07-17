@@ -124,6 +124,8 @@
 └── └── ├── Introduction/
 └── └── └── ├── IntroductionScene.cpp
 └── └── └── └── IntroductionScene.h
+└── └── ├── SceneHelper.cpp
+└── └── ├── SceneHelper.h
 └── └── ├── SceneManager.cpp
 └── └── ├── SceneManager.h
 └── └── ├── SceneName.h
@@ -4781,6 +4783,27 @@ File Path: DirectXGame/Application/Managers/CollisionManager/CollisionManager.cp
 
 using namespace KamataEngine;
 
+namespace {
+
+bool IsOverlapping(const Collider* a, const Collider* b) {
+    if (!a || !b) {
+        return false;
+    }
+
+    const auto aPos = a->GetTranslate();
+    const auto bPos = b->GetTranslate();
+    const float radiusSum = a->GetRadius() + b->GetRadius();
+
+    const float dx = aPos.x - bPos.x;
+    const float dy = aPos.y - bPos.y;
+    const float dz = aPos.z - bPos.z;
+    const float distanceSq = dx * dx + dy * dy + dz * dz;
+
+    return distanceSq <= radiusSum * radiusSum;
+}
+
+} // namespace
+
 void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<std::unique_ptr<CharacterBase>>& enemies, const CountDown& countDown) {
     // 無効条件（入力ロック中、プレイヤー不在、プレイヤー爆散演出終了まちetc...）
     if (!player || countDown.IsInputLocked() || player->IsExplosionFinished()) {
@@ -4793,9 +4816,6 @@ void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<
         return;
     }
 
-    const auto p = playerCollider->GetTranslate();
-    const float pr = playerCollider->GetRadius();
-
     // 各敵との衝突判定ループ
     for (auto& e : enemies) {
         if (!e) {
@@ -4806,18 +4826,8 @@ void CollisionManager::ResolvePlayerEnemyCollisions(Player* player, std::vector<
             continue;
         }
 
-        const auto q = enemyCollider->GetTranslate();
-        const float er = enemyCollider->GetRadius();
-
-        // 距離チェック
-        const float dx = p.x - q.x;
-        const float dy = p.y - q.y;
-        const float dz = p.z - q.z;
-        const float dist2 = dx * dx + dy * dy + dz * dz;
-        const float r = pr + er;
-
         // 半径の合計より近ければ衝突
-        if (dist2 <= r * r) {
+        if (IsOverlapping(playerCollider, enemyCollider)) {
             player->SetLastDamageSource(CharacterBase::DamageSource::Collision);
             e->SetLastDamageSource(CharacterBase::DamageSource::Collision);
             player->OnCollision(e.get());
@@ -4843,9 +4853,6 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
             continue;
         }
 
-        const auto bp = bc->GetTranslate();
-        const float br = bc->GetRadius();
-
         // 各敵と衝突チェック
         for (auto& e : enemies) {
             if (!e) {
@@ -4862,17 +4869,7 @@ void CollisionManager::ResolveBulletEnemyCollisions(std::vector<std::unique_ptr<
                 continue;
             }
 
-            const auto ep = enemyCollider->GetTranslate();
-            const float er = enemyCollider->GetRadius();
-
-            // 球判定
-            const float dx = bp.x - ep.x;
-            const float dy = bp.y - ep.y;
-            const float dz = bp.z - ep.z;
-            const float dist2 = dx * dx + dy * dy + dz * dz;
-            const float rr = br + er;
-
-            if (dist2 <= rr * rr) {
+            if (IsOverlapping(bc, enemyCollider)) {
                 // 相互通知：敵は死に、弾は消える
                 e->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
                 e->OnCollision(b.get());
@@ -4899,9 +4896,6 @@ void CollisionManager::ResolveHomingMissileEnemyCollisions(std::vector<std::uniq
             continue;
         }
 
-        const auto mp = missileCollider->GetTranslate();
-        const float mr = missileCollider->GetRadius();
-
         for (auto& e : enemies) {
             if (!e || e->IsDead()) {
                 continue;
@@ -4912,16 +4906,7 @@ void CollisionManager::ResolveHomingMissileEnemyCollisions(std::vector<std::uniq
                 continue;
             }
 
-            const auto ep = enemyCollider->GetTranslate();
-            const float er = enemyCollider->GetRadius();
-
-            const float dx = mp.x - ep.x;
-            const float dy = mp.y - ep.y;
-            const float dz = mp.z - ep.z;
-            const float dist2 = dx * dx + dy * dy + dz * dz;
-            const float rr = mr + er;
-
-            if (dist2 <= rr * rr) {
+            if (IsOverlapping(missileCollider, enemyCollider)) {
                 e->SetLastDamageSource(CharacterBase::DamageSource::HomingMissile);
                 e->OnCollision(m.get());
                 m->OnCollision(e.get());
@@ -4941,9 +4926,6 @@ void CollisionManager::ResolvePlayerTurretBulletCollisions(Player* player, std::
         return;
     }
 
-    const auto pp = playerCollider->GetTranslate();
-    const float pr = playerCollider->GetRadius();
-
     for (auto& e : enemies) {
         auto* turret = dynamic_cast<TurretEnemy*>(e.get());
         if (!turret || turret->IsDead()) {
@@ -4960,16 +4942,7 @@ void CollisionManager::ResolvePlayerTurretBulletCollisions(Player* player, std::
                 continue;
             }
 
-            const auto bp = bulletCollider->GetTranslate();
-            const float br = bulletCollider->GetRadius();
-
-            const float dx = pp.x - bp.x;
-            const float dy = pp.y - bp.y;
-            const float dz = pp.z - bp.z;
-            const float dist2 = dx * dx + dy * dy + dz * dz;
-            const float rr = pr + br;
-
-            if (dist2 <= rr * rr) {
+            if (IsOverlapping(playerCollider, bulletCollider)) {
                 player->SetLastDamageSource(CharacterBase::DamageSource::Bullet);
                 player->OnCollision(tb.get());
                 tb->OnCollision(player);
@@ -4994,9 +4967,6 @@ void CollisionManager::ResolvePlayerBulletTurretBulletCollisions(
             continue;
         }
 
-        const auto pp = playerBulletCollider->GetTranslate();
-        const float pr = playerBulletCollider->GetRadius();
-
         bool hit = false;
         for (auto& e : enemies) {
             auto* turret = dynamic_cast<TurretEnemy*>(e.get());
@@ -5014,16 +4984,7 @@ void CollisionManager::ResolvePlayerBulletTurretBulletCollisions(
                     continue;
                 }
 
-                const auto tp = turretBulletCollider->GetTranslate();
-                const float tr = turretBulletCollider->GetRadius();
-
-                const float dx = pp.x - tp.x;
-                const float dy = pp.y - tp.y;
-                const float dz = pp.z - tp.z;
-                const float dist2 = dx * dx + dy * dy + dz * dz;
-                const float rr = pr + tr;
-
-                if (dist2 <= rr * rr) {
+                if (IsOverlapping(playerBulletCollider, turretBulletCollider)) {
                     pb->OnCollision(tb.get());
                     tb->OnCollision(pb.get());
                     hit = true;
@@ -5530,6 +5491,7 @@ namespace {
     constexpr Vector2 kLockBaseSize{ 200.0f, 6.0f };
 } // namespace
 
+// HPバー、スコア、ホーミング関連ゲージを生成して初期状態を整える。
 void UIManager::Initialize(Player* player) {
     player_ = player;
 
@@ -5551,12 +5513,14 @@ void UIManager::Initialize(Player* player) {
     lockProgressBar_->SetSize({ 0.0f, kLockBaseSize.y });
 }
 
+// BulletManager から受け取ったロックオン状態を UI 表示用に保持する。
 void UIManager::SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking) {
     homingLockCount_ = (std::max)(currentLockCount, 0);
     homingMaxLockCount_ = (std::max)(maxLockCount, 1);
     isHomingLocking_ = isLocking;
 }
 
+// プレイヤーHP、スコア、ホーミングゲージの表示状態を更新する。
 void UIManager::Update() {
     // HPバー更新
     if (player_ && graph_) {
@@ -5573,15 +5537,19 @@ void UIManager::Update() {
     }
 
     if (homingCooldownFront_) {
+        // クールダウン率に合わせて前面バーの横幅だけを変える。
         homingCooldownFront_->SetSize({ kCoolSize.x * homingCooldownRate_, kCoolSize.y });
     }
 
     if (lockProgressBar_) {
+        // ロック中の数を最大ロック数で割り、進行バーとして表示する。
         const float lockRate = static_cast<float>(homingLockCount_) / static_cast<float>(homingMaxLockCount_);
         lockProgressBar_->SetSize({ kLockBaseSize.x * std::clamp(lockRate, 0.0f, 1.0f), kLockBaseSize.y });
     }
 }
 
+// 生成済みの UI 要素を順番に描画する。
+// ロックオン進行バーはロック操作中だけ表示する。
 void UIManager::Draw() {
     if (graph_) {
         graph_->Draw();
@@ -5823,6 +5791,7 @@ File Path: DirectXGame/Application/Objects/Asteroid/AsteroidField.cpp
 
 using namespace KamataEngine;
 
+// 小惑星モデルを読み込み、設定値に従って初期表示分の小惑星を生成する。
 void AsteroidField::Initialize(const AsteroidFieldConfig& config) {
     config_ = config;
     spawnTimer_ = 0.0f;
@@ -5836,6 +5805,7 @@ void AsteroidField::Initialize(const AsteroidFieldConfig& config) {
     }
 }
 
+// すべての小惑星を更新し、手前に抜けたものを一定間隔で奥側へ再配置する。
 void AsteroidField::Update() {
     spawnTimer_ += GameTime::kDeltaTime;
 
@@ -5845,6 +5815,7 @@ void AsteroidField::Update() {
         if (asteroid->GetZ() < config_.recycleZ && spawnTimer_ >= config_.spawnInterval) {
             spawnTimer_ = 0.0f;
 
+            // 視界奥のランダムな位置へ戻し、再びプレイヤー側へ流す。
             Vector3 pos = { Rand(-config_.rangeX, config_.rangeX), Rand(-config_.rangeY, config_.rangeY), Rand(config_.spawnZMin, config_.spawnZMax) };
             Vector3 velocity = { 0.0f, 0.0f, Rand(config_.speedMin, config_.speedMax) };
             Vector3 rotate = { Rand(config_.rotationMin, config_.rotationMax), Rand(config_.rotationMin, config_.rotationMax), Rand(config_.rotationMin, config_.rotationMax) };
@@ -5854,12 +5825,14 @@ void AsteroidField::Update() {
     }
 }
 
+// 管理中の小惑星をすべて描画する。
 void AsteroidField::Draw(const Camera& camera) const {
     for (const auto& asteroid : asteroids_) {
         asteroid->Draw(camera);
     }
 }
 
+// 設定範囲内のランダムな位置・速度・回転で小惑星を1つ追加する。
 void AsteroidField::SpawnAsteroid() {
     Vector3 pos = { Rand(-config_.rangeX, config_.rangeX), Rand(-config_.rangeY, config_.rangeY), Rand(config_.spawnZMin, config_.spawnZMax) };
     Vector3 velocity = { 0.0f, 0.0f, Rand(config_.speedMin, config_.speedMax) };
@@ -5870,6 +5843,7 @@ void AsteroidField::SpawnAsteroid() {
     asteroids_.push_back(std::move(asteroid));
 }
 
+// min から max の範囲でランダムな小数値を返す。
 float AsteroidField::Rand(float min, float max) {
     std::uniform_real_distribution<float> dist(min, max);
     return dist(mt_);
@@ -6032,8 +6006,10 @@ void CountDown::Update(float dt) {
 
         if (kPlaysBeep[phaseIndex] && seBeep_) {
             KamataEngine::Audio::GetInstance()->PlayWave(seBeep_);
-
-            inputLocked_ = false;
+        }
+        if (phase_ == Phase::Go && seGo_ && !goPlayed_) {
+            KamataEngine::Audio::GetInstance()->PlayWave(seGo_);
+            goPlayed_ = true;
         }
     }
 
@@ -6108,11 +6084,10 @@ void CountDown::AdvancePhase() {
     phaseTimer_ = 0.0f;
 
     static constexpr Phase kNextPhases[kPhaseCount] = { Phase::Inactive, Phase::Count3, Phase::Count2, Phase::Count1, Phase::Go, Phase::Done, Phase::Done };
-    const Phase previousPhase = phase_;
     phase_ = kNextPhases[static_cast<int>(phase_)];
 
-    if (previousPhase == Phase::Count1) {
-        phase_ = Phase::Done;
+    if (phase_ == Phase::Done) {
+        inputLocked_ = false;
     }
 }
 
@@ -7476,6 +7451,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <ClCompile Include="Application\Managers\BossManager\BossManager.cpp" />
     <ClCompile Include="Application\Managers\BossManager\BossUIManager.cpp" />
     <ClCompile Include="Scenes\InGame\GameSceneUpdateExecutor.cpp" />
+    <ClCompile Include="Scenes\SceneHelper.cpp" />
     <ClCompile Include="Application\Managers\BulletManager\BulletManager.cpp" />
     <ClCompile Include="Scenes\Clear\ClearScene.cpp" />
     <ClCompile Include="Application\Managers\CollisionManager\CollisionManager.cpp" />
@@ -7630,6 +7606,7 @@ File Path: DirectXGame/DirectXGame.vcxproj
     <ClInclude Include="Application\Managers\BossManager\BossManager.h" />
     <ClInclude Include="Application\Managers\BossManager\BossUIManager.h" />
     <ClInclude Include="Scenes\InGame\GameSceneUpdateExecutor.h" />
+    <ClInclude Include="Scenes\SceneHelper.h" />
     <ClInclude Include="Application\Managers\BulletManager\BulletManager.h" />
     <ClInclude Include="Scenes\Clear\ClearScene.h" />
     <ClInclude Include="Application\Managers\CollisionManager\CollisionManager.h" />
@@ -7855,6 +7832,9 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <ClCompile Include="Scenes\SceneManager.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="Scenes\SceneHelper.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
     <ClCompile Include="Application\Background\Skydome\Skydome.cpp">
       <Filter>Application\Background\Skydome</Filter>
     </ClCompile>
@@ -7962,6 +7942,9 @@ File Path: DirectXGame/DirectXGame.vcxproj.filters
     <ClInclude Include="Scenes\SceneManager.h">
       <Filter>Scenes</Filter>
     </ClInclude>
+    <ClInclude Include="Scenes\SceneHelper.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
     <ClInclude Include="Scenes\SceneName.h">
       <Filter>Scenes</Filter>
     </ClInclude>
@@ -8045,6 +8028,7 @@ File Path: DirectXGame/Scenes/Clear/ClearScene.cpp
 #include "ClearScene.h"
 
 #include "Application/Utility/GameTime.h"
+#include "Scenes/SceneHelper.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
@@ -8065,17 +8049,6 @@ constexpr float kResultCountSpeed = 500.0f;
 constexpr float kResultEndWaitTime = 0.5f;
 constexpr float kReturnBlinkSpeed = 4.0f;
 
-constexpr int kAsteroidCount = 10;
-constexpr float kAsteroidSpawnZMin = 0.0f;
-constexpr float kAsteroidSpawnZMax = 140.0f;
-constexpr float kAsteroidRecycleZ = -50.0f;
-constexpr float kAsteroidSpawnInterval = 1.0f;
-constexpr float kAsteroidRangeX = 25.0f;
-constexpr float kAsteroidRangeY = 15.0f;
-constexpr float kAsteroidSpeedMin = -0.3f;
-constexpr float kAsteroidSpeedMax = -0.1f;
-constexpr float kAsteroidRotMin = 0.01f;
-constexpr float kAsteroidRotMax = 0.03f;
 } // namespace
 
 ClearScene::ClearScene(int finalScore) : finalScore_(finalScore) {}
@@ -8093,19 +8066,7 @@ void ClearScene::Initialize() {
 	pointSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/point.wav");
 
 	// 小惑星を一定量生成
-	AsteroidFieldConfig asteroidConfig{};
-	asteroidConfig.count = kAsteroidCount;
-	asteroidConfig.spawnZMin = kAsteroidSpawnZMin;
-	asteroidConfig.spawnZMax = kAsteroidSpawnZMax;
-	asteroidConfig.recycleZ = kAsteroidRecycleZ;
-	asteroidConfig.spawnInterval = kAsteroidSpawnInterval;
-	asteroidConfig.rangeX = kAsteroidRangeX;
-	asteroidConfig.rangeY = kAsteroidRangeY;
-	asteroidConfig.speedMin = kAsteroidSpeedMin;
-	asteroidConfig.speedMax = kAsteroidSpeedMax;
-	asteroidConfig.rotationMin = kAsteroidRotMin;
-	asteroidConfig.rotationMax = kAsteroidRotMax;
-	asteroidField_.Initialize(asteroidConfig);
+	asteroidField_.Initialize(SceneHelper::CreateMenuAsteroidFieldConfig());
 
 	// 天球
 	skydome_ = std::make_unique<Skydome>();
@@ -8119,15 +8080,13 @@ void ClearScene::Initialize() {
 	scoreUI_.SetPosition(centerX, centerY);
 
 	// GAME CLEAR 表示
-	uint32_t clearTex = TextureManager::Load("./Resources/Clear/GameClear.png");
-	clearTextSprite_.reset(Sprite::Create(clearTex, {kScreenWidth * 0.5f, kClearTextPosY}));
+	clearTextSprite_ = SceneHelper::CreateSprite("./Resources/Clear/GameClear.png", {kScreenWidth * 0.5f, kClearTextPosY});
 	clearTextSprite_->SetAnchorPoint({0.5f, 0.5f});
 	clearTextSprite_->SetSize({0, 0});
 	clearTextSprite_->SetColor({1, 1, 1, 0});
 
 	// RETURN テキスト（最初は透明）
-	uint32_t returnTex = TextureManager::Load("./Resources/Clear/Return.png");
-	returnTextSprite_.reset(Sprite::Create(returnTex, {kScreenWidth * 0.5f, kReturnTextPosY}));
+	returnTextSprite_ = SceneHelper::CreateSprite("./Resources/Clear/Return.png", {kScreenWidth * 0.5f, kReturnTextPosY});
 	returnTextSprite_->SetAnchorPoint({0.5f, 0.5f});
 	returnTextSprite_->SetSize(returnTextBaseSize_);
 	returnTextSprite_->SetColor({1, 1, 1, 0});
@@ -8224,41 +8183,25 @@ void ClearScene::Draw() {
 	// コマンドリストの取得
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-#pragma region 背景スプライト描画
-	Sprite::PreDraw(commandList);
-
-	Sprite::PostDraw();
-	dxCommon_->ClearDepthBuffer();
-#pragma endregion
+	SceneHelper::Begin3DDraw(dxCommon_, commandList);
 
 #pragma region 3Dオブジェクト描画
-	Model::PreDraw();
-
-	// 小惑星描画
-	asteroidField_.Draw(camera_);
-
-	// 天球描画
-	skydome_->Draw();
-
-	Model::PostDraw();
+	SceneHelper::DrawModelLayer([this]() {
+		asteroidField_.Draw(camera_);
+		skydome_->Draw();
+	});
 #pragma endregion
 
 #pragma region 前景スプライト描画
-	Sprite::PreDraw(commandList);
-
-	// GAME CLEAR!! テキスト
-	if (clearTextSprite_) {
-		clearTextSprite_->Draw();
-	}
-
-	// スコア
-	scoreUI_.Draw();
-
-	if (returnTextSprite_) {
-		returnTextSprite_->Draw();
-	}
-
-	Sprite::PostDraw();
+	SceneHelper::DrawSpriteLayer(commandList, [this]() {
+		if (clearTextSprite_) {
+			clearTextSprite_->Draw();
+		}
+		scoreUI_.Draw();
+		if (returnTextSprite_) {
+			returnTextSprite_->Draw();
+		}
+	});
 #pragma endregion
 }
 
@@ -8374,6 +8317,7 @@ File Path: DirectXGame/Scenes/Finish/FinishScene.cpp
 #include "FinishScene.h"
 
 #include "Application/Utility/GameTime.h"
+#include "Scenes/SceneHelper.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
@@ -8381,17 +8325,6 @@ using namespace KamataEngine;
 namespace {
 constexpr float kTwoPi = 6.28318530717958647692f;
 
-constexpr int kAsteroidCount = 10;
-constexpr float kAsteroidSpawnZMin = 0.0f;
-constexpr float kAsteroidSpawnZMax = 140.0f;
-constexpr float kAsteroidRecycleZ = -50.0f;
-constexpr float kAsteroidSpawnInterval = 1.0f;
-constexpr float kAsteroidRangeX = 25.0f;
-constexpr float kAsteroidRangeY = 15.0f;
-constexpr float kAsteroidSpeedMin = -0.3f;
-constexpr float kAsteroidSpeedMax = -0.1f;
-constexpr float kAsteroidRotMin = 0.01f;
-constexpr float kAsteroidRotMax = 0.03f;
 } // namespace
 
 FinishScene::FinishScene() {}
@@ -8409,29 +8342,15 @@ void FinishScene::Initialize() {
 	input_ = Input::GetInstance();
 
 	// 各種テクスチャ
-	finishTextureHandle_ = TextureManager::Load("./Resources/finish/End.png");
-	finishSprite_.reset(Sprite::Create(finishTextureHandle_, {150.0f, 200.0f}));
+	finishSprite_ = SceneHelper::CreateSprite("./Resources/finish/End.png", {150.0f, 200.0f}, &finishTextureHandle_);
 
-	returnTextureHandle_ = TextureManager::Load("./Resources/finish/Return.png");
-	returnSprite_.reset(Sprite::Create(returnTextureHandle_, {120.0f, 550.0f}));
+	returnSprite_ = SceneHelper::CreateSprite("./Resources/finish/Return.png", {120.0f, 550.0f}, &returnTextureHandle_);
 
 	// 各種サウンド
 	changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
 
 	// 小惑星生成
-	AsteroidFieldConfig asteroidConfig{};
-	asteroidConfig.count = kAsteroidCount;
-	asteroidConfig.spawnZMin = kAsteroidSpawnZMin;
-	asteroidConfig.spawnZMax = kAsteroidSpawnZMax;
-	asteroidConfig.recycleZ = kAsteroidRecycleZ;
-	asteroidConfig.spawnInterval = kAsteroidSpawnInterval;
-	asteroidConfig.rangeX = kAsteroidRangeX;
-	asteroidConfig.rangeY = kAsteroidRangeY;
-	asteroidConfig.speedMin = kAsteroidSpeedMin;
-	asteroidConfig.speedMax = kAsteroidSpeedMax;
-	asteroidConfig.rotationMin = kAsteroidRotMin;
-	asteroidConfig.rotationMax = kAsteroidRotMax;
-	asteroidField_.Initialize(asteroidConfig);
+	asteroidField_.Initialize(SceneHelper::CreateMenuAsteroidFieldConfig());
 
 	// 天球
 	skydome_ = std::make_unique<Skydome>();
@@ -8467,53 +8386,21 @@ void FinishScene::Draw() {
 	// コマンドリストの取得
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-#pragma region 背景スプライト描画
-	// 背景スプライト描画前処理
-	Sprite::PreDraw(commandList);
-
-	/// <summary>
-	/// ここに背景スプライトの描画処理を追加できる
-	/// </summary>
-
-	// スプライト描画後処理
-	Sprite::PostDraw();
-
-	// 深度バッファクリア
-	dxCommon_->ClearDepthBuffer();
-#pragma endregion
+	SceneHelper::Begin3DDraw(dxCommon_, commandList);
 
 #pragma region 3Dオブジェクト描画
-	// 3Dオブジェクト描画前処理
-	Model::PreDraw();
-
-	/// <summary>
-	/// ここに3Dオブジェクトの描画処理を追加できる
-	/// </summary>
-
-	// 小惑星描画
-	asteroidField_.Draw(camera_);
-
-	// 天球描画
-	skydome_->Draw();
-
-	// 3Dオブジェクト描画後処理
-	Model::PostDraw();
+	SceneHelper::DrawModelLayer([this]() {
+		asteroidField_.Draw(camera_);
+		skydome_->Draw();
+	});
 
 #pragma endregion
 
 #pragma region 前景スプライト描画
-	// 背景スプライト描画前処理
-	Sprite::PreDraw(commandList);
-
-	/// <summary>
-	/// ここに背景スプライトの描画処理を追加できる
-	/// </summary>
-
-	finishSprite_->Draw();
-	returnSprite_->Draw();
-
-	// スプライト描画後処理
-	Sprite::PostDraw();
+	SceneHelper::DrawSpriteLayer(commandList, [this]() {
+		finishSprite_->Draw();
+		returnSprite_->Draw();
+	});
 #pragma endregion
 }
 
@@ -8704,6 +8591,7 @@ File Path: DirectXGame/Scenes/InGame/GameScene.cpp
 #include "GameSceneUpdateExecutor.h"
 #include "Scenes/Clear/ClearScene.h"
 #include "Scenes/Finish/FinishScene.h"
+#include "Scenes/SceneHelper.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
@@ -8821,10 +8709,10 @@ void GameScene::Initialize() {
     wasdTextureHandle_ = TextureManager::Load("./Resources/InGame/WASD.png");
     const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
     const Vector2 keyUvSize = { 96.0f, 96.0f };
-    wasdWSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY }));
-    wasdASprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) }));
-    wasdSSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) }));
-    wasdDSprite_.reset(Sprite::Create(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) }));
+    wasdWSprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY });
+    wasdASprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) });
+    wasdSSprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) });
+    wasdDSprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) });
     if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
         wasdWSprite_->SetAnchorPoint({ 0.0f, 0.0f });
         wasdASprite_->SetAnchorPoint({ 0.0f, 0.0f });
@@ -8844,9 +8732,9 @@ void GameScene::Initialize() {
     const Vector2 mouseSize = { kMouseSize, kMouseSize };
     const Vector2 mouseButtonUvSize = { 320.0f, 270.0f };
     const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
-    mouseBaseSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }, { 1.0f, 1.0f, 1.0f, 0.55f }));
-    mouseLeftSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }));
-    mouseRightSprite_.reset(Sprite::Create(mouseTextureHandle_, { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }));
+    mouseBaseSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }, { 1.0f, 1.0f, 1.0f, 0.55f });
+    mouseLeftSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY });
+    mouseRightSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX + mouseButtonSize.x, kMouseBaseY });
     if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
         mouseBaseSprite_->SetAnchorPoint({ 0.0f, 0.0f });
         mouseLeftSprite_->SetAnchorPoint({ 0.0f, 0.0f });
@@ -8922,7 +8810,7 @@ void GameScene::Initialize() {
     // ===== 照準 =====
     reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
     lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png");
-    reticleSprite_.reset(Sprite::Create(reticleTexHandle_, reticlePos_));
+    reticleSprite_ = SceneHelper::CreateSprite(reticleTexHandle_, reticlePos_);
     if (reticleSprite_) {
         reticleSprite_->SetAnchorPoint({ 0.5f, 0.5f });
         reticleSprite_->SetSize({ 32.0f, 32.0f });
@@ -8932,7 +8820,7 @@ void GameScene::Initialize() {
     pauseMenu_ = std::make_unique<PauseMenu>();
     pauseMenu_->Initialize();
     pauseTitleTexHandle_ = TextureManager::Load("./Resources/InGame/Pause.png");
-    pauseTitleSprite_.reset(Sprite::Create(pauseTitleTexHandle_, { kPauseTitlePosX, kPauseTitlePosY }));
+    pauseTitleSprite_ = SceneHelper::CreateSprite(pauseTitleTexHandle_, { kPauseTitlePosX, kPauseTitlePosY });
     pauseTitleSprite_->SetAnchorPoint({ 0.0f, 0.0f });
     const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
     pauseTitleSprite_->SetSize({ pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f });
@@ -8940,7 +8828,7 @@ void GameScene::Initialize() {
     seEnemyHitHandle_ = audio_->LoadWave("./Resources/SE/shot.wav");
     seEnemyKillHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
     scorePopupTexHandle_ = TextureManager::Load("./Resources/InGame/number.png");
-    scorePopupDigitSprite_.reset(Sprite::Create(scorePopupTexHandle_, { 0.0f, 0.0f }));
+    scorePopupDigitSprite_ = SceneHelper::CreateSprite(scorePopupTexHandle_, { 0.0f, 0.0f });
 
     // ===== その他 =====
     isEnd_ = false;
@@ -8969,144 +8857,138 @@ void GameScene::Draw() {
     ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
     const Camera* cam = railCamera_->GetCamera();
 
-#pragma region 背景スプライト
-    Sprite::PreDraw(commandList);
-    // 背景スプライトの描画があればここ
-
-    Sprite::PostDraw();
-    dxCommon_->ClearDepthBuffer();
-#pragma endregion
+    SceneHelper::Begin3DDraw(dxCommon_, commandList);
 
 #pragma region 3Dオブジェクト描画
-    Model::PreDraw();
+    SceneHelper::DrawModelLayer([this, cam]() {
 
-    // 空/スカイドームは常に描く（雰囲気）
-    skydome_->Draw();
+        // 空/スカイドームは常に描く（雰囲気）
+        skydome_->Draw();
 
-    // （任意）CountDown中もプレイヤーだけ見せたいなら描く
-    if (state_ == GameState::Playing) {
-        player_->Draw(cam);
-    }
-
-    // ゲーム中だけ描きたいものは Playing に寄せる
-    if (state_ == GameState::Playing && (result_ == GameResult::None || transitionPhase_ == SceneTransitionPhase::FailCinematic)) {
-
-        // スピードライン
-        speedLine_.Draw();
-
-        // 敵・弾・ボス
-        enemyManager_.Draw(cam);
-        bossManager_.Draw(cam);
-        bulletManager_.Draw(cam);
-    }
-
-    // エンジンスモークは通常時とクリア演出中に描画
-    const bool canDrawSmoke = (state_ == GameState::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
-    if (canDrawSmoke && engineSmokeEmitter_) {
-        engineSmokeEmitter_->Draw(cam);
-    }
-
-    // GPU煙エフェクトは最後に描画（Model描画状態を壊さないため）
-    if (state_ == GameState::Playing && result_ == GameResult::None) {
-        if (damageSmokeEmitter_) {
-            damageSmokeEmitter_->Draw(cam);
+        // （任意）CountDown中もプレイヤーだけ見せたいなら描く
+        if (state_ == GameState::Playing) {
+            player_->Draw(cam);
         }
-        if (missileAfterburnerEmitter_) {
-            missileAfterburnerEmitter_->Draw(cam);
-        }
-    }
 
-    Model::PostDraw();
+        // ゲーム中だけ描きたいものは Playing に寄せる
+        if (state_ == GameState::Playing && (result_ == GameResult::None || transitionPhase_ == SceneTransitionPhase::FailCinematic)) {
+
+            // スピードライン
+            speedLine_.Draw();
+
+            // 敵・弾・ボス
+            enemyManager_.Draw(cam);
+            bossManager_.Draw(cam);
+            bulletManager_.Draw(cam);
+        }
+
+        // エンジンスモークは通常時とクリア演出中に描画
+        const bool canDrawSmoke = (state_ == GameState::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
+        if (canDrawSmoke && engineSmokeEmitter_) {
+            engineSmokeEmitter_->Draw(cam);
+        }
+
+        // GPU煙エフェクトは最後に描画（Model描画状態を壊さないため）
+        if (state_ == GameState::Playing && result_ == GameResult::None) {
+            if (damageSmokeEmitter_) {
+                damageSmokeEmitter_->Draw(cam);
+            }
+            if (missileAfterburnerEmitter_) {
+                missileAfterburnerEmitter_->Draw(cam);
+            }
+        }
+
+        });
 #pragma endregion
 
 #pragma region 前景スプライト
-    Sprite::PreDraw(commandList);
+    SceneHelper::DrawSpriteLayer(commandList, [this]() {
 
-    // 3カウントは CountDown 中だけ
-    if (state_ == GameState::CountDown) {
-        countDown_.Draw();
-    }
-
-    // UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
-    if (state_ == GameState::Playing) {
-        uiManager_.Draw();
-        bossManager_.DrawUI();
-
-        if (reticleSprite_ && result_ == GameResult::None) {
-            reticleSprite_->Draw();
+        // 3カウントは CountDown 中だけ
+        if (state_ == GameState::CountDown) {
+            countDown_.Draw();
         }
 
-        // ロックオン演出
-        for (auto& marker : lockOnMarkers_) {
-            if (marker.sprite) {
-                marker.sprite->Draw();
+        // UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
+        if (state_ == GameState::Playing) {
+            uiManager_.Draw();
+            bossManager_.DrawUI();
+
+            if (reticleSprite_ && result_ == GameResult::None) {
+                reticleSprite_->Draw();
             }
-        }
 
-        const Camera* drawCam = railCamera_ ? railCamera_->GetCamera() : &camera_;
-        if (drawCam) {
-            const Matrix4x4 viewProj = MyMath::Multiply(drawCam->matView, drawCam->matProjection);
-            for (const auto& popup : scorePopups_) {
-                const Vector3 clip = MyMath::Transform(popup.worldPos, viewProj);
-                if (clip.z < 0.0f || clip.z > 1.0f) {
-                    continue;
+            // ロックオン演出
+            for (auto& marker : lockOnMarkers_) {
+                if (marker.sprite) {
+                    marker.sprite->Draw();
                 }
-                const Vector2 screenPos = { (clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight };
-                const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
-                const float scale = 0.85f + 0.35f * (1.0f - t);
-                const float alpha = (std::max)(0.0f, 1.0f - t);
-                DrawPopupNumber(scorePopupDigitSprite_.get(), popup.value, screenPos, scale, alpha);
+            }
+
+            const Camera* drawCam = railCamera_ ? railCamera_->GetCamera() : &camera_;
+            if (drawCam) {
+                const Matrix4x4 viewProj = MyMath::Multiply(drawCam->matView, drawCam->matProjection);
+                for (const auto& popup : scorePopups_) {
+                    const Vector3 clip = MyMath::Transform(popup.worldPos, viewProj);
+                    if (clip.z < 0.0f || clip.z > 1.0f) {
+                        continue;
+                    }
+                    const Vector2 screenPos = { (clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight };
+                    const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
+                    const float scale = 0.85f + 0.35f * (1.0f - t);
+                    const float alpha = (std::max)(0.0f, 1.0f - t);
+                    DrawPopupNumber(scorePopupDigitSprite_.get(), popup.value, screenPos, scale, alpha);
+                }
             }
         }
-    }
 
-    // Pauseメニュー
-    if (isPaused_) {
-        pauseMenu_->Draw();
-    }
-
-    // 操作UI
-    if (!isPaused_) {
-        if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
-            const bool isWPressed = input_->PushKey(DIK_W);
-            const bool isAPressed = input_->PushKey(DIK_A);
-            const bool isSPressed = input_->PushKey(DIK_S);
-            const bool isDPressed = input_->PushKey(DIK_D);
-            const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
-
-            ApplyPressedSpriteState(wasdWSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY }, keySize, isWPressed);
-            ApplyPressedSpriteState(wasdASprite_.get(), { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isAPressed);
-            ApplyPressedSpriteState(wasdSSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isSPressed);
-            ApplyPressedSpriteState(wasdDSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isDPressed);
-
-            wasdWSprite_->Draw();
-            wasdASprite_->Draw();
-            wasdSSprite_->Draw();
-            wasdDSprite_->Draw();
+        // Pauseメニュー
+        if (isPaused_) {
+            pauseMenu_->Draw();
         }
 
-        if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
-            const bool isLeftPressed = input_->IsPressMouse(0);
-            const bool isRightPressed = input_->IsPressMouse(1);
-            const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
+        // 操作UI
+        if (!isPaused_) {
+            if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
+                const bool isWPressed = input_->PushKey(DIK_W);
+                const bool isAPressed = input_->PushKey(DIK_A);
+                const bool isSPressed = input_->PushKey(DIK_S);
+                const bool isDPressed = input_->PushKey(DIK_D);
+                const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
 
-            ApplyPressedSpriteState(mouseLeftSprite_.get(), { kMouseBaseX, kMouseBaseY }, mouseButtonSize, isLeftPressed);
-            ApplyPressedSpriteState(mouseRightSprite_.get(), { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }, mouseButtonSize, isRightPressed);
+                ApplyPressedSpriteState(wasdWSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY }, keySize, isWPressed);
+                ApplyPressedSpriteState(wasdASprite_.get(), { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isAPressed);
+                ApplyPressedSpriteState(wasdSSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isSPressed);
+                ApplyPressedSpriteState(wasdDSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isDPressed);
 
-            mouseBaseSprite_->Draw();
-            mouseLeftSprite_->Draw();
-            mouseRightSprite_->Draw();
+                wasdWSprite_->Draw();
+                wasdASprite_->Draw();
+                wasdSSprite_->Draw();
+                wasdDSprite_->Draw();
+            }
+
+            if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
+                const bool isLeftPressed = input_->IsPressMouse(0);
+                const bool isRightPressed = input_->IsPressMouse(1);
+                const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
+
+                ApplyPressedSpriteState(mouseLeftSprite_.get(), { kMouseBaseX, kMouseBaseY }, mouseButtonSize, isLeftPressed);
+                ApplyPressedSpriteState(mouseRightSprite_.get(), { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }, mouseButtonSize, isRightPressed);
+
+                mouseBaseSprite_->Draw();
+                mouseLeftSprite_->Draw();
+                mouseRightSprite_->Draw();
+            }
         }
-    }
 
-    // Pauseガイド
-    if (!isPaused_ && state_ == GameState::Playing) {
-        if (pauseTitleSprite_) {
-            pauseTitleSprite_->Draw();
+        // Pauseガイド
+        if (!isPaused_ && state_ == GameState::Playing) {
+            if (pauseTitleSprite_) {
+                pauseTitleSprite_->Draw();
+            }
         }
-    }
 
-    Sprite::PostDraw();
+        });
 #pragma endregion
 }
 
@@ -9434,6 +9316,7 @@ File Path: DirectXGame/Scenes/InGame/GameSceneUpdateExecutor.cpp
 #include "GameScene.h"
 
 #include "Application/Utility/GameTime.h"
+#include "Scenes/SceneHelper.h"
 
 #include <algorithm>
 #include <cmath>
@@ -9855,7 +9738,7 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 		}
 
 		// 画面内の対象だけマーカーを作る。
-		auto sprite = std::unique_ptr<Sprite>(Sprite::Create(gameScene.lockOnTexHandle_, screenPos));
+		auto sprite = SceneHelper::CreateSprite(gameScene.lockOnTexHandle_, screenPos);
 		if (!sprite) {
 			continue;
 		}
@@ -10038,7 +9921,11 @@ void GameSceneUpdateExecutor::JudgeResultAndStartClear(GameScene& gameScene) {
 	if (gameScene.isTutorialLevel_ && reachedClearScore) {
 		gameScene.result_ = GameResult::Clear;
 		gameScene.clearScore_ = currentScore;
-		gameScene.isEnd_ = true;
+		gameScene.isClearAnimating_ = true;
+		gameScene.clearAnimTimer_ = 0.0f;
+		gameScene.transitionPhase_ = SceneTransitionPhase::ClearCinematic;
+		gameScene.transitionTimer_ = 0.0f;
+		gameScene.timeScale_ = 0.5f;
 		return;
 	}
 
@@ -10353,22 +10240,12 @@ File Path: DirectXGame/Scenes/Introduction/IntroductionScene.cpp
 #include "IntroductionScene.h"
 
 #include "Scenes/InGame/GameScene.h"
+#include "Scenes/SceneHelper.h"
 #include "Scenes/Title/TitleScene.h"
 
 using namespace KamataEngine;
 
 namespace {
-constexpr int kAsteroidCount = 10;
-constexpr float kAsteroidSpawnZMin = 0.0f;
-constexpr float kAsteroidSpawnZMax = 140.0f;
-constexpr float kAsteroidRecycleZ = -50.0f;
-constexpr float kAsteroidSpawnInterval = 1.0f;
-constexpr float kAsteroidRangeX = 25.0f;
-constexpr float kAsteroidRangeY = 15.0f;
-constexpr float kAsteroidSpeedMin = -0.3f;
-constexpr float kAsteroidSpeedMax = -0.1f;
-constexpr float kAsteroidRotMin = 0.01f;
-constexpr float kAsteroidRotMax = 0.03f;
 constexpr float kDifficultyBaseX = 700.0f;
 constexpr float kDifficultyBaseY = 300.0f;
 constexpr float kDifficultyStepY = 80.0f;
@@ -10393,11 +10270,9 @@ void IntroductionScene::Initialize() {
 	selectedIndex_ = 0;
 
 	// 各種テクスチャ
-	returnTitleTextureHandle_ = TextureManager::Load("./Resources/introduction/Esc-export.png");
-	returnTitleSprite_.reset(Sprite::Create(returnTitleTextureHandle_, {20.0f, 20.0f}));
+	returnTitleSprite_ = SceneHelper::CreateSprite("./Resources/introduction/Esc-export.png", {20.0f, 20.0f}, &returnTitleTextureHandle_);
 
-	introTextureHandle_ = TextureManager::Load("./Resources/Introduction/setumei.png");
-	introSprite_.reset(Sprite::Create(introTextureHandle_, {0.0f, 0.0f}));
+	introSprite_ = SceneHelper::CreateSprite("./Resources/Introduction/setumei.png", {0.0f, 0.0f}, &introTextureHandle_);
 
 	const std::array<const char*, static_cast<size_t>(Difficulty::Count)> difficultyTexturePaths = {
 	    "./Resources/Introduction/DifficultyTutorial.png",
@@ -10407,8 +10282,7 @@ void IntroductionScene::Initialize() {
 	};
 
 	for (size_t i = 0; i < difficultySprites_.size(); ++i) {
-		difficultyTextureHandles_[i] = TextureManager::Load(difficultyTexturePaths[i]);
-		difficultySprites_[i].reset(Sprite::Create(difficultyTextureHandles_[i], {kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i)}));
+		difficultySprites_[i] = SceneHelper::CreateSprite(difficultyTexturePaths[i], {kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i)}, &difficultyTextureHandles_[i]);
 		difficultySprites_[i]->SetColor(kDifficultyNormalColor);
 	}
 
@@ -10423,19 +10297,7 @@ void IntroductionScene::Initialize() {
 	skydome_->Initialize(&camera_);
 
 	// 小惑星
-	AsteroidFieldConfig asteroidConfig{};
-	asteroidConfig.count = kAsteroidCount;
-	asteroidConfig.spawnZMin = kAsteroidSpawnZMin;
-	asteroidConfig.spawnZMax = kAsteroidSpawnZMax;
-	asteroidConfig.recycleZ = kAsteroidRecycleZ;
-	asteroidConfig.spawnInterval = kAsteroidSpawnInterval;
-	asteroidConfig.rangeX = kAsteroidRangeX;
-	asteroidConfig.rangeY = kAsteroidRangeY;
-	asteroidConfig.speedMin = kAsteroidSpeedMin;
-	asteroidConfig.speedMax = kAsteroidSpeedMax;
-	asteroidConfig.rotationMin = kAsteroidRotMin;
-	asteroidConfig.rotationMax = kAsteroidRotMax;
-	asteroidField_.Initialize(asteroidConfig);
+	asteroidField_.Initialize(SceneHelper::CreateMenuAsteroidFieldConfig());
 }
 
 void IntroductionScene::Update() {
@@ -10475,67 +10337,35 @@ void IntroductionScene::Draw() {
 	// コマンドリストの取得
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-#pragma region 背景スプライト描画
-	// 背景スプライト描画前処理
-	Sprite::PreDraw(commandList);
-
-	/// <summary>
-	/// ここに背景スプライトの描画処理を追加できる
-	/// </summary>
-
-	// スプライト描画後処理
-	Sprite::PostDraw();
-
-	// 深度バッファクリア
-	dxCommon_->ClearDepthBuffer();
-#pragma endregion
+	SceneHelper::Begin3DDraw(dxCommon_, commandList);
 
 #pragma region 3Dオブジェクト描画
-	// 3Dオブジェクト描画前処理
-	Model::PreDraw();
-
-	/// <summary>
-	/// ここに3Dオブジェクトの描画処理を追加できる
-	/// </summary>
-
-	// 天球描画
-	skydome_->Draw();
-
-	// 小惑星描画
-	asteroidField_.Draw(camera_);
-
-	// 3Dオブジェクト描画後処理
-	Model::PostDraw();
+	SceneHelper::DrawModelLayer([this]() {
+		skydome_->Draw();
+		asteroidField_.Draw(camera_);
+	});
 #pragma endregion
 
 #pragma region 前景スプライト描画
-	// 前景スプライト描画前処理
-	Sprite::PreDraw(commandList);
+	SceneHelper::DrawSpriteLayer(commandList, [this]() {
+		returnTitleSprite_->Draw();
 
-	/// <summary>
-	/// ここに前景スプライトの描画処理を追加できる
-	/// </summary>
-
-	returnTitleSprite_->Draw();
-
-	for (size_t i = 0; i < difficultySprites_.size(); ++i) {
-		auto& sprite = difficultySprites_[i];
-		if (!sprite) {
-			continue;
+		for (size_t i = 0; i < difficultySprites_.size(); ++i) {
+			auto& sprite = difficultySprites_[i];
+			if (!sprite) {
+				continue;
+			}
+			sprite->SetPosition({kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i)});
+			if (static_cast<int>(i) == selectedIndex_) {
+				sprite->SetColor(kDifficultySelectedColor);
+				sprite->SetSize({512.0f * kDifficultySelectedScale, 128.0f * kDifficultySelectedScale});
+			} else {
+				sprite->SetColor(kDifficultyNormalColor);
+				sprite->SetSize({512.0f * kDifficultyNormalScale, 128.0f * kDifficultyNormalScale});
+			}
+			sprite->Draw();
 		}
-		sprite->SetPosition({kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i)});
-		if (static_cast<int>(i) == selectedIndex_) {
-			sprite->SetColor(kDifficultySelectedColor);
-			sprite->SetSize({512.0f * kDifficultySelectedScale, 128.0f * kDifficultySelectedScale});
-		} else {
-			sprite->SetColor(kDifficultyNormalColor);
-			sprite->SetSize({512.0f * kDifficultyNormalScale, 128.0f * kDifficultyNormalScale});
-		}
-		sprite->Draw();
-	}
-
-	// スプライト描画後処理
-	Sprite::PostDraw();
+	});
 #pragma endregion
 }
 
@@ -10574,6 +10404,7 @@ TransitionHint IntroductionScene::GetTransitionHint(SceneName to) const {
 	}
 	return h;
 }
+
 
 ============================================================
 File Path: DirectXGame/Scenes/Introduction/IntroductionScene.h
@@ -10682,6 +10513,166 @@ private:
 	// シーン終了フラグ
 	bool isEnd_ = false;
 };
+
+============================================================
+File Path: DirectXGame/Scenes/SceneHelper.cpp
+============================================================
+#include "SceneHelper.h"
+
+using namespace KamataEngine;
+
+namespace SceneHelper {
+
+/// <summary>
+/// メニュー画面で奥行き感を出すための小惑星フィールド設定を返す。
+/// ゲーム中より控えめな速度・数にして、背景演出として使いやすい値にしている。
+/// </summary>
+AsteroidFieldConfig CreateMenuAsteroidFieldConfig() {
+	AsteroidFieldConfig config{};
+	config.count = 10;
+	config.spawnZMin = 0.0f;
+	config.spawnZMax = 140.0f;
+	config.recycleZ = -50.0f;
+	config.spawnInterval = 1.0f;
+	config.rangeX = 25.0f;
+	config.rangeY = 15.0f;
+	config.speedMin = -0.3f;
+	config.speedMax = -0.1f;
+	config.rotationMin = 0.01f;
+	config.rotationMax = 0.03f;
+	return config;
+}
+
+// 既に読み込み済みのテクスチャを、そのまま標準色のスプライトにする。
+std::unique_ptr<Sprite> CreateSprite(uint32_t textureHandle, const Vector2& position) { return std::unique_ptr<Sprite>(Sprite::Create(textureHandle, position)); }
+
+// 既に読み込み済みのテクスチャを、色指定付きのスプライトにする。
+std::unique_ptr<Sprite> CreateSprite(uint32_t textureHandle, const Vector2& position, const Vector4& color) { return std::unique_ptr<Sprite>(Sprite::Create(textureHandle, position, color)); }
+
+
+// テクスチャ読み込みとスプライト生成をひとまとめに行う。/// 呼び出し元がハンドルを保持したい場合だけ textureHandle に書き戻す。
+std::unique_ptr<Sprite> CreateSprite(const char* texturePath, const Vector2& position, uint32_t* textureHandle) {
+	const uint32_t handle = TextureManager::Load(texturePath);
+	if (textureHandle) {
+		*textureHandle = handle;
+	}
+	return CreateSprite(handle, position);
+}
+
+// テクスチャ読み込みと色指定付きスプライト生成をひとまとめに行う。
+std::unique_ptr<Sprite> CreateSprite(const char* texturePath, const Vector2& position, const Vector4& color, uint32_t* textureHandle) {
+	const uint32_t handle = TextureManager::Load(texturePath);
+	if (textureHandle) {
+		*textureHandle = handle;
+	}
+	return CreateSprite(handle, position, color);
+}
+
+
+// 直前のスプライト描画状態を終了させたうえで深度バッファを初期化する。
+// 3Dモデルを描く前に呼ぶことで、2D描画の状態と深度情報が残らないようにする。
+void Begin3DDraw(DirectXCommon* dxCommon, ID3D12GraphicsCommandList* commandList) {
+	DrawSpriteLayer(commandList, []() {});
+	dxCommon->ClearDepthBuffer();
+}
+
+} // namespace SceneHelper
+
+
+============================================================
+File Path: DirectXGame/Scenes/SceneHelper.h
+============================================================
+#pragma once
+
+#include <KamataEngine.h>
+#include <cstdint>
+#include <memory>
+#include <utility>
+
+#include "Application/Objects/Asteroid/AsteroidField.h"
+
+/// <summary>
+/// シーン共通の初期化・描画補助関数群。
+/// 各シーンで重複しやすいスプライト生成、3D描画開始処理、
+/// モデル/スプライト描画レイヤーの PreDraw/PostDraw 呼び出しをまとめる。
+/// </summary>
+namespace SceneHelper {
+
+/// <summary>
+/// タイトルやリザルトなど、メニュー系シーンで使う小惑星背景の標準設定を作成する。
+/// </summary>
+/// <returns>メニュー用に調整された小惑星フィールド設定</returns>
+AsteroidFieldConfig CreateMenuAsteroidFieldConfig();
+
+/// <summary>
+/// 読み込み済みテクスチャハンドルからスプライトを生成する。
+/// </summary>
+/// <param name="textureHandle">使用するテクスチャハンドル</param>
+/// <param name="position">表示位置</param>
+/// <returns>生成されたスプライト</returns>
+std::unique_ptr<KamataEngine::Sprite> CreateSprite(uint32_t textureHandle, const KamataEngine::Vector2& position);
+
+/// <summary>
+/// 読み込み済みテクスチャハンドルと初期色からスプライトを生成する。
+/// </summary>
+/// <param name="textureHandle">使用するテクスチャハンドル</param>
+/// <param name="position">表示位置</param>
+/// <param name="color">初期色</param>
+/// <returns>生成されたスプライト</returns>
+std::unique_ptr<KamataEngine::Sprite> CreateSprite(uint32_t textureHandle, const KamataEngine::Vector2& position, const KamataEngine::Vector4& color);
+
+/// <summary>
+/// テクスチャを読み込んでからスプライトを生成する。
+/// 読み込んだハンドルを呼び出し元で再利用したい場合は textureHandle に受け取れる。
+/// </summary>
+/// <param name="texturePath">読み込むテクスチャパス</param>
+/// <param name="position">表示位置</param>
+/// <param name="textureHandle">読み込んだテクスチャハンドルの受け取り先</param>
+/// <returns>生成されたスプライト</returns>
+std::unique_ptr<KamataEngine::Sprite> CreateSprite(const char* texturePath, const KamataEngine::Vector2& position, uint32_t* textureHandle = nullptr);
+
+/// <summary>
+/// テクスチャを読み込み、初期色を指定してスプライトを生成する。
+/// </summary>
+/// <param name="texturePath">読み込むテクスチャパス</param>
+/// <param name="position">表示位置</param>
+/// <param name="color">初期色</param>
+/// <param name="textureHandle">読み込んだテクスチャハンドルの受け取り先</param>
+/// <returns>生成されたスプライト</returns>
+std::unique_ptr<KamataEngine::Sprite> CreateSprite(const char* texturePath, const KamataEngine::Vector2& position, const KamataEngine::Vector4& color, uint32_t* textureHandle = nullptr);
+
+/// <summary>
+/// 2D描画状態を閉じて深度バッファをクリアし、3D描画を始められる状態にする。
+/// </summary>
+/// <param name="dxCommon">DirectX共通管理クラス</param>
+/// <param name="commandList">描画コマンドリスト</param>
+void Begin3DDraw(KamataEngine::DirectXCommon* dxCommon, ID3D12GraphicsCommandList* commandList);
+
+/// <summary>
+/// モデル描画用の PreDraw/PostDraw をまとめて実行する。
+/// </summary>
+/// <param name="drawFunc">モデル描画処理</param>
+template <class DrawFunc>
+void DrawModelLayer(DrawFunc&& drawFunc) {
+	KamataEngine::Model::PreDraw();
+	std::forward<DrawFunc>(drawFunc)();
+	KamataEngine::Model::PostDraw();
+}
+
+/// <summary>
+/// スプライト描画用の PreDraw/PostDraw をまとめて実行する。
+/// </summary>
+/// <param name="commandList">描画コマンドリスト</param>
+/// <param name="drawFunc">スプライト描画処理</param>
+template <class DrawFunc>
+void DrawSpriteLayer(ID3D12GraphicsCommandList* commandList, DrawFunc&& drawFunc) {
+	KamataEngine::Sprite::PreDraw(commandList);
+	std::forward<DrawFunc>(drawFunc)();
+	KamataEngine::Sprite::PostDraw();
+}
+
+} // namespace SceneHelper
+
 
 ============================================================
 File Path: DirectXGame/Scenes/SceneManager.cpp
@@ -11013,12 +11004,14 @@ public:
 
 private:
 	/// <summary>
-	///
+	/// 現在のシーンに合わせて再生中のBGMを切り替える。
+	/// 既に同じシーン用BGMが再生中の場合は何もしない。
 	/// </summary>
 	void UpdateSceneBgm_();
 
 	/// <summary>
-	///
+	/// シーン名に対応するBGMハンドルを取得する。
+	/// BGMを持たないシーンの場合は 0 を返す。
 	/// </summary>
 	uint32_t GetBgmHandleForScene_(SceneName sceneName);
 
@@ -11082,6 +11075,7 @@ File Path: DirectXGame/Scenes/Title/TitleScene.cpp
 
 #include "Application/Utility/GameTime.h"
 #include "Scenes/Introduction/IntroductionScene.h"
+#include "Scenes/SceneHelper.h"
 
 using namespace KamataEngine;
 
@@ -11096,18 +11090,6 @@ constexpr float kBlinkBaseAlpha = 0.5f;
 constexpr float kBlinkAmpAlpha = 0.5f;
 
 // 小惑星ランダム範囲
-constexpr float kAsteroidRangeX = 25.0f;
-constexpr float kAsteroidRangeY = 15.0f;
-constexpr float kAsteroidSpeedMin = -0.3f;
-constexpr float kAsteroidSpeedMax = -0.1f;
-constexpr float kAsteroidRotMin = 0.01f;
-constexpr float kAsteroidRotMax = 0.03f;
-
-constexpr int kAsteroidCount = 10;
-constexpr float kAsteroidSpawnZMin = 0.0f;
-constexpr float kAsteroidSpawnZMax = 140.0f;
-constexpr float kAsteroidRecycleZ = -50.0f;
-constexpr float kAsteroidSpawnInterval = 1.0f;
 } // namespace
 
 TitleScene::TitleScene() {}
@@ -11125,30 +11107,15 @@ void TitleScene::Initialize() {
 	input_ = Input::GetInstance();
 
 	// 各種テクスチャ
-	titleTextureHandle_ = TextureManager::Load("./Resources/title/GameTitle.png");
-	titleSprite_.reset(Sprite::Create(titleTextureHandle_, titlePosition_));
-
-	startTextureHandle_ = TextureManager::Load("./Resources/title/Start.png");
-	startSprite_.reset(Sprite::Create(startTextureHandle_, {150.0f, 550.0f}));
+	titleSprite_ = SceneHelper::CreateSprite("./Resources/title/GameTitle.png", titlePosition_, &titleTextureHandle_);
+	startSprite_ = SceneHelper::CreateSprite("./Resources/title/Start.png", {150.0f, 550.0f}, &startTextureHandle_);
 	startSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f}); // 最初は透明
 
 	// 各種サウンド
 	changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
 
 	// 小惑星生成
-	AsteroidFieldConfig asteroidConfig{};
-	asteroidConfig.count = kAsteroidCount;
-	asteroidConfig.spawnZMin = kAsteroidSpawnZMin;
-	asteroidConfig.spawnZMax = kAsteroidSpawnZMax;
-	asteroidConfig.recycleZ = kAsteroidRecycleZ;
-	asteroidConfig.spawnInterval = kAsteroidSpawnInterval;
-	asteroidConfig.rangeX = kAsteroidRangeX;
-	asteroidConfig.rangeY = kAsteroidRangeY;
-	asteroidConfig.speedMin = kAsteroidSpeedMin;
-	asteroidConfig.speedMax = kAsteroidSpeedMax;
-	asteroidConfig.rotationMin = kAsteroidRotMin;
-	asteroidConfig.rotationMax = kAsteroidRotMax;
-	asteroidField_.Initialize(asteroidConfig);
+	asteroidField_.Initialize(SceneHelper::CreateMenuAsteroidFieldConfig());
 
 	// 天球
 	skydome_ = std::make_unique<Skydome>();
@@ -11199,52 +11166,20 @@ void TitleScene::Draw() {
 	// コマンドリストの取得
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-#pragma region 背景スプライト描画
-	// 背景スプライト描画前処理
-	Sprite::PreDraw(commandList);
-
-	/// <summary>
-	/// ここに背景スプライトの描画処理を追加できる
-	/// </summary>
-
-	// スプライト描画後処理
-	Sprite::PostDraw();
-
-	// 深度バッファクリア
-	dxCommon_->ClearDepthBuffer();
-#pragma endregion
+	SceneHelper::Begin3DDraw(dxCommon_, commandList);
 
 #pragma region 3Dオブジェクト描画
-	// 3Dオブジェクト描画前処理
-	Model::PreDraw();
-
-	/// <summary>
-	/// ここに3Dオブジェクトの描画処理を追加できる
-	/// </summary>
-
-	// 小惑星描画
-	asteroidField_.Draw(camera_);
-
-	// 天球描画
-	skydome_->Draw();
-
-	// 3Dオブジェクト描画後処理
-	Model::PostDraw();
+	SceneHelper::DrawModelLayer([this]() {
+		asteroidField_.Draw(camera_);
+		skydome_->Draw();
+	});
 #pragma endregion
 
 #pragma region 前景スプライト描画
-	// 前景スプライト描画前処理
-	Sprite::PreDraw(commandList);
-
-	/// <summary>
-	/// ここに前景スプライトの描画処理を追加できる
-	/// </summary>
-
-	titleSprite_->Draw();
-	startSprite_->Draw();
-
-	// スプライト描画後処理
-	Sprite::PostDraw();
+	SceneHelper::DrawSpriteLayer(commandList, [this]() {
+		titleSprite_->Draw();
+		startSprite_->Draw();
+	});
 #pragma endregion
 }
 
