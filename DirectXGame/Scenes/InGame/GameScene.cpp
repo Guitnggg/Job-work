@@ -284,133 +284,133 @@ void GameScene::Draw() {
 #pragma region 3Dオブジェクト描画
     SceneHelper::DrawModelLayer([this, cam]() {
 
-    // 空/スカイドームは常に描く（雰囲気）
-    skydome_->Draw();
+        // 空/スカイドームは常に描く（雰囲気）
+        skydome_->Draw();
 
-    // （任意）CountDown中もプレイヤーだけ見せたいなら描く
-    if (state_ == GameState::Playing) {
-        player_->Draw(cam);
-    }
-
-    // ゲーム中だけ描きたいものは Playing に寄せる
-    if (state_ == GameState::Playing && (result_ == GameResult::None || transitionPhase_ == SceneTransitionPhase::FailCinematic)) {
-
-        // スピードライン
-        speedLine_.Draw();
-
-        // 敵・弾・ボス
-        enemyManager_.Draw(cam);
-        bossManager_.Draw(cam);
-        bulletManager_.Draw(cam);
-    }
-
-    // エンジンスモークは通常時とクリア演出中に描画
-    const bool canDrawSmoke = (state_ == GameState::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
-    if (canDrawSmoke && engineSmokeEmitter_) {
-        engineSmokeEmitter_->Draw(cam);
-    }
-
-    // GPU煙エフェクトは最後に描画（Model描画状態を壊さないため）
-    if (state_ == GameState::Playing && result_ == GameResult::None) {
-        if (damageSmokeEmitter_) {
-            damageSmokeEmitter_->Draw(cam);
+        // （任意）CountDown中もプレイヤーだけ見せたいなら描く
+        if (state_ == GameState::Playing) {
+            player_->Draw(cam);
         }
-        if (missileAfterburnerEmitter_) {
-            missileAfterburnerEmitter_->Draw(cam);
-        }
-    }
 
-    });
+        // ゲーム中だけ描きたいものは Playing に寄せる
+        if (state_ == GameState::Playing && (result_ == GameResult::None || transitionPhase_ == SceneTransitionPhase::FailCinematic)) {
+
+            // スピードライン
+            speedLine_.Draw();
+
+            // 敵・弾・ボス
+            enemyManager_.Draw(cam);
+            bossManager_.Draw(cam);
+            bulletManager_.Draw(cam);
+        }
+
+        // エンジンスモークは通常時とクリア演出中に描画
+        const bool canDrawSmoke = (state_ == GameState::Playing) && ((result_ == GameResult::None) || (result_ == GameResult::Clear && isClearAnimating_));
+        if (canDrawSmoke && engineSmokeEmitter_) {
+            engineSmokeEmitter_->Draw(cam);
+        }
+
+        // GPU煙エフェクトは最後に描画（Model描画状態を壊さないため）
+        if (state_ == GameState::Playing && result_ == GameResult::None) {
+            if (damageSmokeEmitter_) {
+                damageSmokeEmitter_->Draw(cam);
+            }
+            if (missileAfterburnerEmitter_) {
+                missileAfterburnerEmitter_->Draw(cam);
+            }
+        }
+
+        });
 #pragma endregion
 
 #pragma region 前景スプライト
     SceneHelper::DrawSpriteLayer(commandList, [this]() {
 
-    // 3カウントは CountDown 中だけ
-    if (state_ == GameState::CountDown) {
-        countDown_.Draw();
-    }
-
-    // UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
-    if (state_ == GameState::Playing) {
-        uiManager_.Draw();
-        bossManager_.DrawUI();
-
-        if (reticleSprite_ && result_ == GameResult::None) {
-            reticleSprite_->Draw();
+        // 3カウントは CountDown 中だけ
+        if (state_ == GameState::CountDown) {
+            countDown_.Draw();
         }
 
-        // ロックオン演出
-        for (auto& marker : lockOnMarkers_) {
-            if (marker.sprite) {
-                marker.sprite->Draw();
+        // UI（スコア/HP等）は Playing 中だけ（結果画面で出したいなら条件追加）
+        if (state_ == GameState::Playing) {
+            uiManager_.Draw();
+            bossManager_.DrawUI();
+
+            if (reticleSprite_ && result_ == GameResult::None) {
+                reticleSprite_->Draw();
             }
-        }
 
-        const Camera* drawCam = railCamera_ ? railCamera_->GetCamera() : &camera_;
-        if (drawCam) {
-            const Matrix4x4 viewProj = MyMath::Multiply(drawCam->matView, drawCam->matProjection);
-            for (const auto& popup : scorePopups_) {
-                const Vector3 clip = MyMath::Transform(popup.worldPos, viewProj);
-                if (clip.z < 0.0f || clip.z > 1.0f) {
-                    continue;
+            // ロックオン演出
+            for (auto& marker : lockOnMarkers_) {
+                if (marker.sprite) {
+                    marker.sprite->Draw();
                 }
-                const Vector2 screenPos = { (clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight };
-                const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
-                const float scale = 0.85f + 0.35f * (1.0f - t);
-                const float alpha = (std::max)(0.0f, 1.0f - t);
-                DrawPopupNumber(scorePopupDigitSprite_.get(), popup.value, screenPos, scale, alpha);
+            }
+
+            const Camera* drawCam = railCamera_ ? railCamera_->GetCamera() : &camera_;
+            if (drawCam) {
+                const Matrix4x4 viewProj = MyMath::Multiply(drawCam->matView, drawCam->matProjection);
+                for (const auto& popup : scorePopups_) {
+                    const Vector3 clip = MyMath::Transform(popup.worldPos, viewProj);
+                    if (clip.z < 0.0f || clip.z > 1.0f) {
+                        continue;
+                    }
+                    const Vector2 screenPos = { (clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight };
+                    const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
+                    const float scale = 0.85f + 0.35f * (1.0f - t);
+                    const float alpha = (std::max)(0.0f, 1.0f - t);
+                    DrawPopupNumber(scorePopupDigitSprite_.get(), popup.value, screenPos, scale, alpha);
+                }
             }
         }
-    }
 
-    // Pauseメニュー
-    if (isPaused_) {
-        pauseMenu_->Draw();
-    }
-
-    // 操作UI
-    if (!isPaused_) {
-        if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
-            const bool isWPressed = input_->PushKey(DIK_W);
-            const bool isAPressed = input_->PushKey(DIK_A);
-            const bool isSPressed = input_->PushKey(DIK_S);
-            const bool isDPressed = input_->PushKey(DIK_D);
-            const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
-
-            ApplyPressedSpriteState(wasdWSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY }, keySize, isWPressed);
-            ApplyPressedSpriteState(wasdASprite_.get(), { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isAPressed);
-            ApplyPressedSpriteState(wasdSSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isSPressed);
-            ApplyPressedSpriteState(wasdDSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isDPressed);
-
-            wasdWSprite_->Draw();
-            wasdASprite_->Draw();
-            wasdSSprite_->Draw();
-            wasdDSprite_->Draw();
+        // Pauseメニュー
+        if (isPaused_) {
+            pauseMenu_->Draw();
         }
 
-        if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
-            const bool isLeftPressed = input_->IsPressMouse(0);
-            const bool isRightPressed = input_->IsPressMouse(1);
-            const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
+        // 操作UI
+        if (!isPaused_) {
+            if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
+                const bool isWPressed = input_->PushKey(DIK_W);
+                const bool isAPressed = input_->PushKey(DIK_A);
+                const bool isSPressed = input_->PushKey(DIK_S);
+                const bool isDPressed = input_->PushKey(DIK_D);
+                const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
 
-            ApplyPressedSpriteState(mouseLeftSprite_.get(), { kMouseBaseX, kMouseBaseY }, mouseButtonSize, isLeftPressed);
-            ApplyPressedSpriteState(mouseRightSprite_.get(), { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }, mouseButtonSize, isRightPressed);
+                ApplyPressedSpriteState(wasdWSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY }, keySize, isWPressed);
+                ApplyPressedSpriteState(wasdASprite_.get(), { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isAPressed);
+                ApplyPressedSpriteState(wasdSSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isSPressed);
+                ApplyPressedSpriteState(wasdDSprite_.get(), { kWasdBaseX + (keySize.x + kWasdSpacing) * 2.0f, kWasdBaseY + (keySize.y + kWasdSpacing) }, keySize, isDPressed);
 
-            mouseBaseSprite_->Draw();
-            mouseLeftSprite_->Draw();
-            mouseRightSprite_->Draw();
+                wasdWSprite_->Draw();
+                wasdASprite_->Draw();
+                wasdSSprite_->Draw();
+                wasdDSprite_->Draw();
+            }
+
+            if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
+                const bool isLeftPressed = input_->IsPressMouse(0);
+                const bool isRightPressed = input_->IsPressMouse(1);
+                const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
+
+                ApplyPressedSpriteState(mouseLeftSprite_.get(), { kMouseBaseX, kMouseBaseY }, mouseButtonSize, isLeftPressed);
+                ApplyPressedSpriteState(mouseRightSprite_.get(), { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }, mouseButtonSize, isRightPressed);
+
+                mouseBaseSprite_->Draw();
+                mouseLeftSprite_->Draw();
+                mouseRightSprite_->Draw();
+            }
         }
-    }
 
-    // Pauseガイド
-    if (!isPaused_ && state_ == GameState::Playing) {
-        if (pauseTitleSprite_) {
-            pauseTitleSprite_->Draw();
+        // Pauseガイド
+        if (!isPaused_ && state_ == GameState::Playing) {
+            if (pauseTitleSprite_) {
+                pauseTitleSprite_->Draw();
+            }
         }
-    }
 
-    });
+        });
 #pragma endregion
 }
 
