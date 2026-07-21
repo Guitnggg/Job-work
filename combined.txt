@@ -4410,7 +4410,7 @@ void BulletManager::Initialize() {
 
     // Object Pool Pattern:
     // 通常弾は連射で頻繁に生成・破棄されるため、最初に一定数を生成してプールとして保持する。
-    // 発射時はこの中から未使用(isDead_)の弾を取り出して再利用し、毎回 new/delete しないようにする。
+    // 発射時はこの中から未使用(isDead_)の弾を取り出して再利用し、毎回の動的確保・解放を避ける。
     bullets_.reserve(kInitialBulletPoolSize);
     for (int32_t i = 0; i < kInitialBulletPoolSize; ++i) {
         auto bullet = std::make_unique<Bullet>();
