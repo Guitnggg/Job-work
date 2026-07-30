@@ -532,11 +532,17 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 
 		const Vector3 localOffset = {0.0f, gameScene.kSmokeOffsetY, gameScene.kSmokeOffsetZ};
 		const Vector3 offset = MyMath::TransformNormal(localOffset, playerRotateMatrix);
-		const Vector3 spawnPos = MyMath::Add(playerPos, offset);
+		const Vector3 spawnCenter = MyMath::Add(playerPos, offset);
 
 		// 煙をまとめて発生させる。
 		for (int i = 0; i < params.burstCount; ++i) {
-			const Vector3 localVel = {xyDist(rng), xyDist(rng), params.baseZSpeed + zDist(rng)};
+			// Spawn across the nozzle and converge toward the exhaust center line.
+			const Vector3 localSpread = {xyDist(rng), xyDist(rng), 0.0f};
+			const Vector3 spreadOffset = MyMath::TransformNormal(localSpread, playerRotateMatrix);
+			const Vector3 particleSpawnPos = MyMath::Add(spawnCenter, spreadOffset);
+			const float convergenceSpeed = 1.0f / (std::max)(params.lifeTime, 0.01f);
+			const Vector3 localVel = {
+			    -localSpread.x * convergenceSpeed, -localSpread.y * convergenceSpeed, params.baseZSpeed + zDist(rng)};
 			const Vector3 vel = MyMath::TransformNormal(localVel, playerRotateMatrix);
 
 			if (gameScene.engineSmokeEmitter_) {
@@ -544,7 +550,7 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 				const Vector4 startColor = isBoosting ? kBoostCoreColor : kEngineCoreColor;
 				const Vector4 endColor = isBoosting ? kBoostOuterColor : kEngineFadeColor;
 				const float endScale = isBoosting ? params.startScale * 0.25f : params.startScale * 0.10f;
-				gameScene.engineSmokeEmitter_->Emit(spawnPos, vel, params.lifeTime, params.startScale, endScale, startColor, endColor);
+				gameScene.engineSmokeEmitter_->Emit(particleSpawnPos, vel, params.lifeTime, params.startScale, endScale, startColor, endColor);
 			}
 		}
 	}
@@ -580,6 +586,7 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 
 		const Vector3 pos = missile->GetWorldTranslation();
 		const Vector3 spawnPos = MyMath::Add(pos, MyMath::Multiply(vel, gameScene.kMissileAfterburnerOffsetZ));
+		for (int trailParticle = 0; trailParticle < 4; ++trailParticle) {
 		Vector3 emitVel = MyMath::Multiply(vel, gameScene.kMissileAfterburnerSpeed);
 		emitVel.x += randDist(rng);
 		emitVel.y += randDist(rng);
@@ -594,6 +601,7 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 		emberVel.z += randDist(rng) * 0.8f;
 		gameScene.missileAfterburnerEmitter_->Emit(
 		    spawnPos, emberVel, gameScene.kMissileAfterburnerLife * 0.65f, gameScene.kMissileAfterburnerStartScale * 0.6f, 0.0f, kBoostOuterColor, kExplosionFireColor);
+		}
 	}
 
 	gameScene.missileAfterburnerEmitter_->Update(dt);

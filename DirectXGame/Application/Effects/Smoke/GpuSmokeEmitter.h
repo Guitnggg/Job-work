@@ -4,8 +4,6 @@
 #include <wrl.h>
 
 #include <cstdint>
-#include <vector>
-
 #include "3d/Camera.h"
 #include "math/Matrix4x4.h"
 #include "math/Vector3.h"
@@ -14,16 +12,16 @@
 class GpuSmokeEmitter {
 public:
     struct SmokeParticle {
-        KamataEngine::Vector3 position;
-        float scale = 0.0f;
+        KamataEngine::Vector3 initialPosition;
+        float spawnTime = 0.0f;
 
         KamataEngine::Vector3 velocity;
         float life = 0.0f;
 
-        float age = 0.0f;
         float startScale = 0.0f;
         float endScale = 0.0f;
         float active = 0.0f;
+        float padding = 0.0f;
 
         KamataEngine::Vector4 startColor{ 0.65f, 0.65f, 0.65f, 0.7f };
         KamataEngine::Vector4 endColor{ 0.12f, 0.12f, 0.12f, 0.0f };
@@ -51,12 +49,14 @@ private:
     struct Constants {
         KamataEngine::Matrix4x4 view;
         KamataEngine::Matrix4x4 projection;
+        float elapsedTime = 0.0f;
+        float padding[3]{};
     };
 
     uint32_t maxParticles_ = 0;
     uint32_t nextSpawnIndex_ = 0;
 
-    std::vector<SmokeParticle> particles_;
+    float elapsedTime_ = 0.0f;
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;

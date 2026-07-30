@@ -174,21 +174,21 @@ void GameScene::Initialize() {
 
     // ===== エンジンスモーク初期化 =====
     engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
-    engineSmokeEmitter_->Initialize(256);
+    engineSmokeEmitter_->Initialize(2048);
     damageSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
-    damageSmokeEmitter_->Initialize(768);
+    damageSmokeEmitter_->Initialize(8192);
     missileAfterburnerEmitter_ = std::make_unique<GpuSmokeEmitter>();
-    missileAfterburnerEmitter_->Initialize(512);
+    missileAfterburnerEmitter_->Initialize(4096);
     smokeEmitTimer_ = 0.0f;
     prevEnemyHpMap_.clear();
     prevPlayerHp_ = player_->GetHP();
 
     // ===== 通常時スモーク =====
     normalSmokeParams_ = {
-        0.08f, // emitInterval
-        1.0f,  // lifeTime
-        0.3f,  // startScale
-        10,    // burstCount
+        0.03f, // emitInterval
+        0.40f, // lifeTime
+        0.40f, // startScale
+        32,    // burstCount
         -3.0f  // baseZSpeed
     };
 
@@ -196,8 +196,8 @@ void GameScene::Initialize() {
     boostSmokeParams_ = {
         0.01f, // emitInterval
         0.30f, // lifeTime
-        0.20f, // startScale
-        3,     // burstCount
+        0.32f, // startScale
+        64,    // burstCount
         -1.6f  // baseZSpeed
     };
 

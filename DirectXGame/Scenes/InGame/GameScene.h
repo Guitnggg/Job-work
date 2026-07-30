@@ -183,16 +183,16 @@ private:
 
 	static constexpr float kSmokeOffsetY = -0.3f;
 	static constexpr float kSmokeOffsetZ = -1.5f;
-	static constexpr float kSmokeRandXY = 0.5f;
+	static constexpr float kSmokeRandXY = 0.25f;
 	static constexpr float kSmokeRandZ = 0.10f;
 
 	// ========== GPUダメージエフェクト ==========
 	std::unordered_map<CharacterBase*, int32_t> prevEnemyHpMap_;
 	int32_t prevPlayerHp_ = 0;
 	static constexpr float kDamageGpuLife = 0.35f;
-	static constexpr float kDamageGpuStartScale = 0.20f;
-	static constexpr float kDamageGpuEndScale = 0.8f;
-	static constexpr int kDamageGpuBurst = 32;
+	static constexpr float kDamageGpuStartScale = 0.32f;
+	static constexpr float kDamageGpuEndScale = 1.25f;
+	static constexpr int kDamageGpuBurst = 128;
 	static constexpr float kDamageGpuSpeed = 6.0f;
 
 	// ========== 効果音 ==========
@@ -217,7 +217,7 @@ private:
 
 	// ========== ミサイルアフターバーナー ==========
 	static constexpr float kMissileAfterburnerLife = 0.28f;
-	static constexpr float kMissileAfterburnerStartScale = 0.13f;
+	static constexpr float kMissileAfterburnerStartScale = 0.20f;
 	static constexpr float kMissileAfterburnerEndScale = 0.0f;
 	static constexpr float kMissileAfterburnerSpeed = -3.8f;
 	static constexpr float kMissileAfterburnerOffsetZ = -0.55f;

@@ -40,7 +40,8 @@ void GpuSmokeEmitter::Initialize(uint32_t maxParticles) {
     maxParticles_ = std::max<uint32_t>(maxParticles, 1);
 
     // CPU側パーティクル配列確保
-    particles_.resize(maxParticles_);
+    nextSpawnIndex_ = 0;
+    elapsedTime_ = 0.0f;
 
     CreatePipeline_();       // パイプライン生成
     CreateVertexBuffer_();   // クアッド頂点生成
@@ -53,21 +54,20 @@ void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, flo
 }
 
 void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, float life, float startScale, float endScale, const Vector4& startColor, const Vector4& endColor) {
-    if (particles_.empty()) {
+    if (!mappedParticles_ || maxParticles_ == 0) {
         return;
     }
 
     // 次の書き込み位置取得
-    SmokeParticle& p = particles_[nextSpawnIndex_];
+    SmokeParticle& p = mappedParticles_[nextSpawnIndex_];
 
     // 初期値設定
-    p.position = position;
+    p.initialPosition = position;
+    p.spawnTime = elapsedTime_;
     p.velocity = velocity;
     p.life = (std::max)(0.01f, life);
-    p.age = 0.0f;
     p.startScale = startScale;
     p.endScale = endScale;
-    p.scale = startScale;
     p.active = 1.0f;
     p.startColor = startColor;
     p.endColor = endColor;
@@ -82,6 +82,7 @@ void GpuSmokeEmitter::Update(float dt) {
     }
 
     // 無効パーティクルはスキップ
+#if 0
     for (auto& p : particles_) {
         if (p.active < 0.5f) {
             continue;
@@ -113,6 +114,8 @@ void GpuSmokeEmitter::Update(float dt) {
     if (mappedParticles_) {
         std::memcpy(mappedParticles_, particles_.data(), sizeof(SmokeParticle) * particles_.size());
     }
+#endif
+    elapsedTime_ += dt;
 }
 
 void GpuSmokeEmitter::Draw(const Camera* camera) {
@@ -129,6 +132,7 @@ void GpuSmokeEmitter::Draw(const Camera* camera) {
     if (mappedConstants_) {
         mappedConstants_->view = camera->matView;
         mappedConstants_->projection = camera->matProjection;
+        mappedConstants_->elapsedTime = elapsedTime_;
     }
 
     // パイプライン設定
@@ -148,7 +152,7 @@ void GpuSmokeEmitter::Draw(const Camera* camera) {
     commandList->SetGraphicsRootDescriptorTable(1, srvHeap_->GetGPUDescriptorHandleForHeapStart());
 
     // 描画インスタンシング
-    commandList->DrawInstanced(6, static_cast<UINT>(particles_.size()), 0, 0);
+    commandList->DrawInstanced(6, maxParticles_, 0, 0);
 }
 
 void GpuSmokeEmitter::CreatePipeline_() {
@@ -285,7 +289,7 @@ void GpuSmokeEmitter::CreateParticleBuffer_() {
     }
 
     // バッファサイズ
-    const UINT bufferSize = static_cast<UINT>(sizeof(SmokeParticle) * particles_.size());
+    const UINT bufferSize = static_cast<UINT>(sizeof(SmokeParticle) * maxParticles_);
 
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
     CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
@@ -314,7 +318,7 @@ void GpuSmokeEmitter::CreateParticleBuffer_() {
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srvDesc.Buffer.FirstElement = 0;
-    srvDesc.Buffer.NumElements = static_cast<UINT>(particles_.size());
+    srvDesc.Buffer.NumElements = maxParticles_;
     srvDesc.Buffer.StructureByteStride = sizeof(SmokeParticle);
     srvDesc.Format = DXGI_FORMAT_UNKNOWN;
 
