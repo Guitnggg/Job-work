@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "Application/Managers/EnemyManager/EnemyManager.h"
+#include "Application/Utility/MyMath/MyMath.h"
 
 using namespace KamataEngine;
 
@@ -32,6 +33,7 @@ void BulletManager::Initialize() {
 
     fireCooldownFrames_ = 0;
     burstShotsRemaining_ = 0;
+    burstDirection_ = kForward;
     isHomingLocking_ = false;
     homingLockFrame_ = 0;
     homingCooldownFrames_ = 0;
@@ -55,6 +57,16 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 
     if (input->IsTriggerMouse(0) && burstShotsRemaining_ <= 0 && fireCooldownFrames_ <= 0) {
         burstShotsRemaining_ = kBurstShotCount;
+
+        // Snapshot the aim only once. Every shot in this burst must keep flying
+        // toward the point that was selected when the mouse was clicked.
+        burstDirection_ = shootDir;
+        const float burstDirLenSq = burstDirection_.x * burstDirection_.x + burstDirection_.y * burstDirection_.y + burstDirection_.z * burstDirection_.z;
+        if (burstDirLenSq <= 0.000001f) {
+            burstDirection_ = kForward;
+        } else {
+            burstDirection_ = MyMath::Normalize(burstDirection_);
+        }
     }
 
     if (burstShotsRemaining_ <= 0 || fireCooldownFrames_ > 0) {
@@ -62,7 +74,7 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
         return;
     }
 
-    Vector3 dir = shootDir;
+    Vector3 dir = burstDirection_;
     const float lenSq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
     if (lenSq <= 0.000001f) {
         dir = kForward;

@@ -119,6 +119,7 @@ private:
     // 通常弾の発射管理
     int32_t fireCooldownFrames_ = 0;
     int32_t burstShotsRemaining_ = 0;
+    KamataEngine::Vector3 burstDirection_{ 0.0f, 0.0f, 1.0f };
     static constexpr int32_t kBurstShotCount = 3;
     static constexpr int32_t kBurstIntervalFrames = 3;  // バースト内の連射間隔
     static constexpr int32_t kBurstCooldownFrames = 18; // バースト終了後のクールダウン

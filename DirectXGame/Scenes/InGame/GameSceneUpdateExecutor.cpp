@@ -24,6 +24,9 @@ constexpr Vector4 kExplosionHotColor{1.0f, 0.82f, 0.22f, 1.0f};
 constexpr Vector4 kExplosionFireColor{1.0f, 0.24f, 0.04f, 0.0f};
 constexpr Vector4 kSmokeStartColor{0.24f, 0.22f, 0.20f, 0.55f};
 constexpr Vector4 kSmokeEndColor{0.03f, 0.03f, 0.04f, 0.0f};
+constexpr Vector4 kReticleNormalColor{1.0f, 1.0f, 1.0f, 1.0f};
+constexpr Vector4 kReticleTargetColor{1.0f, 0.2f, 0.2f, 1.0f};
+constexpr float kReticleTargetRadius = 32.0f;
 
 class IPauseMenuCommand {
 public:
@@ -374,9 +377,40 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 	const Vector3 playerPos = gameScene.player_->GetWorldTranslation();
 	const float targetZ = playerPos.z + 120.0f;
 	const float t = (targetZ - nearPoint.z) / rayDir.z;
-	const Vector3 hit = MyMath::Add(nearPoint, MyMath::Multiply(rayDir, t));
+	Vector3 aimPoint = MyMath::Add(nearPoint, MyMath::Multiply(rayDir, t));
 
-	gameScene.shootDirection_ = MyMath::Normalize(MyMath::Subtract(hit, playerPos));
+	// If an enemy is under the reticle, use its center as the aim point. Select
+	// the closest visible enemy when multiple targets overlap on screen.
+	CharacterBase* aimedEnemy = nullptr;
+	float nearestDepth = 1.0f;
+	const float targetRadiusSq = kReticleTargetRadius * kReticleTargetRadius;
+	for (const auto& enemy : gameScene.enemyManager_.GetEnemies()) {
+		if (!enemy || enemy->IsDead()) {
+			continue;
+		}
+
+		const Vector3 clip = MyMath::Transform(enemy->GetWorldTranslation(), viewProj);
+		if (clip.z < 0.0f || clip.z > 1.0f) {
+			continue;
+		}
+
+		const Vector2 enemyScreen = {(clip.x * 0.5f + 0.5f) * gameScene.kScreenWidth, (-clip.y * 0.5f + 0.5f) * gameScene.kScreenHeight};
+		const float dx = enemyScreen.x - gameScene.reticlePos_.x;
+		const float dy = enemyScreen.y - gameScene.reticlePos_.y;
+		if (dx * dx + dy * dy <= targetRadiusSq && (!aimedEnemy || clip.z < nearestDepth)) {
+			aimedEnemy = enemy.get();
+			nearestDepth = clip.z;
+		}
+	}
+
+	if (aimedEnemy) {
+		aimPoint = aimedEnemy->GetWorldTranslation();
+	}
+	if (gameScene.reticleSprite_) {
+		gameScene.reticleSprite_->SetColor(aimedEnemy ? kReticleTargetColor : kReticleNormalColor);
+	}
+
+	gameScene.shootDirection_ = MyMath::Normalize(MyMath::Subtract(aimPoint, playerPos));
 	if (gameScene.shootDirection_.z < 0.05f) {
 		gameScene.shootDirection_.z = 0.05f;
 		gameScene.shootDirection_ = MyMath::Normalize(gameScene.shootDirection_);
