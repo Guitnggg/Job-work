@@ -4,12 +4,19 @@
 
 #include <algorithm>
 
+namespace {
+constexpr float kRightMargin = 10.0f;
+constexpr float kScoreFollowRate = 0.22f;
+constexpr float kScorePopDuration = 0.18f;
+constexpr float kScorePopScale = 0.35f;
+}
+
 void Score::Initialize() {
     textureHandle_ = KamataEngine::TextureManager::Load("./Resources/InGame/number.png");
 
     // 画面右上に表示するためにx座標を計算
     float screenWidth = static_cast<float>(KamataEngine::DirectXCommon::GetInstance()->GetBackBufferWidth());
-    startX_ = screenWidth - (size_.x * kDigitCount) - 10.0f;
+    startX_ = screenWidth - (size_.x * kDigitCount) - kRightMargin;
 
     // 各桁のスプライトを作成
     for (int i = 0; i < kDigitCount; ++i) {
@@ -23,11 +30,10 @@ void Score::Initialize() {
 }
 
 void Score::Update() {
-    const float follow = 0.22f;
-    displayedScore_ += (static_cast<float>(score_) - displayedScore_) * follow;
+    displayedScore_ += (static_cast<float>(score_) - displayedScore_) * kScoreFollowRate;
     if (scorePopTimer_ > 0.0f) {
         scorePopTimer_ = (std::max)(0.0f, scorePopTimer_ - GameTime::kDeltaTime);
-        const float pulse = 1.0f + (scorePopTimer_ / 0.18f) * 0.35f;
+        const float pulse = 1.0f + (scorePopTimer_ / kScorePopDuration) * kScorePopScale;
         for (int i = 0; i < kDigitCount; ++i) {
             digitSprites_[i]->SetSize({ size_.x * pulse, size_.y * pulse });
         }
@@ -59,7 +65,7 @@ void Score::Draw() {
 
 void Score::Add(int value) {
     score_ += value;
-    scorePopTimer_ = 0.18f;
+    scorePopTimer_ = kScorePopDuration;
 }
 
 void Score::SetPosition(float x, float y) {

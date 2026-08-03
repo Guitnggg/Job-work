@@ -9,6 +9,10 @@
 using namespace KamataEngine;
 
 namespace {
+constexpr float kBossSpawnOffsetY = 0.8f;
+constexpr float kBossSpawnOffsetZ = 55.0f;
+constexpr float kWarningPulseAngularSpeed = 10.0f;
+
 CharacterBase::DamageSource GetProjectileDamageSource(CharacterBase* projectile) {
 	if (dynamic_cast<HomingMissile*>(projectile)) {
 		return CharacterBase::DamageSource::HomingMissile;
@@ -43,7 +47,7 @@ void BossManager::Initialize() {
 
 void BossManager::StartBossBattle(const Vector3& playerPos, WorldTransform* parent) {
 	boss_ = std::make_unique<Boss>();
-	boss_->Initialize({playerPos.x, playerPos.y + 0.8f, playerPos.z + 55.0f});
+	boss_->Initialize({playerPos.x, playerPos.y + kBossSpawnOffsetY, playerPos.z + kBossSpawnOffsetZ});
 	boss_->SetParent(parent);
 	boss_->Update();
 	attackController_.Initialize(boss_.get());
@@ -64,7 +68,7 @@ void BossManager::Update(float dt) {
 		if (boss_) {
 			boss_->Update();
 		}
-		const float warningRate = std::fabs(std::sin(introTimer_ * 10.0f));
+		const float warningRate = std::fabs(std::sin(introTimer_ * kWarningPulseAngularSpeed));
 		uiManager_.Update(boss_.get(), warningRate, false, true);
 		if (introTimer_ >= kIntroDuration) {
 			state_ = State::Battle;

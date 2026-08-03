@@ -3,14 +3,23 @@
 #include <algorithm>
 #include <cassert>
 
+namespace {
+constexpr float kCriticalHpRate = 0.25f;
+constexpr float kWarningHpRate = 0.50f;
+constexpr KamataEngine::Vector4 kBackBarColor{0.04f, 0.06f, 0.08f, 0.85f};
+constexpr KamataEngine::Vector4 kHealthyColor{0.15f, 0.95f, 0.35f, 0.95f};
+constexpr KamataEngine::Vector4 kWarningColor{1.0f, 0.75f, 0.10f, 0.98f};
+constexpr KamataEngine::Vector4 kCriticalColor{1.0f, 0.15f, 0.10f, 0.98f};
+}
+
 Graph::Graph() {}
 
 void Graph::Initialize() {
 
     texHandle_ = KamataEngine::TextureManager::Load("./Resources/white1x1.png");
 
-    backBar_.reset(KamataEngine::Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, { 0.04f, 0.06f, 0.08f, 0.85f }));
-    frontBar_.reset(KamataEngine::Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, { 0.15f, 0.95f, 0.35f, 0.95f }));
+    backBar_.reset(KamataEngine::Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, kBackBarColor));
+    frontBar_.reset(KamataEngine::Sprite::Create(texHandle_, { kBarPosX, kBarPosY }, kHealthyColor));
     backBar_->SetSize({ kBarWidth, kBarHeight });
     frontBar_->SetSize({ kBarWidth, kBarHeight });
 
@@ -26,12 +35,12 @@ void Graph::SetValue(float rate) {
 void Graph::Update() {
     // 横幅を value_ に応じて変化させる
     frontBar_->SetSize({ kBarWidth * value_, kBarHeight });
-    if (value_ <= 0.25f) {
-        frontBar_->SetColor({ 1.0f, 0.15f, 0.10f, 0.98f });
-    } else if (value_ <= 0.50f) {
-        frontBar_->SetColor({ 1.0f, 0.75f, 0.10f, 0.98f });
+    if (value_ <= kCriticalHpRate) {
+        frontBar_->SetColor(kCriticalColor);
+    } else if (value_ <= kWarningHpRate) {
+        frontBar_->SetColor(kWarningColor);
     } else {
-        frontBar_->SetColor({ 0.15f, 0.95f, 0.35f, 0.95f });
+        frontBar_->SetColor(kHealthyColor);
     }
 }
 

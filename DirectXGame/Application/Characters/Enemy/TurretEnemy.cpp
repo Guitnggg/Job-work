@@ -7,6 +7,14 @@
 
 using namespace KamataEngine;
 
+namespace {
+constexpr float kFlashScaleAmount = 0.3f;
+constexpr float kDirectionLengthEpsilon = 0.000001f;
+constexpr float kShakeFrequencyX = 40.0f;
+constexpr float kShakeFrequencyY = 52.0f;
+constexpr float kVerticalShakeScale = 0.5f;
+}
+
 /// <summary>
 /// TurretEnemy の行動を状態ごとに分離するための State Pattern 用基底クラス。
 /// </summary>
@@ -133,7 +141,8 @@ void TurretEnemy::Draw(const Camera* camera) {
         if (flashTimer_ > 0.0f && flashTextureHandle_ != 0u) {
             Vector3 backupScale = worldTransform_.scale_;
             const float t = flashTimer_ / kFlashDuration;
-            worldTransform_.scale_ = { backupScale.x * (1.0f + t * 0.3f), backupScale.y * (1.0f + t * 0.3f), backupScale.z * (1.0f + t * 0.3f) };
+            worldTransform_.scale_ = {
+                backupScale.x * (1.0f + t * kFlashScaleAmount), backupScale.y * (1.0f + t * kFlashScaleAmount), backupScale.z * (1.0f + t * kFlashScaleAmount) };
             worldTransform_.UpdateMatrix();
             model_->Draw(worldTransform_, *camera, flashTextureHandle_, &flashColor_);
             worldTransform_.scale_ = backupScale;
@@ -173,7 +182,7 @@ void TurretEnemy::AimToTarget_() {
 
     const float lenSq = toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z;
 
-    if (lenSq < 0.000001f) {
+    if (lenSq < kDirectionLengthEpsilon) {
         return;
     }
 
@@ -198,7 +207,7 @@ void TurretEnemy::Fire_() {
     Vector3 dir{ targetPos_.x - muzzlePos.x, targetPos_.y - muzzlePos.y, targetPos_.z - muzzlePos.z };
 
     const float len = std::sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-    if (len < 0.000001f) {
+    if (len < kDirectionLengthEpsilon) {
         return;
     }
     dir.x /= len;
@@ -237,8 +246,8 @@ void TurretEnemy::UpdateBodyFeedback_(float dt) {
     worldTransform_.translation_ = baseTranslation_;
     if (shakeTimer_ > 0.0f) {
         const float t = shakeTimer_ / kShakeDuration;
-        worldTransform_.translation_.x += std::sin(t * 40.0f) * kShakePower * t;
-        worldTransform_.translation_.y += std::cos(t * 52.0f) * kShakePower * 0.5f * t;
+        worldTransform_.translation_.x += std::sin(t * kShakeFrequencyX) * kShakePower * t;
+        worldTransform_.translation_.y += std::cos(t * kShakeFrequencyY) * kShakePower * kVerticalShakeScale * t;
     }
     worldTransform_.UpdateMatrix();
 }

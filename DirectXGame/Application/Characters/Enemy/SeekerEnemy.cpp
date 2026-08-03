@@ -6,6 +6,15 @@
 
 using namespace KamataEngine;
 
+namespace {
+constexpr float kFlashScaleAmount = 0.5f;
+constexpr float kFlashBlinkStartRate = 0.5f;
+constexpr float kFlashBlinkFrequency = 10.0f;
+constexpr int32_t kBlinkVisibleDivisor = 2;
+constexpr float kDirectionLengthEpsilon = 0.00001f;
+constexpr int32_t kCollisionDamage = 1;
+}
+
 /// <summary>
 /// SeekerEnemy の行動を状態ごとに分離するための State Pattern 用基底クラス。
 /// </summary>
@@ -130,7 +139,7 @@ void SeekerEnemy::Draw(const Camera* camera) {
 
     if (flashTimer_ > 0.0f) {
         float t = flashTimer_ / kFlashDuration;
-        float scaleMul = 1.0f + 0.5f * t;
+        float scaleMul = 1.0f + kFlashScaleAmount * t;
 
         worldTransform_.scale_.x = baseScale_.x * scaleMul;
         worldTransform_.scale_.y = baseScale_.y * scaleMul;
@@ -138,9 +147,9 @@ void SeekerEnemy::Draw(const Camera* camera) {
         worldTransform_.UpdateMatrix();
 
         bool visible = true;
-        if (t > 0.5f) {
-            int32_t blink = static_cast<int32_t>(t * 10.0f);
-            visible = (blink % 2) == 0;
+        if (t > kFlashBlinkStartRate) {
+            int32_t blink = static_cast<int32_t>(t * kFlashBlinkFrequency);
+            visible = (blink % kBlinkVisibleDivisor) == 0;
         }
 
         if (visible) {
@@ -162,7 +171,7 @@ void SeekerEnemy::OnCollision(CharacterBase* /*other*/) {
     }
 
     // ダメージ処理
-    hp_ -= 1;
+    hp_ -= kCollisionDamage;
     if (hp_ < 0) {
         hp_ = 0;
     }
@@ -180,7 +189,7 @@ void SeekerEnemy::OnCollision(CharacterBase* /*other*/) {
     // ノックバック方向（進行方向の逆）
     hitDir_ = { -velocity_.x, -velocity_.y, -velocity_.z };
     float len = std::sqrt(hitDir_.x * hitDir_.x + hitDir_.y * hitDir_.y + hitDir_.z * hitDir_.z);
-    if (len > 0.00001f) {
+    if (len > kDirectionLengthEpsilon) {
         hitDir_.x /= len;
         hitDir_.y /= len;
         hitDir_.z /= len;
@@ -240,7 +249,7 @@ void SeekerEnemy::UpdateActiveMotion_(float dt) {
         Vector3 toTarget{ targetPos_.x - pos.x, targetPos_.y - pos.y, targetPos_.z - pos.z };
 
         float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
-        if (len > 0.00001f) {
+        if (len > kDirectionLengthEpsilon) {
             toTarget.x /= len;
             toTarget.y /= len;
             toTarget.z /= len;
@@ -252,7 +261,7 @@ void SeekerEnemy::UpdateActiveMotion_(float dt) {
         velocity_.z = (1.0f - turnRate_) * velocity_.z + turnRate_ * toTarget.z;
 
         float vlen = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
-        if (vlen > 0.00001f) {
+        if (vlen > kDirectionLengthEpsilon) {
             velocity_.x /= vlen;
             velocity_.y /= vlen;
             velocity_.z /= vlen;

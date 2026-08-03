@@ -2,6 +2,10 @@
 
 #include "Application/Utility/GameTime.h"
 
+namespace {
+constexpr KamataEngine::Vector2 kScreenSize{1280.0f, 720.0f};
+}
+
 SceneManager::SceneManager() {
 	// BGM
 	audio_ = KamataEngine::Audio::GetInstance();
@@ -19,11 +23,11 @@ SceneManager::SceneManager() {
 	    false,                    // FlipX
 	    false                     // FlipY
 	    ));
-	fadeSprite_->SetSize({1280, 720});
+	fadeSprite_->SetSize(kScreenSize);
 
 	// 白フラッシュ
 	flashSprite_.reset(KamataEngine::Sprite::Create(0, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, false, false));
-	flashSprite_->SetSize({1280, 720});
+	flashSprite_->SetSize(kScreenSize);
 }
 
 SceneManager::~SceneManager() {

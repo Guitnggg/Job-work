@@ -27,6 +27,31 @@ constexpr Vector4 kSmokeEndColor{0.03f, 0.03f, 0.04f, 0.0f};
 constexpr Vector4 kReticleNormalColor{1.0f, 1.0f, 1.0f, 1.0f};
 constexpr Vector4 kReticleTargetColor{1.0f, 0.2f, 0.2f, 1.0f};
 constexpr float kReticleTargetRadius = 32.0f;
+constexpr float kIntroCinematicZoom = -10.0f;
+constexpr float kClearCinematicZoom = -18.0f;
+constexpr float kClearCinematicRestoreTime = 0.55f;
+constexpr float kBossStartCinematicDuration = 0.8f;
+constexpr float kBossIntroTimeScale = 0.65f;
+constexpr float kBossIntroCinematicZoom = -26.0f;
+constexpr float kBossIntroCinematicDuration = 2.0f;
+constexpr float kBossClearCinematicZoom = -28.0f;
+constexpr float kBossClearTimeScaleRestoreTime = 0.6f;
+constexpr float kFailCinematicZoom = -24.0f;
+constexpr float kFailSecondExplosionTime = 0.40f;
+constexpr float kFailSecondExplosionScale = 1.4f;
+constexpr float kFailCinematicDuration = 1.2f;
+constexpr float kExplosionSeVolume = 0.7f;
+constexpr float kExplosionParticleLifeScale = 1.3f;
+constexpr int kSmokeParticleCountDivisor = 2;
+constexpr float kSmokeVelocityScale = 0.45f;
+constexpr float kSmokeParticleLifeScale = 3.2f;
+constexpr float kSmokeStartScaleMultiplier = 1.2f;
+constexpr float kSmokeEndScaleMultiplier = 2.4f;
+constexpr Vector3 kExplosionShakeDirection{0.5f, 0.3f, 0.0f};
+constexpr float kExplosionShakeScale = 2.0f;
+constexpr float kEnemyHitSeVolume = 0.25f;
+constexpr float kBoostSmokeEndScaleRate = 0.25f;
+constexpr float kNormalSmokeEndScaleRate = 0.10f;
 
 class IPauseMenuCommand {
 public:
@@ -278,7 +303,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 					}
 				}
 				if (gameScene.audio_ && gameScene.seEnemyHitHandle_ != 0u) {
-					gameScene.audio_->PlayWave(gameScene.seEnemyHitHandle_, false, 0.25f);
+					gameScene.audio_->PlayWave(gameScene.seEnemyHitHandle_, false, kEnemyHitSeVolume);
 				}
 			}
 			// 撃破演出とスコア加算。
@@ -569,7 +594,7 @@ void GameSceneUpdateExecutor::EngineSmokesUpdate(GameScene& gameScene, float dt)
 				const bool isBoosting = gameScene.result_ == GameResult::Clear && gameScene.isClearAnimating_;
 				const Vector4 startColor = isBoosting ? kBoostCoreColor : kEngineCoreColor;
 				const Vector4 endColor = isBoosting ? kBoostOuterColor : kEngineFadeColor;
-				const float endScale = isBoosting ? params.startScale * 0.25f : params.startScale * 0.10f;
+				const float endScale = isBoosting ? params.startScale * kBoostSmokeEndScaleRate : params.startScale * kNormalSmokeEndScaleRate;
 				gameScene.engineSmokeEmitter_->Emit(particleSpawnPos, vel, params.lifeTime, params.startScale, endScale, startColor, endColor);
 			}
 		}
@@ -787,7 +812,7 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 
 	// 開始演出。
 	if (gameScene.transitionPhase_ == SceneTransitionPhase::IntroCinematic) {
-		gameScene.railCamera_->SetCinematicZoom(-10.0f);
+		gameScene.railCamera_->SetCinematicZoom(kIntroCinematicZoom);
 		if (gameScene.transitionTimer_ >= gameScene.kBossStartCinematicDuration) {
 			gameScene.transitionPhase_ = SceneTransitionPhase::None;
 			gameScene.timeScale_ = 1.0f;
@@ -795,41 +820,41 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::ClearCinematic) {
 		// クリア演出。
-		gameScene.railCamera_->SetCinematicZoom(-18.0f);
-		if (gameScene.transitionTimer_ >= 0.55f) {
+		gameScene.railCamera_->SetCinematicZoom(kClearCinematicZoom);
+		if (gameScene.transitionTimer_ >= kClearCinematicRestoreTime) {
 			gameScene.timeScale_ = 1.0f;
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossStartCinematic) {
 		// ゲーム開始時と同じカメラ演出。カウントダウンは再生しない。
-		gameScene.railCamera_->SetCinematicZoom(-10.0f);
-		if (gameScene.transitionTimer_ >= 0.8f) {
+		gameScene.railCamera_->SetCinematicZoom(kIntroCinematicZoom);
+		if (gameScene.transitionTimer_ >= kBossStartCinematicDuration) {
 			gameScene.isBossTransitionAnimating_ = false;
 			gameScene.transitionPhase_ = SceneTransitionPhase::BossIntroCinematic;
 			gameScene.transitionTimer_ = 0.0f;
-			gameScene.timeScale_ = 0.65f;
+			gameScene.timeScale_ = kBossIntroTimeScale;
 			gameScene.railCamera_->SetCinematicZoom(0.0f);
 			gameScene.bossManager_.StartBossBattle(gameScene.player_->GetTranslation(), &gameScene.railCamera_->GetWorldTransform());
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossIntroCinematic) {
-		gameScene.railCamera_->SetCinematicZoom(-26.0f);
-		if (gameScene.transitionTimer_ >= 2.0f) {
+		gameScene.railCamera_->SetCinematicZoom(kBossIntroCinematicZoom);
+		if (gameScene.transitionTimer_ >= kBossIntroCinematicDuration) {
 			gameScene.transitionPhase_ = SceneTransitionPhase::None;
 			gameScene.timeScale_ = 1.0f;
 			gameScene.railCamera_->SetCinematicZoom(0.0f);
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::BossClearCinematic) {
-		gameScene.railCamera_->SetCinematicZoom(-28.0f);
-		if (gameScene.transitionTimer_ >= 0.6f) {
+		gameScene.railCamera_->SetCinematicZoom(kBossClearCinematicZoom);
+		if (gameScene.transitionTimer_ >= kBossClearTimeScaleRestoreTime) {
 			gameScene.timeScale_ = 1.0f;
 		}
 	} else if (gameScene.transitionPhase_ == SceneTransitionPhase::FailCinematic) {
 		// 失敗演出。
-		gameScene.railCamera_->SetCinematicZoom(-24.0f);
-		if (gameScene.transitionTimer_ >= 0.40f && !gameScene.failSecondExplosionDone_) {
-			StartExplosionAtPlayer(gameScene, 1.4f);
+		gameScene.railCamera_->SetCinematicZoom(kFailCinematicZoom);
+		if (gameScene.transitionTimer_ >= kFailSecondExplosionTime && !gameScene.failSecondExplosionDone_) {
+			StartExplosionAtPlayer(gameScene, kFailSecondExplosionScale);
 			gameScene.failSecondExplosionDone_ = true;
 		}
-		if (gameScene.transitionTimer_ >= 1.2f) {
+		if (gameScene.transitionTimer_ >= kFailCinematicDuration) {
 			gameScene.isEnd_ = true;
 			gameScene.timeScale_ = 1.0f;
 		}
@@ -839,7 +864,7 @@ void GameSceneUpdateExecutor::UpdateTransitionDirection(GameScene& gameScene, fl
 // プレイヤー位置に爆発を出す。
 void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float scale) {
 	if (gameScene.audio_ && gameScene.seExplosionHandle_ != 0u) {
-		gameScene.audio_->PlayWave(gameScene.seExplosionHandle_, false, 0.7f);
+		gameScene.audio_->PlayWave(gameScene.seExplosionHandle_, false, kExplosionSeVolume);
 	}
 
 	Vector3 pos = gameScene.player_->GetWorldTranslation();
@@ -852,19 +877,21 @@ void GameSceneUpdateExecutor::StartExplosionAtPlayer(GameScene& gameScene, float
 		if (gameScene.damageSmokeEmitter_) {
 			Vector3 vel = {dist(rng) * (gameScene.kDamageGpuSpeed * scale), dist(rng) * (gameScene.kDamageGpuSpeed * scale), dist(rng) * (gameScene.kDamageGpuSpeed * scale)};
 			gameScene.damageSmokeEmitter_->Emit(
-			    pos, vel, gameScene.kDamageGpuLife * 1.3f, gameScene.kDamageGpuStartScale * scale, gameScene.kDamageGpuEndScale * scale, kExplosionHotColor, kExplosionFireColor);
+			    pos, vel, gameScene.kDamageGpuLife * kExplosionParticleLifeScale, gameScene.kDamageGpuStartScale * scale, gameScene.kDamageGpuEndScale * scale, kExplosionHotColor, kExplosionFireColor);
 		}
 	}
 	// 煙パーティクル。
-	for (int i = 0; i < count / 2; i++) {
+	for (int i = 0; i < count / kSmokeParticleCountDivisor; i++) {
 		if (gameScene.damageSmokeEmitter_) {
 			Vector3 vel = {
-			    dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f), dist(rng) * (gameScene.kDamageGpuSpeed * scale * 0.45f)};
+			    dist(rng) * (gameScene.kDamageGpuSpeed * scale * kSmokeVelocityScale), dist(rng) * (gameScene.kDamageGpuSpeed * scale * kSmokeVelocityScale),
+			    dist(rng) * (gameScene.kDamageGpuSpeed * scale * kSmokeVelocityScale)};
 			gameScene.damageSmokeEmitter_->Emit(
-			    pos, vel, gameScene.kDamageGpuLife * 3.2f, gameScene.kDamageGpuStartScale * scale * 1.2f, gameScene.kDamageGpuEndScale * scale * 2.4f, kSmokeStartColor, kSmokeEndColor);
+			    pos, vel, gameScene.kDamageGpuLife * kSmokeParticleLifeScale, gameScene.kDamageGpuStartScale * scale * kSmokeStartScaleMultiplier,
+			    gameScene.kDamageGpuEndScale * scale * kSmokeEndScaleMultiplier, kSmokeStartColor, kSmokeEndColor);
 		}
 	}
 	if (gameScene.railCamera_) {
-		gameScene.railCamera_->AddShake({0.5f, 0.3f, 0.0f}, scale * 2.0f);
+		gameScene.railCamera_->AddShake(kExplosionShakeDirection, scale * kExplosionShakeScale);
 	}
 }

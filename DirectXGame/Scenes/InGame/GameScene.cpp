@@ -21,6 +21,15 @@ using json = nlohmann::json;
 
 namespace {
     constexpr bool kEnableBossStage = false;
+    constexpr uint32_t kEngineSmokeMaxParticles = 2048;
+    constexpr uint32_t kDamageSmokeMaxParticles = 8192;
+    constexpr uint32_t kMissileAfterburnerMaxParticles = 4096;
+    constexpr float kWasdTextureCellSize = 96.0f;
+    constexpr float kMouseTextureSize = 640.0f;
+    constexpr float kMouseButtonTextureWidth = 320.0f;
+    constexpr float kMouseButtonTextureHeight = 270.0f;
+    constexpr float kReticleSize = 32.0f;
+    constexpr float kPauseTitleScale = 0.7f;
 
     struct LevelDefaults {
         const char* fileName;
@@ -130,7 +139,7 @@ void GameScene::Initialize() {
     // ===== 操作UI =====
     wasdTextureHandle_ = TextureManager::Load("./Resources/InGame/WASD.png");
     const Vector2 keySize = { kWasdKeySize, kWasdKeySize };
-    const Vector2 keyUvSize = { 96.0f, 96.0f };
+    const Vector2 keyUvSize = { kWasdTextureCellSize, kWasdTextureCellSize };
     wasdWSprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY });
     wasdASprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX, kWasdBaseY + (keySize.y + kWasdSpacing) });
     wasdSSprite_ = SceneHelper::CreateSprite(wasdTextureHandle_, { kWasdBaseX + (keySize.x + kWasdSpacing), kWasdBaseY + (keySize.y + kWasdSpacing) });
@@ -144,16 +153,16 @@ void GameScene::Initialize() {
         wasdASprite_->SetSize(keySize);
         wasdSSprite_->SetSize(keySize);
         wasdDSprite_->SetSize(keySize);
-        wasdWSprite_->SetTextureRect({ 96.0f, 0.0f }, keyUvSize);
-        wasdASprite_->SetTextureRect({ 0.0f, 96.0f }, keyUvSize);
-        wasdSSprite_->SetTextureRect({ 96.0f, 96.0f }, keyUvSize);
-        wasdDSprite_->SetTextureRect({ 192.0f, 96.0f }, keyUvSize);
+        wasdWSprite_->SetTextureRect({ kWasdTextureCellSize, 0.0f }, keyUvSize);
+        wasdASprite_->SetTextureRect({ 0.0f, kWasdTextureCellSize }, keyUvSize);
+        wasdSSprite_->SetTextureRect({ kWasdTextureCellSize, kWasdTextureCellSize }, keyUvSize);
+        wasdDSprite_->SetTextureRect({ kWasdTextureCellSize * 2.0f, kWasdTextureCellSize }, keyUvSize);
     }
 
     mouseTextureHandle_ = TextureManager::Load("./Resources/InGame/Mouse.png");
     const Vector2 mouseSize = { kMouseSize, kMouseSize };
-    const Vector2 mouseButtonUvSize = { 320.0f, 270.0f };
-    const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
+    const Vector2 mouseButtonUvSize = { kMouseButtonTextureWidth, kMouseButtonTextureHeight };
+    const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * kMouseButtonTextureHeight / kMouseTextureSize };
     mouseBaseSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY }, { 1.0f, 1.0f, 1.0f, 0.55f });
     mouseLeftSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX, kMouseBaseY });
     mouseRightSprite_ = SceneHelper::CreateSprite(mouseTextureHandle_, { kMouseBaseX + mouseButtonSize.x, kMouseBaseY });
@@ -164,9 +173,9 @@ void GameScene::Initialize() {
         mouseBaseSprite_->SetSize(mouseSize);
         mouseLeftSprite_->SetSize(mouseButtonSize);
         mouseRightSprite_->SetSize(mouseButtonSize);
-        mouseBaseSprite_->SetTextureRect({ 0.0f, 0.0f }, { 640.0f, 640.0f });
+        mouseBaseSprite_->SetTextureRect({ 0.0f, 0.0f }, { kMouseTextureSize, kMouseTextureSize });
         mouseLeftSprite_->SetTextureRect({ 0.0f, 0.0f }, mouseButtonUvSize);
-        mouseRightSprite_->SetTextureRect({ 320.0f, 0.0f }, mouseButtonUvSize);
+        mouseRightSprite_->SetTextureRect({ kMouseButtonTextureWidth, 0.0f }, mouseButtonUvSize);
     }
 
     // ===== スピードライン初期化 =====
@@ -174,11 +183,11 @@ void GameScene::Initialize() {
 
     // ===== エンジンスモーク初期化 =====
     engineSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
-    engineSmokeEmitter_->Initialize(2048);
+    engineSmokeEmitter_->Initialize(kEngineSmokeMaxParticles);
     damageSmokeEmitter_ = std::make_unique<GpuSmokeEmitter>();
-    damageSmokeEmitter_->Initialize(8192);
+    damageSmokeEmitter_->Initialize(kDamageSmokeMaxParticles);
     missileAfterburnerEmitter_ = std::make_unique<GpuSmokeEmitter>();
-    missileAfterburnerEmitter_->Initialize(4096);
+    missileAfterburnerEmitter_->Initialize(kMissileAfterburnerMaxParticles);
     smokeEmitTimer_ = 0.0f;
     prevEnemyHpMap_.clear();
     prevPlayerHp_ = player_->GetHP();
@@ -235,7 +244,7 @@ void GameScene::Initialize() {
     reticleSprite_ = SceneHelper::CreateSprite(reticleTexHandle_, reticlePos_);
     if (reticleSprite_) {
         reticleSprite_->SetAnchorPoint({ 0.5f, 0.5f });
-        reticleSprite_->SetSize({ 32.0f, 32.0f });
+    reticleSprite_->SetSize({ kReticleSize, kReticleSize });
     }
 
     // ===== Pause =====
@@ -245,7 +254,7 @@ void GameScene::Initialize() {
     pauseTitleSprite_ = SceneHelper::CreateSprite(pauseTitleTexHandle_, { kPauseTitlePosX, kPauseTitlePosY });
     pauseTitleSprite_->SetAnchorPoint({ 0.0f, 0.0f });
     const Vector2 pauseTitleSize = pauseTitleSprite_->GetSize();
-    pauseTitleSprite_->SetSize({ pauseTitleSize.x * 0.7f, pauseTitleSize.y * 0.7f });
+    pauseTitleSprite_->SetSize({ pauseTitleSize.x * kPauseTitleScale, pauseTitleSize.y * kPauseTitleScale });
     seExplosionHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
     seEnemyHitHandle_ = audio_->LoadWave("./Resources/SE/shot.wav");
     seEnemyKillHandle_ = audio_->LoadWave("./Resources/SE/Explosion.wav");
@@ -392,7 +401,7 @@ void GameScene::Draw() {
             if (mouseBaseSprite_ && mouseLeftSprite_ && mouseRightSprite_) {
                 const bool isLeftPressed = input_->IsPressMouse(0);
                 const bool isRightPressed = input_->IsPressMouse(1);
-                const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * 270.0f / 640.0f };
+                const Vector2 mouseButtonSize = { kMouseSize * 0.5f, kMouseSize * kMouseButtonTextureHeight / kMouseTextureSize };
 
                 ApplyPressedSpriteState(mouseLeftSprite_.get(), { kMouseBaseX, kMouseBaseY }, mouseButtonSize, isLeftPressed);
                 ApplyPressedSpriteState(mouseRightSprite_.get(), { kMouseBaseX + mouseButtonSize.x, kMouseBaseY }, mouseButtonSize, isRightPressed);
