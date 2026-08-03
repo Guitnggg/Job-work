@@ -421,6 +421,26 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 
 // UI 表示を更新する。
 void GameSceneUpdateExecutor::UIUpdate(GameScene& gameScene) {
+	// プレイヤーの少し上を画面座標へ変換し、HPバーを機体に追従させる。
+	const Camera* cam = gameScene.railCamera_ ? gameScene.railCamera_->GetCamera() : &gameScene.camera_;
+	if (cam && gameScene.player_) {
+		constexpr float kHpWorldOffsetY = 2.2f;
+		constexpr float kHpBarWidth = 140.0f;
+		constexpr float kHpScreenGap = 12.0f;
+		constexpr float kHpScreenMargin = 12.0f;
+
+		Vector3 hpWorldPos = gameScene.player_->GetWorldTranslation();
+		hpWorldPos.y += kHpWorldOffsetY;
+		const Matrix4x4 viewProj = MyMath::Multiply(cam->matView, cam->matProjection);
+		const Vector3 clip = MyMath::Transform(hpWorldPos, viewProj);
+		Vector2 hpScreenPos = {
+		    (clip.x * 0.5f + 0.5f) * gameScene.kScreenWidth - kHpBarWidth * 0.5f,
+		    (-clip.y * 0.5f + 0.5f) * gameScene.kScreenHeight - kHpScreenGap};
+		hpScreenPos.x = std::clamp(hpScreenPos.x, kHpScreenMargin, gameScene.kScreenWidth - kHpBarWidth - kHpScreenMargin);
+		hpScreenPos.y = std::clamp(hpScreenPos.y, kHpScreenMargin, gameScene.kScreenHeight - kHpScreenMargin);
+		gameScene.uiManager_.SetPlayerHpPosition(hpScreenPos);
+	}
+
 	gameScene.uiManager_.SetHomingCooldownRate(gameScene.bulletManager_.GetHomingCooldownRate());
 	gameScene.uiManager_.SetHomingLockInfo(gameScene.bulletManager_.GetCurrentLockCount(), gameScene.bulletManager_.GetMaxLockCount(), gameScene.bulletManager_.IsHomingLocking());
 	gameScene.uiManager_.Update();

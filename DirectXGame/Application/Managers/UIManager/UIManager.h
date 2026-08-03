@@ -47,6 +47,11 @@ public:
     /// </summary>
     void SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking);
 
+    /// <summary>
+    /// プレイヤー頭上に表示するHPバーの左上座標を設定する。
+    /// </summary>
+    void SetPlayerHpPosition(const KamataEngine::Vector2& position);
+
 private:
     // HP参照用。所有権は持たない
     Player* player_ = nullptr;
@@ -66,4 +71,9 @@ private:
     int32_t homingLockCount_ = 0;
     int32_t homingMaxLockCount_ = 5;
     bool isHomingLocking_ = false;
+
+    // HPバーは被弾後の短時間だけ表示する。
+    int32_t previousPlayerHp_ = 0;
+    float playerHpVisibleTimer_ = 0.0f;
+    static constexpr float kPlayerHpVisibleDuration = 1.5f;
 };

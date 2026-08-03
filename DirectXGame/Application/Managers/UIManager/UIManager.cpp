@@ -1,5 +1,7 @@
 #include "UIManager.h"
 
+#include "Application/Utility/GameTime.h"
+
 #include <algorithm>
 
 using namespace KamataEngine;
@@ -15,6 +17,8 @@ namespace {
 // HPバー、スコア、ホーミング関連ゲージを生成して初期状態を整える。
 void UIManager::Initialize(Player* player) {
     player_ = player;
+    previousPlayerHp_ = player_ ? player_->GetHP() : 0;
+    playerHpVisibleTimer_ = 0.0f;
 
     // HPバー（Graph）
     graph_ = std::make_unique<Graph>();
@@ -41,12 +45,26 @@ void UIManager::SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount
     isHomingLocking_ = isLocking;
 }
 
+void UIManager::SetPlayerHpPosition(const Vector2& position) {
+    if (graph_) {
+        graph_->SetPosition(position);
+    }
+}
+
 // プレイヤーHP、スコア、ホーミングゲージの表示状態を更新する。
 void UIManager::Update() {
     // HPバー更新
     if (player_ && graph_) {
+        const int32_t currentHp = player_->GetHP();
+        if (currentHp < previousPlayerHp_) {
+            playerHpVisibleTimer_ = kPlayerHpVisibleDuration;
+        } else if (playerHpVisibleTimer_ > 0.0f) {
+            playerHpVisibleTimer_ = (std::max)(0.0f, playerHpVisibleTimer_ - GameTime::kDeltaTime);
+        }
+        previousPlayerHp_ = currentHp;
+
         // HP(0〜100想定) を 0.0〜1.0 に変換してGraphに渡す
-        float hpRate = static_cast<float>(player_->GetHP()) / kUiMaxHp;
+        float hpRate = static_cast<float>(currentHp) / kUiMaxHp;
 
         graph_->SetValue(hpRate);
         graph_->Update();
@@ -72,7 +90,7 @@ void UIManager::Update() {
 // 生成済みの UI 要素を順番に描画する。
 // ロックオン進行バーはロック操作中だけ表示する。
 void UIManager::Draw() {
-    if (graph_) {
+    if (graph_ && playerHpVisibleTimer_ > 0.0f) {
         graph_->Draw();
     }
     if (score_) {

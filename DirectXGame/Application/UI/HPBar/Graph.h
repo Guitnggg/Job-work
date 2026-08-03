@@ -4,6 +4,7 @@
 
 #include "base/TextureManager.h"
 #include <2d/Sprite.h>
+#include "math/Vector2.h"
 
 /// <summary>
 /// グラフ表示クラス 背景バー（赤）＋前景バー（緑）
@@ -30,6 +31,7 @@ public:
     /// </summary>
     /// <param name="rate">表示比率</param>
     void SetValue(float rate);
+    void SetPosition(const KamataEngine::Vector2& position);
 
     /// <summary>
     /// 表示割合を取得する
@@ -54,8 +56,8 @@ private:
 
     float value_ = 1.0f; // 現在の表示比率(0.0～1.0)
 
-    static constexpr float kBarWidth = 200.0f;
-    static constexpr float kBarHeight = 10.0f;
+    static constexpr float kBarWidth = 140.0f;
+    static constexpr float kBarHeight = 12.0f;
     static constexpr float kBarPosX = 24.0f;
     static constexpr float kBarPosY = 64.0f;
 };
