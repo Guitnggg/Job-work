@@ -30,6 +30,17 @@ namespace {
     constexpr float kMouseButtonTextureHeight = 270.0f;
     constexpr float kReticleSize = 32.0f;
     constexpr float kPauseTitleScale = 0.7f;
+    constexpr size_t kDefaultLevelIndex = 2;
+    constexpr float kPressedSpriteScale = 0.92f;
+    constexpr float kPressedSpriteOffsetY = 4.0f;
+    constexpr Vector2 kPopupDigitDisplaySize{24.0f, 40.0f};
+    constexpr Vector2 kPopupDigitTextureSize{32.0f, 64.0f};
+    constexpr float kPopupBaseScale = 0.85f;
+    constexpr float kPopupScaleAmount = 0.35f;
+    constexpr int kTutorialClearScore = 1000;
+    constexpr int kEasyClearScore = 5000;
+    constexpr int kNormalClearScore = 10000;
+    constexpr int kHardClearScore = 15000;
 
     struct LevelDefaults {
         const char* fileName;
@@ -39,10 +50,10 @@ namespace {
     };
 
     constexpr LevelDefaults kLevelDefaults[] = {
-        {"Tutorial.json", 1000, true, false},
-        {"Easy.json", 5000, false, false},
-        {"Normal.json", 10000, false, true},
-        {"Hard.json", 15000, false, true},
+        {"Tutorial.json", kTutorialClearScore, true, false},
+        {"Easy.json", kEasyClearScore, false, false},
+        {"Normal.json", kNormalClearScore, false, true},
+        {"Hard.json", kHardClearScore, false, true},
     };
 
     const LevelDefaults& FindLevelDefaults(const std::string& path) {
@@ -51,7 +62,7 @@ namespace {
                 return defaults;
             }
         }
-        return kLevelDefaults[2];
+        return kLevelDefaults[kDefaultLevelIndex];
     }
 
     int LoadClearScoreFromLevelJson(const std::string& path, int fallbackScore) {
@@ -72,8 +83,8 @@ namespace {
 
         const Vector4 normalColor = { 1.0f, 1.0f, 1.0f, 0.88f };
         const Vector4 pressedColor = { 0.35f, 0.95f, 1.0f, 1.0f };
-        const float scale = isPressed ? 0.92f : 1.0f;
-        const float pressOffsetY = isPressed ? 4.0f : 0.0f;
+        const float scale = isPressed ? kPressedSpriteScale : 1.0f;
+        const float pressOffsetY = isPressed ? kPressedSpriteOffsetY : 0.0f;
         const Vector2 size = { baseSize.x * scale, baseSize.y * scale };
         const Vector2 position = { basePosition.x + (baseSize.x - size.x) * 0.5f, basePosition.y + (baseSize.y - size.y) * 0.5f + pressOffsetY };
 
@@ -89,7 +100,7 @@ namespace {
 
         const int absValue = (std::max)(0, value);
         const std::string text = std::to_string(absValue);
-        const Vector2 digitSize = { 24.0f * scale, 40.0f * scale };
+        const Vector2 digitSize = { kPopupDigitDisplaySize.x * scale, kPopupDigitDisplaySize.y * scale };
         const float totalWidth = digitSize.x * static_cast<float>(text.size());
         float x = center.x - totalWidth * 0.5f;
 
@@ -97,7 +108,7 @@ namespace {
             const int digit = static_cast<int>(c - '0');
             digitSprite->SetPosition({ x, center.y });
             digitSprite->SetSize(digitSize);
-            digitSprite->SetTextureRect({ 32.0f * static_cast<float>(digit), 0.0f }, { 32.0f, 64.0f });
+            digitSprite->SetTextureRect({ kPopupDigitTextureSize.x * static_cast<float>(digit), 0.0f }, kPopupDigitTextureSize);
             digitSprite->SetColor({ 1.0f, 0.95f, 0.35f, alpha });
             digitSprite->Draw();
             x += digitSize.x;
@@ -366,7 +377,7 @@ void GameScene::Draw() {
                     }
                     const Vector2 screenPos = { (clip.x * 0.5f + 0.5f) * kScreenWidth, (-clip.y * 0.5f + 0.5f) * kScreenHeight };
                     const float t = popup.maxLife > 0.0f ? (1.0f - popup.life / popup.maxLife) : 1.0f;
-                    const float scale = 0.85f + 0.35f * (1.0f - t);
+                const float scale = kPopupBaseScale + kPopupScaleAmount * (1.0f - t);
                     const float alpha = (std::max)(0.0f, 1.0f - t);
                     DrawPopupNumber(scorePopupDigitSprite_.get(), popup.value, screenPos, scale, alpha);
                 }

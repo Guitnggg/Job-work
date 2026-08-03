@@ -7,6 +7,12 @@
 
 using namespace KamataEngine;
 
+namespace {
+constexpr int32_t kInvincibilityBlinkIntervalFrames = 2;
+constexpr int32_t kInvincibilityBlinkCycle = 2;
+constexpr float kDirectionLengthEpsilon = 0.000001f;
+}
+
 /// <summary>
 /// Player の振る舞いを状態ごとに分離するための State Pattern 用基底クラス。
 /// </summary>
@@ -268,7 +274,7 @@ void Player::UpdateMoveAndBank_(float dt) {
 void Player::Draw(const Camera* camera) {
     if (!camera || !model_ || isExplosionFinished_)
         return;
-    if (invincibleFrames_ > 0 && ((invincibleFrames_ / 2) % 2 == 0))
+    if (invincibleFrames_ > 0 && ((invincibleFrames_ / kInvincibilityBlinkIntervalFrames) % kInvincibilityBlinkCycle == 0))
         return;
     model_->Draw(worldTransform_, *camera);
 }
@@ -283,7 +289,7 @@ void Player::OnCollision(CharacterBase*) {
 // 外部から渡された照準方向を正規化して攻撃方法として保持する
 void Player::SetAimDirection(const KamataEngine::Vector3& dir) {
     const float lenSq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
-    if (lenSq <= 0.000001f) {
+    if (lenSq <= kDirectionLengthEpsilon) {
         return;
     }
     aimYaw_ = std::atan2(dir.x, dir.z);

@@ -15,6 +15,7 @@ constexpr float kTwoPi = 6.28318530717958647692f;
 constexpr float kTitleFallSpeed = 3.0f;
 constexpr float kBlinkBaseAlpha = 0.5f;
 constexpr float kBlinkAmpAlpha = 0.5f;
+constexpr Vector2 kStartTextPosition{150.0f, 550.0f};
 
 // 小惑星ランダム範囲
 } // namespace
@@ -35,7 +36,7 @@ void TitleScene::Initialize() {
 
 	// 各種テクスチャ
 	titleSprite_ = SceneHelper::CreateSprite("./Resources/title/GameTitle.png", titlePosition_, &titleTextureHandle_);
-	startSprite_ = SceneHelper::CreateSprite("./Resources/title/Start.png", {150.0f, 550.0f}, &startTextureHandle_);
+	startSprite_ = SceneHelper::CreateSprite("./Resources/title/Start.png", kStartTextPosition, &startTextureHandle_);
 	startSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f}); // 最初は透明
 
 	// 各種サウンド

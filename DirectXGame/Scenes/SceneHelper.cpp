@@ -4,23 +4,35 @@ using namespace KamataEngine;
 
 namespace SceneHelper {
 
+namespace {
+constexpr int kMenuAsteroidCount = 10;
+constexpr float kMenuAsteroidSpawnZMax = 140.0f;
+constexpr float kMenuAsteroidRecycleZ = -50.0f;
+constexpr float kMenuAsteroidRangeX = 25.0f;
+constexpr float kMenuAsteroidRangeY = 15.0f;
+constexpr float kMenuAsteroidSpeedMin = -0.3f;
+constexpr float kMenuAsteroidSpeedMax = -0.1f;
+constexpr float kMenuAsteroidRotationMin = 0.01f;
+constexpr float kMenuAsteroidRotationMax = 0.03f;
+}
+
 /// <summary>
 /// メニュー画面で奥行き感を出すための小惑星フィールド設定を返す。
 /// ゲーム中より控えめな速度・数にして、背景演出として使いやすい値にしている。
 /// </summary>
 AsteroidFieldConfig CreateMenuAsteroidFieldConfig() {
 	AsteroidFieldConfig config{};
-	config.count = 10;
+	config.count = kMenuAsteroidCount;
 	config.spawnZMin = 0.0f;
-	config.spawnZMax = 140.0f;
-	config.recycleZ = -50.0f;
+	config.spawnZMax = kMenuAsteroidSpawnZMax;
+	config.recycleZ = kMenuAsteroidRecycleZ;
 	config.spawnInterval = 1.0f;
-	config.rangeX = 25.0f;
-	config.rangeY = 15.0f;
-	config.speedMin = -0.3f;
-	config.speedMax = -0.1f;
-	config.rotationMin = 0.01f;
-	config.rotationMax = 0.03f;
+	config.rangeX = kMenuAsteroidRangeX;
+	config.rangeY = kMenuAsteroidRangeY;
+	config.speedMin = kMenuAsteroidSpeedMin;
+	config.speedMax = kMenuAsteroidSpeedMax;
+	config.rotationMin = kMenuAsteroidRotationMin;
+	config.rotationMax = kMenuAsteroidRotationMax;
 	return config;
 }
 

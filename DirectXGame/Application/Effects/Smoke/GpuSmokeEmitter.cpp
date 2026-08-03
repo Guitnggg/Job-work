@@ -33,6 +33,8 @@ namespace {
 
     // 深度フォーマット
     constexpr DXGI_FORMAT kDepthFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    constexpr float kMinimumParticleLife = 0.01f;
+    constexpr UINT kQuadVertexCount = 6;
 } // namespace
 
 void GpuSmokeEmitter::Initialize(uint32_t maxParticles) {
@@ -65,7 +67,7 @@ void GpuSmokeEmitter::Emit(const Vector3& position, const Vector3& velocity, flo
     p.initialPosition = position;
     p.spawnTime = elapsedTime_;
     p.velocity = velocity;
-    p.life = (std::max)(0.01f, life);
+    p.life = (std::max)(kMinimumParticleLife, life);
     p.startScale = startScale;
     p.endScale = endScale;
     p.active = 1.0f;
@@ -152,7 +154,7 @@ void GpuSmokeEmitter::Draw(const Camera* camera) {
     commandList->SetGraphicsRootDescriptorTable(1, srvHeap_->GetGPUDescriptorHandleForHeapStart());
 
     // 描画インスタンシング
-    commandList->DrawInstanced(6, maxParticles_, 0, 0);
+    commandList->DrawInstanced(kQuadVertexCount, maxParticles_, 0, 0);
 }
 
 void GpuSmokeEmitter::CreatePipeline_() {

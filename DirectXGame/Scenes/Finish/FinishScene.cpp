@@ -7,6 +7,11 @@
 using namespace KamataEngine;
 
 namespace {
+constexpr Vector2 kFinishTextPosition{150.0f, 200.0f};
+constexpr Vector2 kReturnTextPosition{120.0f, 550.0f};
+}
+
+namespace {
 constexpr float kTwoPi = 6.28318530717958647692f;
 
 } // namespace
@@ -26,9 +31,9 @@ void FinishScene::Initialize() {
 	input_ = Input::GetInstance();
 
 	// 各種テクスチャ
-	finishSprite_ = SceneHelper::CreateSprite("./Resources/finish/End.png", {150.0f, 200.0f}, &finishTextureHandle_);
+	finishSprite_ = SceneHelper::CreateSprite("./Resources/finish/End.png", kFinishTextPosition, &finishTextureHandle_);
 
-	returnSprite_ = SceneHelper::CreateSprite("./Resources/finish/Return.png", {120.0f, 550.0f}, &returnTextureHandle_);
+	returnSprite_ = SceneHelper::CreateSprite("./Resources/finish/Return.png", kReturnTextPosition, &returnTextureHandle_);
 
 	// 各種サウンド
 	changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");

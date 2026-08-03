@@ -11,17 +11,22 @@ constexpr Vector2 kHpPos{330.0f, 22.0f};
 constexpr Vector2 kHpSize{620.0f, 18.0f};
 constexpr Vector2 kWarningPos{270.0f, 300.0f};
 constexpr Vector2 kWarningSize{740.0f, 88.0f};
+constexpr float kHpFramePadding = 4.0f;
+constexpr float kHpFrameSizeExpansion = kHpFramePadding * 2.0f;
+constexpr float kWarningBaseAlpha = 0.35f;
+constexpr float kWarningAlphaRange = 0.55f;
+constexpr float kWarningMaxAlpha = 0.9f;
 } // namespace
 
 void BossUIManager::Initialize() {
 	textureHandle_ = TextureManager::Load("./Resources/white1x1.png");
-	hpFrameBar_.reset(Sprite::Create(textureHandle_, {kHpPos.x - 4.0f, kHpPos.y - 4.0f}, {1.0f, 1.0f, 1.0f, 0.9f}));
+	hpFrameBar_.reset(Sprite::Create(textureHandle_, {kHpPos.x - kHpFramePadding, kHpPos.y - kHpFramePadding}, {1.0f, 1.0f, 1.0f, 0.9f}));
 	hpBackBar_.reset(Sprite::Create(textureHandle_, kHpPos, {0.08f, 0.01f, 0.01f, 0.92f}));
 	hpFrontBar_.reset(Sprite::Create(textureHandle_, kHpPos, {1.0f, 0.16f, 0.05f, 0.95f}));
 	warningBar_.reset(Sprite::Create(textureHandle_, kWarningPos, {1.0f, 0.04f, 0.02f, 0.0f}));
 
 	if (hpFrameBar_) {
-		hpFrameBar_->SetSize({kHpSize.x + 8.0f, kHpSize.y + 8.0f});
+		hpFrameBar_->SetSize({kHpSize.x + kHpFrameSizeExpansion, kHpSize.y + kHpFrameSizeExpansion});
 	}
 	if (hpBackBar_) {
 		hpBackBar_->SetSize(kHpSize);
@@ -44,7 +49,7 @@ void BossUIManager::Update(const Boss* boss, float warningRate, bool showHpBar, 
 	}
 
 	if (warningBar_) {
-		const float alpha = std::clamp(0.35f + warningRate * 0.55f, 0.0f, 0.9f);
+		const float alpha = std::clamp(kWarningBaseAlpha + warningRate * kWarningAlphaRange, 0.0f, kWarningMaxAlpha);
 		warningBar_->SetColor({1.0f, 0.02f, 0.02f, alpha});
 	}
 }

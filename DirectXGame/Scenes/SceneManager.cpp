@@ -4,6 +4,7 @@
 
 namespace {
 constexpr KamataEngine::Vector2 kScreenSize{1280.0f, 720.0f};
+constexpr float kBgmVolume = 0.1f;
 }
 
 SceneManager::SceneManager() {
@@ -233,7 +234,7 @@ void SceneManager::UpdateSceneBgm_() {
 	currentBgmScene_ = sceneName;
 	const uint32_t bgmHandle = GetBgmHandleForScene_(sceneName);
 	if (audio_ && bgmHandle != 0u) {
-		bgmVoiceHandle_ = audio_->PlayWave(bgmHandle, true, 0.1f);
+		bgmVoiceHandle_ = audio_->PlayWave(bgmHandle, true, kBgmVolume);
 	}
 }
 

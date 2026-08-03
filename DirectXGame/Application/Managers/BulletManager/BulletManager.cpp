@@ -9,6 +9,7 @@ using namespace KamataEngine;
 
 namespace {
     constexpr Vector3 kForward{ 0.0f, 0.0f, 1.0f };
+    constexpr float kDirectionLengthEpsilon = 0.000001f;
 } // namespace
 
 void BulletManager::Initialize() {
@@ -62,7 +63,7 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
         // toward the point that was selected when the mouse was clicked.
         burstDirection_ = shootDir;
         const float burstDirLenSq = burstDirection_.x * burstDirection_.x + burstDirection_.y * burstDirection_.y + burstDirection_.z * burstDirection_.z;
-        if (burstDirLenSq <= 0.000001f) {
+        if (burstDirLenSq <= kDirectionLengthEpsilon) {
             burstDirection_ = kForward;
         } else {
             burstDirection_ = MyMath::Normalize(burstDirection_);
@@ -76,7 +77,7 @@ void BulletManager::HandleShooting_(KamataEngine::Input* input, Player* player, 
 
     Vector3 dir = burstDirection_;
     const float lenSq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
-    if (lenSq <= 0.000001f) {
+    if (lenSq <= kDirectionLengthEpsilon) {
         dir = kForward;
     }
 

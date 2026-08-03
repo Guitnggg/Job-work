@@ -7,6 +7,11 @@
 using namespace KamataEngine;
 
 namespace {
+constexpr Vector2 kReturnTitlePosition{20.0f, 20.0f};
+constexpr Vector2 kDifficultySpriteSize{512.0f, 128.0f};
+}
+
+namespace {
 constexpr float kDifficultyBaseX = 700.0f;
 constexpr float kDifficultyBaseY = 300.0f;
 constexpr float kDifficultyStepY = 80.0f;
@@ -31,7 +36,7 @@ void IntroductionScene::Initialize() {
 	selectedIndex_ = 0;
 
 	// 各種テクスチャ
-	returnTitleSprite_ = SceneHelper::CreateSprite("./Resources/introduction/Esc-export.png", {20.0f, 20.0f}, &returnTitleTextureHandle_);
+	returnTitleSprite_ = SceneHelper::CreateSprite("./Resources/introduction/Esc-export.png", kReturnTitlePosition, &returnTitleTextureHandle_);
 
 	introSprite_ = SceneHelper::CreateSprite("./Resources/Introduction/setumei.png", {0.0f, 0.0f}, &introTextureHandle_);
 
@@ -119,10 +124,10 @@ void IntroductionScene::Draw() {
 			sprite->SetPosition({kDifficultyBaseX, kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i)});
 			if (static_cast<int>(i) == selectedIndex_) {
 				sprite->SetColor(kDifficultySelectedColor);
-				sprite->SetSize({512.0f * kDifficultySelectedScale, 128.0f * kDifficultySelectedScale});
+		sprite->SetSize({kDifficultySpriteSize.x * kDifficultySelectedScale, kDifficultySpriteSize.y * kDifficultySelectedScale});
 			} else {
 				sprite->SetColor(kDifficultyNormalColor);
-				sprite->SetSize({512.0f * kDifficultyNormalScale, 128.0f * kDifficultyNormalScale});
+		sprite->SetSize({kDifficultySpriteSize.x * kDifficultyNormalScale, kDifficultySpriteSize.y * kDifficultyNormalScale});
 			}
 			sprite->Draw();
 		}

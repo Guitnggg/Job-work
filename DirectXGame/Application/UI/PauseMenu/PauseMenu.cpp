@@ -5,19 +5,20 @@
 
 using namespace KamataEngine;
 
+namespace {
+constexpr float kBackEaseOvershoot = 1.70158f;
+constexpr float kBackEaseCubicCoefficient = kBackEaseOvershoot + 1.0f;
+}
+
 // =========================
 // イージング関数
 // =========================　
 float EaseOutBack(float t) {
-    const float c1 = 1.70158f;
-    const float c3 = c1 + 1.0f;
-    return 1.0f + c3 * powf(t - 1.0f, 3) + c1 * powf(t - 1.0f, 2);
+    return 1.0f + kBackEaseCubicCoefficient * powf(t - 1.0f, 3) + kBackEaseOvershoot * powf(t - 1.0f, 2);
 }
 
 float EaseInBack(float t) {
-    const float c1 = 1.70158f;
-    const float c3 = c1 + 1.0f;
-    return c3 * t * t * t - c1 * t * t;
+    return kBackEaseCubicCoefficient * t * t * t - kBackEaseOvershoot * t * t;
 }
 
 // =========================
