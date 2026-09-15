@@ -1,25 +1,31 @@
 #include "UIManager.h"
 
-#include "Application/Utility/GameTime.h"
-
 #include <algorithm>
 
 using namespace KamataEngine;
 
 namespace {
     constexpr float kUiMaxHp = 100.0f;
-    constexpr Vector2 kCoolPos{ 24.0f, 84.0f };
-    constexpr Vector2 kCoolSize{ 200.0f, 10.0f };
-    constexpr Vector2 kLockPos{ 24.0f, 98.0f };
-    constexpr Vector2 kLockBaseSize{ 200.0f, 6.0f };
+    constexpr Vector2 kUiBasePos{ 0.0f, 0.0f };
+    constexpr Vector2 kUiBaseSize{ 1280.0f, 720.0f };
+    constexpr Vector2 kNormalPos{ 55.0f, 684.0f };
+    constexpr Vector2 kNormalSize{ 280.0f, 14.0f };
+    constexpr Vector2 kCoolPos{ 945.0f, 684.0f };
+    constexpr Vector2 kCoolSize{ 280.0f, 14.0f };
+    constexpr Vector2 kLockPos{ 945.0f, 673.0f };
+    constexpr Vector2 kLockBaseSize{ 280.0f, 4.0f };
+    constexpr Vector2 kSlotStartPos{ 1040.0f, 648.0f };
+    constexpr Vector2 kSlotSize{ 14.0f, 14.0f };
+    constexpr float kSlotGap = 18.0f;
+    constexpr Vector4 kHudGreen{ 0.10f, 1.0f, 0.38f, 0.95f };
+    constexpr Vector4 kHudCyan{ 0.10f, 0.82f, 1.0f, 0.95f };
+    constexpr Vector4 kHudYellow{ 1.0f, 0.82f, 0.12f, 0.98f };
+    constexpr Vector4 kHudDim{ 0.02f, 0.10f, 0.13f, 0.90f };
 } // namespace
 
 // HPバー、スコア、ホーミング関連ゲージを生成して初期状態を整える。
 void UIManager::Initialize(Player* player) {
     player_ = player;
-    previousPlayerHp_ = player_ ? player_->GetHP() : 0;
-    playerHpVisibleTimer_ = 0.0f;
-
     // HPバー（Graph）
     graph_ = std::make_unique<Graph>();
     graph_->Initialize();
@@ -27,28 +33,35 @@ void UIManager::Initialize(Player* player) {
     // スコア
     score_ = std::make_unique<Score>();
     score_->Initialize();
+    score_->SetPosition(1090.0f, 8.0f);
 
     homingBarTexHandle_ = TextureManager::Load("./Resources/white1x1.png");
+    uiBaseTexHandle_ = TextureManager::Load("./Resources/InGame/UIBase.png");
+    uiBaseSprite_.reset(Sprite::Create(uiBaseTexHandle_, kUiBasePos));
+    normalAttackBack_.reset(Sprite::Create(homingBarTexHandle_, kNormalPos, kHudDim));
+    normalAttackFront_.reset(Sprite::Create(homingBarTexHandle_, kNormalPos, kHudCyan));
     homingCooldownBack_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, { 0.1f, 0.1f, 0.1f, 0.9f }));
-    homingCooldownFront_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, { 0.2f, 0.8f, 1.0f, 0.9f }));
-    lockProgressBar_.reset(Sprite::Create(homingBarTexHandle_, kLockPos, { 1.0f, 0.85f, 0.2f, 0.9f }));
+    homingCooldownFront_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, kHudCyan));
+    lockProgressBar_.reset(Sprite::Create(homingBarTexHandle_, kLockPos, kHudYellow));
 
+    uiBaseSprite_->SetSize(kUiBaseSize);
+    normalAttackBack_->SetSize(kNormalSize);
+    normalAttackFront_->SetSize(kNormalSize);
     homingCooldownBack_->SetSize(kCoolSize);
     homingCooldownFront_->SetSize(kCoolSize);
     lockProgressBar_->SetSize({ 0.0f, kLockBaseSize.y });
+    for (size_t i = 0; i < homingLockSlots_.size(); ++i) {
+        homingLockSlots_[i].reset(Sprite::Create(homingBarTexHandle_, { kSlotStartPos.x + kSlotGap * static_cast<float>(i), kSlotStartPos.y }, kHudDim));
+        homingLockSlots_[i]->SetSize(kSlotSize);
+    }
 }
 
 // BulletManager から受け取ったロックオン状態を UI 表示用に保持する。
-void UIManager::SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking) {
+void UIManager::SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking, float lockProgressRate) {
     homingLockCount_ = (std::max)(currentLockCount, 0);
     homingMaxLockCount_ = (std::max)(maxLockCount, 1);
     isHomingLocking_ = isLocking;
-}
-
-void UIManager::SetPlayerHpPosition(const Vector2& position) {
-    if (graph_) {
-        graph_->SetPosition(position);
-    }
+    homingLockProgressRate_ = std::clamp(lockProgressRate, 0.0f, 1.0f);
 }
 
 // プレイヤーHP、スコア、ホーミングゲージの表示状態を更新する。
@@ -56,12 +69,6 @@ void UIManager::Update() {
     // HPバー更新
     if (player_ && graph_) {
         const int32_t currentHp = player_->GetHP();
-        if (currentHp < previousPlayerHp_) {
-            playerHpVisibleTimer_ = kPlayerHpVisibleDuration;
-        } else if (playerHpVisibleTimer_ > 0.0f) {
-            playerHpVisibleTimer_ = (std::max)(0.0f, playerHpVisibleTimer_ - GameTime::kDeltaTime);
-        }
-        previousPlayerHp_ = currentHp;
 
         // HP(0〜100想定) を 0.0〜1.0 に変換してGraphに渡す
         float hpRate = static_cast<float>(currentHp) / kUiMaxHp;
@@ -75,26 +82,56 @@ void UIManager::Update() {
         score_->Update();
     }
 
+    if (normalAttackFront_) {
+        normalAttackFront_->SetSize({ kNormalSize.x * normalAttackCooldownRate_, kNormalSize.y });
+        normalAttackFront_->SetColor(normalAttackCooldownRate_ >= 0.999f ? kHudGreen : kHudCyan);
+    }
+
     if (homingCooldownFront_) {
         // クールダウン率に合わせて前面バーの横幅だけを変える。
         homingCooldownFront_->SetSize({ kCoolSize.x * homingCooldownRate_, kCoolSize.y });
     }
 
     if (lockProgressBar_) {
-        // ロック中の数を最大ロック数で割り、進行バーとして表示する。
-        const float lockRate = static_cast<float>(homingLockCount_) / static_cast<float>(homingMaxLockCount_);
-        lockProgressBar_->SetSize({ kLockBaseSize.x * std::clamp(lockRate, 0.0f, 1.0f), kLockBaseSize.y });
+        lockProgressBar_->SetSize({ kLockBaseSize.x * homingLockProgressRate_, kLockBaseSize.y });
+    }
+
+    for (size_t i = 0; i < homingLockSlots_.size(); ++i) {
+        if (!homingLockSlots_[i]) {
+            continue;
+        }
+        const bool locked = static_cast<int32_t>(i) < homingLockCount_;
+        homingLockSlots_[i]->SetColor(locked ? kHudYellow : Vector4{ 0.08f, 0.25f, 0.25f, 0.85f });
+    }
+
+    if (homingCooldownFront_) {
+        const Vector4 cooldownColor = homingCooldownRate_ >= 0.999f ? kHudGreen : kHudCyan;
+        homingCooldownFront_->SetColor(cooldownColor);
     }
 }
 
 // 生成済みの UI 要素を順番に描画する。
 // ロックオン進行バーはロック操作中だけ表示する。
 void UIManager::Draw() {
-    if (graph_ && playerHpVisibleTimer_ > 0.0f) {
+    if (uiBaseSprite_) {
+        uiBaseSprite_->Draw();
+    }
+    if (graph_) {
         graph_->Draw();
     }
     if (score_) {
         score_->Draw();
+    }
+    if (normalAttackBack_) {
+        normalAttackBack_->Draw();
+    }
+    if (normalAttackFront_) {
+        normalAttackFront_->Draw();
+    }
+    for (auto& slot : homingLockSlots_) {
+        if (slot) {
+            slot->Draw();
+        }
     }
     if (homingCooldownBack_) {
         homingCooldownBack_->Draw();

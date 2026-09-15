@@ -56,8 +56,8 @@ private:
 
     float value_ = 1.0f; // 現在の表示比率(0.0～1.0)
 
-    static constexpr float kBarWidth = 140.0f;
-    static constexpr float kBarHeight = 12.0f;
-    static constexpr float kBarPosX = 24.0f;
-    static constexpr float kBarPosY = 64.0f;
+    static constexpr float kBarWidth = 260.0f;
+    static constexpr float kBarHeight = 16.0f;
+    static constexpr float kBarPosX = 125.0f;
+    static constexpr float kBarPosY = 30.0f;
 };

@@ -86,6 +86,8 @@ private:
 	std::array<std::unique_ptr<KamataEngine::Sprite>, static_cast<size_t>(Difficulty::Count)> difficultySprites_;
 	uint32_t difficultyCursorTextureHandle_ = 0;
 	int selectedIndex_ = 0;
+	uint32_t reticleTextureHandle_ = 0;
+	std::unique_ptr<KamataEngine::Sprite> reticleSprite_;
 
 	// 各種サウンド
 	uint32_t changeSEHandle_ = 0; // シーン変遷SE

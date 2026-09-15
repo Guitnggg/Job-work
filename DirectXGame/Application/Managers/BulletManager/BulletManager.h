@@ -58,6 +58,13 @@ public:
     float GetHomingCooldownRate() const;
 
     /// <summary>
+    /// 通常攻撃の再発射可能率（0.0～1.0）を返す。
+    /// </summary>
+    float GetNormalAttackCooldownRate() const {
+        return 1.0f - std::clamp(static_cast<float>(fireCooldownFrames_) / static_cast<float>(kBurstCooldownFrames), 0.0f, 1.0f);
+    }
+
+    /// <summary>
     /// 現在ロックしている敵の数を返す
     /// </summary>
     /// <returns>現在ロックしている敵の数</returns>
@@ -74,6 +81,13 @@ public:
     /// </summary>
     /// <returns>ホーミングロック中かどうか</returns>
     bool IsHomingLocking() const { return isHomingLocking_; }
+
+    /// <summary>
+    /// ロック操作の時間進行率（0.0～1.0）を返す。
+    /// </summary>
+    float GetHomingLockProgressRate() const {
+        return std::clamp(static_cast<float>(homingLockFrame_) / static_cast<float>(kHomingLockMaxFrame), 0.0f, 1.0f);
+    }
 
     /// <summary>
     /// 現在ロックしている敵のリストを返す

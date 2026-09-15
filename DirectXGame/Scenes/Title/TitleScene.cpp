@@ -16,6 +16,7 @@ constexpr float kTitleFallSpeed = 3.0f;
 constexpr float kBlinkBaseAlpha = 0.5f;
 constexpr float kBlinkAmpAlpha = 0.5f;
 constexpr Vector2 kStartTextPosition{150.0f, 550.0f};
+constexpr Vector2 kReticleSize{32.0f, 32.0f};
 
 // 小惑星ランダム範囲
 } // namespace
@@ -38,6 +39,9 @@ void TitleScene::Initialize() {
 	titleSprite_ = SceneHelper::CreateSprite("./Resources/title/GameTitle.png", titlePosition_, &titleTextureHandle_);
 	startSprite_ = SceneHelper::CreateSprite("./Resources/title/Start.png", kStartTextPosition, &startTextureHandle_);
 	startSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f}); // 最初は透明
+	reticleSprite_ = SceneHelper::CreateSprite("./Resources/InGame/Reticle.png", input_->GetMousePosition(), &reticleTextureHandle_);
+	reticleSprite_->SetAnchorPoint({0.5f, 0.5f});
+	reticleSprite_->SetSize(kReticleSize);
 
 	// 各種サウンド
 	changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
@@ -51,6 +55,10 @@ void TitleScene::Initialize() {
 }
 
 void TitleScene::Update() {
+	if (reticleSprite_) {
+		reticleSprite_->SetPosition(input_->GetMousePosition());
+	}
+
 	// 天球更新
 	skydome_->Update();
 
@@ -107,6 +115,9 @@ void TitleScene::Draw() {
 	SceneHelper::DrawSpriteLayer(commandList, [this]() {
 		titleSprite_->Draw();
 		startSprite_->Draw();
+		if (reticleSprite_) {
+			reticleSprite_->Draw();
+		}
 	});
 #pragma endregion
 }

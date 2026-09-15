@@ -68,6 +68,8 @@ private:
 	std::unique_ptr<KamataEngine::Sprite> titleSprite_;
 	uint32_t startTextureHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> startSprite_;
+	uint32_t reticleTextureHandle_ = 0;
+	std::unique_ptr<KamataEngine::Sprite> reticleSprite_;
 
 	// 各種サウンド
 	uint32_t changeSEHandle_ = 0; // シーン変遷SE

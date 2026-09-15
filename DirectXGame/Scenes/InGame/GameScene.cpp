@@ -356,10 +356,6 @@ void GameScene::Draw() {
             uiManager_.Draw();
             bossManager_.DrawUI();
 
-            if (reticleSprite_ && result_ == GameResult::None) {
-                reticleSprite_->Draw();
-            }
-
             // ロックオン演出
             for (auto& marker : lockOnMarkers_) {
                 if (marker.sprite) {
@@ -390,7 +386,7 @@ void GameScene::Draw() {
         }
 
         // 操作UI
-        if (!isPaused_) {
+        if (!isPaused_ && isTutorialLevel_) {
             if (wasdWSprite_ && wasdASprite_ && wasdSSprite_ && wasdDSprite_) {
                 const bool isWPressed = input_->PushKey(DIK_W);
                 const bool isAPressed = input_->PushKey(DIK_A);
@@ -428,6 +424,11 @@ void GameScene::Draw() {
             if (pauseTitleSprite_) {
                 pauseTitleSprite_->Draw();
             }
+        }
+
+        // OSカーソルを非表示にしているため、ゲームシーン中は常に最前面へ表示する。
+        if (reticleSprite_) {
+            reticleSprite_->Draw();
         }
 
         });

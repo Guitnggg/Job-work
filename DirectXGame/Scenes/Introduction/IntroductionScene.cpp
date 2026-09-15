@@ -21,6 +21,7 @@ constexpr Vector4 kDifficultyNormalColor = {0.8f, 0.8f, 0.8f, 1.0f};
 constexpr Vector4 kDifficultySelectedColor = {1.0f, 1.0f, 1.0f, 1.0f};
 constexpr Vector4 kDifficultyCursorColor = {1.0f, 1.0f, 0.5f, 1.0f};
 constexpr float kDifficultyCursorOffsetX = -54.0f;
+constexpr Vector2 kReticleSize{32.0f, 32.0f};
 } // namespace
 
 IntroductionScene::IntroductionScene() {}
@@ -52,6 +53,10 @@ void IntroductionScene::Initialize() {
 		difficultySprites_[i]->SetColor(kDifficultyNormalColor);
 	}
 
+	reticleSprite_ = SceneHelper::CreateSprite("./Resources/InGame/Reticle.png", {640.0f, 360.0f}, &reticleTextureHandle_);
+	reticleSprite_->SetAnchorPoint({0.5f, 0.5f});
+	reticleSprite_->SetSize(kReticleSize);
+
 	// 各種サウンド
 	changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
 
@@ -69,6 +74,9 @@ void IntroductionScene::Initialize() {
 void IntroductionScene::Update() {
 	// 入力を受け付けるようにする
 	input_ = Input::GetInstance();
+	if (reticleSprite_) {
+		reticleSprite_->SetPosition(input_->GetMousePosition());
+	}
 
 	// 天球更新
 	skydome_->Update();
@@ -130,6 +138,9 @@ void IntroductionScene::Draw() {
 		sprite->SetSize({kDifficultySpriteSize.x * kDifficultyNormalScale, kDifficultySpriteSize.y * kDifficultyNormalScale});
 			}
 			sprite->Draw();
+		}
+		if (reticleSprite_) {
+			reticleSprite_->Draw();
 		}
 	});
 #pragma endregion

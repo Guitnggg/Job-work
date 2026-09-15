@@ -26,7 +26,10 @@ constexpr Vector4 kSmokeStartColor{0.24f, 0.22f, 0.20f, 0.55f};
 constexpr Vector4 kSmokeEndColor{0.03f, 0.03f, 0.04f, 0.0f};
 constexpr Vector4 kReticleNormalColor{1.0f, 1.0f, 1.0f, 1.0f};
 constexpr Vector4 kReticleTargetColor{1.0f, 0.2f, 0.2f, 1.0f};
+constexpr Vector4 kReticleLockColor{0.1f, 1.0f, 0.38f, 1.0f};
 constexpr float kReticleTargetRadius = 32.0f;
+constexpr float kReticleLockSize = 48.0f;
+constexpr float kReticleNormalSize = 32.0f;
 constexpr float kIntroCinematicZoom = -10.0f;
 constexpr float kClearCinematicZoom = -18.0f;
 constexpr float kClearCinematicRestoreTime = 0.55f;
@@ -158,6 +161,9 @@ void GameSceneUpdateExecutor::ExecuteToTitleCommand(GameScene& gameScene) {
 
 // 1 フレームの更新入口。
 void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
+	// OSカーソルの代わりとなるレティクルは、ポーズやカウントダウン中も更新する。
+	UpdateAimAndReticle(gameScene);
+
 	// 長いヒットストップ要求を優先する。
 	if (gameScene.hitStopRequestFrames_ > gameScene.hitStopFrames_) {
 		gameScene.hitStopFrames_ = gameScene.hitStopRequestFrames_;
@@ -230,7 +236,6 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 
 	case GameState::Playing:
 		// プレイ中の更新を順番に実行。
-		UpdateAimAndReticle(gameScene);
 		PlayerUpdate(gameScene);
 		SpawnDamageParticles(gameScene);
 		BattleUpdate(gameScene, dt);
@@ -475,7 +480,9 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 		aimPoint = aimedEnemy->GetWorldTranslation();
 	}
 	if (gameScene.reticleSprite_) {
-		gameScene.reticleSprite_->SetColor(aimedEnemy ? kReticleTargetColor : kReticleNormalColor);
+		const bool isMissileLocking = gameScene.bulletManager_.IsHomingLocking();
+		gameScene.reticleSprite_->SetColor(isMissileLocking ? kReticleLockColor : (aimedEnemy ? kReticleTargetColor : kReticleNormalColor));
+		gameScene.reticleSprite_->SetSize(isMissileLocking ? Vector2{kReticleLockSize, kReticleLockSize} : Vector2{kReticleNormalSize, kReticleNormalSize});
 	}
 
 	gameScene.shootDirection_ = MyMath::Normalize(MyMath::Subtract(aimPoint, playerPos));
@@ -489,28 +496,9 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 
 // UI 表示を更新する。
 void GameSceneUpdateExecutor::UIUpdate(GameScene& gameScene) {
-	// プレイヤーの少し上を画面座標へ変換し、HPバーを機体に追従させる。
-	const Camera* cam = gameScene.railCamera_ ? gameScene.railCamera_->GetCamera() : &gameScene.camera_;
-	if (cam && gameScene.player_) {
-		constexpr float kHpWorldOffsetY = 2.2f;
-		constexpr float kHpBarWidth = 140.0f;
-		constexpr float kHpScreenGap = 12.0f;
-		constexpr float kHpScreenMargin = 12.0f;
-
-		Vector3 hpWorldPos = gameScene.player_->GetWorldTranslation();
-		hpWorldPos.y += kHpWorldOffsetY;
-		const Matrix4x4 viewProj = MyMath::Multiply(cam->matView, cam->matProjection);
-		const Vector3 clip = MyMath::Transform(hpWorldPos, viewProj);
-		Vector2 hpScreenPos = {
-		    (clip.x * 0.5f + 0.5f) * gameScene.kScreenWidth - kHpBarWidth * 0.5f,
-		    (-clip.y * 0.5f + 0.5f) * gameScene.kScreenHeight - kHpScreenGap};
-		hpScreenPos.x = std::clamp(hpScreenPos.x, kHpScreenMargin, gameScene.kScreenWidth - kHpBarWidth - kHpScreenMargin);
-		hpScreenPos.y = std::clamp(hpScreenPos.y, kHpScreenMargin, gameScene.kScreenHeight - kHpScreenMargin);
-		gameScene.uiManager_.SetPlayerHpPosition(hpScreenPos);
-	}
-
+	gameScene.uiManager_.SetNormalAttackCooldownRate(gameScene.bulletManager_.GetNormalAttackCooldownRate());
 	gameScene.uiManager_.SetHomingCooldownRate(gameScene.bulletManager_.GetHomingCooldownRate());
-	gameScene.uiManager_.SetHomingLockInfo(gameScene.bulletManager_.GetCurrentLockCount(), gameScene.bulletManager_.GetMaxLockCount(), gameScene.bulletManager_.IsHomingLocking());
+	gameScene.uiManager_.SetHomingLockInfo(gameScene.bulletManager_.GetCurrentLockCount(), gameScene.bulletManager_.GetMaxLockCount(), gameScene.bulletManager_.IsHomingLocking(), gameScene.bulletManager_.GetHomingLockProgressRate());
 	gameScene.uiManager_.Update();
 }
 
@@ -553,7 +541,7 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 
 		sprite->SetAnchorPoint({0.5f, 0.5f});
 		const float pulse = std::sin(gameScene.smokeEmitTimer_ * kLockMarkerPulseSpeed) * kLockMarkerPulseAmount + 1.0f;
-		sprite->SetSize({kLockMarkerSize * pulse, kLockMarkerSize * pulse});
+		sprite->SetSize({kLockMarkerSize * 1.3f * pulse, kLockMarkerSize * 1.3f * pulse});
 		sprite->SetColor({1.0f, 0.25f, 0.25f, 0.95f});
 
 		gameScene.lockOnMarkers_.push_back({std::move(sprite), target, 0.0f});

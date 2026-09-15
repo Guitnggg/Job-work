@@ -2,6 +2,7 @@
 
 #include <KamataEngine.h>
 #include <algorithm>
+#include <array>
 #include <memory>
 
 #include "Application/Characters/Player/Player.h"
@@ -43,14 +44,14 @@ public:
     void SetHomingCooldownRate(float rate) { homingCooldownRate_ = std::clamp(rate, 0.0f, 1.0f); }
 
     /// <summary>
-    /// ホーミングミサイルのロックオン数と情報を設定する。
+    /// 通常攻撃の再発射可能率を設定する。
     /// </summary>
-    void SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking);
+    void SetNormalAttackCooldownRate(float rate) { normalAttackCooldownRate_ = std::clamp(rate, 0.0f, 1.0f); }
 
     /// <summary>
-    /// プレイヤー頭上に表示するHPバーの左上座標を設定する。
+    /// ホーミングミサイルのロックオン数と情報を設定する。
     /// </summary>
-    void SetPlayerHpPosition(const KamataEngine::Vector2& position);
+    void SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking, float lockProgressRate);
 
 private:
     // HP参照用。所有権は持たない
@@ -65,15 +66,18 @@ private:
     std::unique_ptr<KamataEngine::Sprite> homingCooldownBack_;
     std::unique_ptr<KamataEngine::Sprite> homingCooldownFront_;
     std::unique_ptr<KamataEngine::Sprite> lockProgressBar_;
+    std::unique_ptr<KamataEngine::Sprite> normalAttackBack_;
+    std::unique_ptr<KamataEngine::Sprite> normalAttackFront_;
+    std::unique_ptr<KamataEngine::Sprite> uiBaseSprite_;
+    std::array<std::unique_ptr<KamataEngine::Sprite>, 5> homingLockSlots_{};
     uint32_t homingBarTexHandle_ = 0;
+    uint32_t uiBaseTexHandle_ = 0;
 
+    float normalAttackCooldownRate_ = 1.0f;
     float homingCooldownRate_ = 1.0f;
     int32_t homingLockCount_ = 0;
     int32_t homingMaxLockCount_ = 5;
     bool isHomingLocking_ = false;
+    float homingLockProgressRate_ = 0.0f;
 
-    // HPバーは被弾後の短時間だけ表示する。
-    int32_t previousPlayerHp_ = 0;
-    float playerHpVisibleTimer_ = 0.0f;
-    static constexpr float kPlayerHpVisibleDuration = 1.5f;
 };
