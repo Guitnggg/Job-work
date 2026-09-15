@@ -61,7 +61,11 @@ public:
         player.lastHitRollOffset_ = rollOffset;
 
         if (player.input_ && player.inputEnabled_) {
-            if (player.input_->TriggerKey(DIK_D)) {
+            if (player.input_->TriggerKey(DIK_E)) {
+                player.StartRoll_(1.0f);
+                player.doubleTapFrameD_ = 0;
+            }
+            else if (player.input_->TriggerKey(DIK_D)) {
                 if (player.doubleTapFrameD_ > 0 && player.doubleTapFrameD_ < Player::kDoubleTapThreshold) {
                     player.StartRoll_(1.0f);
                     player.doubleTapFrameD_ = 0;
@@ -70,7 +74,11 @@ public:
                     player.doubleTapFrameD_ = 1;
                 }
             }
-            if (player.input_->TriggerKey(DIK_A)) {
+            if (player.input_->TriggerKey(DIK_Q)) {
+                player.StartRoll_(-1.0f);
+                player.doubleTapFrameA_ = 0;
+            }
+            else if (player.input_->TriggerKey(DIK_A)) {
                 if (player.doubleTapFrameA_ > 0 && player.doubleTapFrameA_ < Player::kDoubleTapThreshold) {
                     player.StartRoll_(-1.0f);
                     player.doubleTapFrameA_ = 0;
@@ -253,8 +261,16 @@ void Player::UpdateMoveAndBank_(float dt) {
         iy--;
     }
 
-    worldTransform_.translation_.x += ix * kMoveSpeedXY * dt;
-    worldTransform_.translation_.y += iy * kMoveSpeedXY * dt;
+    float moveX = static_cast<float>(ix);
+    float moveY = static_cast<float>(iy);
+    if (ix != 0 && iy != 0) {
+        constexpr float kDiagonalNormalize = 0.70710678f;
+        moveX *= kDiagonalNormalize;
+        moveY *= kDiagonalNormalize;
+    }
+
+    worldTransform_.translation_.x += moveX * kMoveSpeedXY * dt;
+    worldTransform_.translation_.y += moveY * kMoveSpeedXY * dt;
 
     worldTransform_.translation_.x = std::clamp(worldTransform_.translation_.x, kClampXMin, kClampXMax);
     worldTransform_.translation_.y = std::clamp(worldTransform_.translation_.y, kClampYMin, kClampYMax);

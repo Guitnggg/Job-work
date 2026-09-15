@@ -18,7 +18,7 @@ constexpr float kClearStartWaitTime = 1.5f;
 constexpr float kClearPopDuration = 0.8f;
 constexpr float kClearPopOverScale = 1.2f;
 constexpr float kClearPopFirstRate = 0.6f;
-constexpr float kResultCountSpeed = 500.0f;
+constexpr float kResultCountDuration = 2.0f;
 constexpr float kResultEndWaitTime = 0.5f;
 constexpr float kReturnBlinkSpeed = 4.0f;
 
@@ -36,7 +36,6 @@ void ClearScene::Initialize() {
 
 	// SE 読み込み
 	changeSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/SceneChange.wav");
-	pointSEHandle_ = Audio::GetInstance()->LoadWave("./Resources/SE/point.wav");
 
 	// 小惑星を一定量生成
 	asteroidField_.Initialize(SceneHelper::CreateMenuAsteroidFieldConfig());
@@ -106,12 +105,11 @@ void ClearScene::Update() {
 	} break;
 
 	case ClearPhase::ResultCount: {
-		//  スコアを0→finalScore_までカウントアップ
-		const float speed = kResultCountSpeed; // 1秒で約500点増える感じ
-		int target = static_cast<int>(displayedScore_ + speed * dt);
-		if (target > finalScore_) {
-			target = finalScore_;
-		}
+		// 得点の大小にかかわらず一定時間でカウントを完了する。
+		const bool skipRequested = input_->TriggerKey(DIK_SPACE) || input_->TriggerKey(DIK_RETURN) || input_->IsTriggerMouse(0);
+		const float t = skipRequested ? 1.0f : std::clamp(phaseTimer_ / kResultCountDuration, 0.0f, 1.0f);
+		const float eased = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
+		const int target = static_cast<int>(static_cast<float>(finalScore_) * eased);
 		int add = target - displayedScore_;
 		if (add > 0) {
 			scoreUI_.Add(add);
@@ -146,7 +144,7 @@ void ClearScene::Update() {
 	scoreUI_.Update();
 
 	/// シーン変遷 ///
-	if (phase_ == ClearPhase::WaitInput && input_->PushKey(DIK_SPACE)) {
+	if (phase_ == ClearPhase::WaitInput && (input_->TriggerKey(DIK_SPACE) || input_->TriggerKey(DIK_RETURN) || input_->IsTriggerMouse(0))) {
 		Audio::GetInstance()->PlayWave(changeSEHandle_);
 		isEnd_ = true;
 	}

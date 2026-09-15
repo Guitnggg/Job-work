@@ -78,7 +78,7 @@ void EnemyManager::ClearAllEnemies() {
 
 void EnemyManager::ClearPendingSpawns() { enemySpawnList_.clear(); }
 
-void EnemyManager::LoadEnemyCsv(const std::string& path) {
+void EnemyManager::LoadEnemyJson(const std::string& path) {
     enemySpawnList_.clear();
 
     std::ifstream ifs(path);
@@ -160,7 +160,7 @@ void EnemyManager::LoadEnemyCsv(const std::string& path) {
     std::sort(enemySpawnList_.begin(), enemySpawnList_.end(), [](const EnemySpawnData& a, const EnemySpawnData& b) { return a.time < b.time; });
 }
 
-void EnemyManager::SpawnEnemiesByCsv(const Vector3& playerPos) {
+void EnemyManager::SpawnEnemiesBySchedule(const Vector3& playerPos) {
     const float currentTime = enemySpawnTimer_;
 
     while (!enemySpawnList_.empty()) {
@@ -211,7 +211,7 @@ std::unique_ptr<CharacterBase> EnemyManager::CreateEnemy_(const EnemySpawnData& 
 
 void EnemyManager::Update(float dt, const Vector3& playerPos) {
     enemySpawnTimer_ += dt;
-    SpawnEnemiesByCsv(playerPos);
+    SpawnEnemiesBySchedule(playerPos);
 
     // 敵更新
     for (auto& enemy : enemies_) {
@@ -234,37 +234,6 @@ void EnemyManager::Draw(const Camera* camera) {
     for (auto& enemy : enemies_) {
         enemy->Draw(camera);
     }
-}
-
-std::vector<CharacterBase*> EnemyManager::GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const {
-    std::vector<std::pair<float, CharacterBase*>> distances;
-    distances.reserve(enemies_.size());
-
-    for (const auto& enemy : enemies_) {
-        if (!enemy || enemy->IsDead()) {
-            continue;
-        }
-        const KamataEngine::Vector3 pos = enemy->GetWorldTranslation();
-        const float dx = pos.x - from.x;
-        const float dy = pos.y - from.y;
-        const float dz = pos.z - from.z;
-        const float distSq = dx * dx + dy * dy + dz * dz;
-        distances.emplace_back(distSq, enemy.get());
-    }
-
-    std::sort(distances.begin(), distances.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
-
-    if (maxCount <= 0) {
-        return {};
-    }
-
-    const size_t count = (std::min)(distances.size(), static_cast<size_t>(maxCount));
-    std::vector<CharacterBase*> result;
-    result.reserve(count);
-    for (size_t i = 0; i < count; ++i) {
-        result.push_back(distances[i].second);
-    }
-    return result;
 }
 
 void EnemyManager::RemoveDeadEnemies() {

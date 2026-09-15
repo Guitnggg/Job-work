@@ -37,6 +37,7 @@ public:
     /// スコア情報を取得する
     /// </summary>
     Score* GetScore() { return score_.get(); }
+    const Score* GetScore() const { return score_.get(); }
 
     /// <summary>
     /// ホーミングミサイルのクールダウン率を設定する
@@ -52,6 +53,9 @@ public:
     /// ホーミングミサイルのロックオン数と情報を設定する。
     /// </summary>
     void SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount, bool isLocking, float lockProgressRate);
+
+    /// <summary>クリア目標に対する現在のスコア進行度を設定する。</summary>
+    void SetScoreGoal(int32_t currentScore, int32_t requiredScore);
 
 private:
     // HP参照用。所有権は持たない
@@ -69,6 +73,8 @@ private:
     std::unique_ptr<KamataEngine::Sprite> normalAttackBack_;
     std::unique_ptr<KamataEngine::Sprite> normalAttackFront_;
     std::unique_ptr<KamataEngine::Sprite> uiBaseSprite_;
+    std::unique_ptr<KamataEngine::Sprite> scoreGoalBack_;
+    std::unique_ptr<KamataEngine::Sprite> scoreGoalFront_;
     std::array<std::unique_ptr<KamataEngine::Sprite>, 5> homingLockSlots_{};
     uint32_t homingBarTexHandle_ = 0;
     uint32_t uiBaseTexHandle_ = 0;
@@ -79,5 +85,6 @@ private:
     int32_t homingMaxLockCount_ = 5;
     bool isHomingLocking_ = false;
     float homingLockProgressRate_ = 0.0f;
+    float scoreGoalRate_ = 0.0f;
 
 };

@@ -95,6 +95,12 @@ public:
     /// <returns>現在ロックしている敵のリスト</returns>
     const std::vector<CharacterBase*>& GetLockedTargets() const { return lockedTargets_; }
 
+    /// <summary>照準周辺にいる、現在ロック可能な敵を優先順で設定する。</summary>
+    void SetHomingCandidates(const std::vector<CharacterBase*>& candidates) { homingCandidates_ = candidates; }
+
+    /// <summary>敵の削除後に、保持中の非所有ポインターを安全な状態へ同期する。</summary>
+    void ValidateHomingTargets(EnemyManager* enemyManager) { ValidateHomingTargets_(enemyManager); }
+
 private:
     /// <summary>
     /// プレイヤーの入力に応じて通常弾を発射する処理 
@@ -143,12 +149,13 @@ private:
     int32_t homingLockFrame_ = 0;
     int32_t homingCooldownFrames_ = 0;
     std::vector<CharacterBase*> lockedTargets_;
+    std::vector<CharacterBase*> homingCandidates_;
     bool wasHomingPressing_ = false;
 
     static constexpr int32_t kHomingLockStartFrame = 30; // 0.5s
     static constexpr int32_t kHomingLockMaxFrame = 60;   // 1.0s
     static constexpr int32_t kHomingMaxLockCount = 5;
-    static constexpr int32_t kHomingCooldownMaxFrame = 600; // 10s
+    static constexpr int32_t kHomingCooldownMaxFrame = 300; // 5s
 
     KamataEngine::Audio* audio_ = nullptr;
     uint32_t shotSeHandle_ = 0;

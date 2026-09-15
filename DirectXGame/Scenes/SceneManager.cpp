@@ -65,8 +65,7 @@ void SceneManager::ChangeScene(std::unique_ptr<IScene> newScene) {
 	TransitionStyle style = hint.style;
 	if (style == TransitionStyle::Auto) {
 		// Autoの場合はSceneManagerのデフォルト規則に従う
-		pendingWhiteFlash_ = ShouldUseWhiteFlash(from, to);
-		style = pendingWhiteFlash_ ? TransitionStyle::WhiteFlash : TransitionStyle::BlackFade;
+		style = ShouldUseWhiteFlash(from, to) ? TransitionStyle::WhiteFlash : TransitionStyle::BlackFade;
 	}
 
 	// 状態遷移の初期設定

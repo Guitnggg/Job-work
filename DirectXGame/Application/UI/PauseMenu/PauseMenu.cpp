@@ -17,10 +17,6 @@ float EaseOutBack(float t) {
     return 1.0f + kBackEaseCubicCoefficient * powf(t - 1.0f, 3) + kBackEaseOvershoot * powf(t - 1.0f, 2);
 }
 
-float EaseInBack(float t) {
-    return kBackEaseCubicCoefficient * t * t * t - kBackEaseOvershoot * t * t;
-}
-
 // =========================
 // 初期化
 // =========================
@@ -67,15 +63,8 @@ void PauseMenu::StartOpenAnimation() {
     animTimer_ = 0.0f;
     scale_ = kStartScale;
     isOpening_ = true;
-    isClosing_ = false;
     isHowToOpen_ = false;
-}
-
-void PauseMenu::StartCloseAnimation() {
-    animTimer_ = 0.0f;
-    isClosing_ = true;
-    isOpening_ = false;
-    isHowToOpen_ = false;
+    selectIndex_ = 0;
 }
 
 // =========================
@@ -95,25 +84,12 @@ void PauseMenu::Update() {
         }
     }
 
-    // --- 閉じる ---
-    if (isClosing_) {
-        animTimer_ += GameTime::kDeltaTime;
-        float t = (std::min)(animTimer_ / kAnimDuration, 1.0f);
-        scale_ = 1.0f - (1.0f - kStartScale) * EaseInBack(t);
-
-        if (t >= 1.0f) {
-            scale_ = kStartScale;
-            isClosing_ = false;
-        }
-        return;
-    }
-
     if (result_ != Result::None) {
         return;
     }
 
     if (isHowToOpen_) {
-        if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_ESCAPE)) {
+        if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_RETURN) || Input::GetInstance()->TriggerKey(DIK_ESCAPE)) {
             isHowToOpen_ = false;
         }
         return;
@@ -121,7 +97,7 @@ void PauseMenu::Update() {
 
     MoveCursor();
 
-    if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+    if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_RETURN)) {
         const MenuAction& action = kMenuActions[selectIndex_];
         if (action.opensHowTo) {
             isHowToOpen_ = true;
@@ -135,11 +111,11 @@ void PauseMenu::Update() {
 // =========================
 void PauseMenu::MoveCursor() {
 
-    if (Input::GetInstance()->TriggerKey(DIK_W)) {
+    if (Input::GetInstance()->TriggerKey(DIK_W) || Input::GetInstance()->TriggerKey(DIK_UP)) {
         selectIndex_ = (selectIndex_ + kMenuCount - 1) % kMenuCount;
     }
 
-    if (Input::GetInstance()->TriggerKey(DIK_S)) {
+    if (Input::GetInstance()->TriggerKey(DIK_S) || Input::GetInstance()->TriggerKey(DIK_DOWN)) {
         selectIndex_ = (selectIndex_ + 1) % kMenuCount;
     }
 

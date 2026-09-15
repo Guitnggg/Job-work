@@ -92,7 +92,7 @@ void TitleScene::Update() {
 	}
 
 	// シーン遷移（落下完了後のみ）
-	if (isTitleFallFinished_ && input_->PushKey(DIK_SPACE)) {
+	if (isTitleFallFinished_ && (input_->TriggerKey(DIK_SPACE) || input_->TriggerKey(DIK_RETURN) || input_->IsTriggerMouse(0))) {
 		Audio::GetInstance()->PlayWave(changeSEHandle_);
 		isEnd_ = true;
 	}

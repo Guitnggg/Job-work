@@ -84,7 +84,6 @@ private:
 
 	std::array<uint32_t, static_cast<size_t>(Difficulty::Count)> difficultyTextureHandles_{};
 	std::array<std::unique_ptr<KamataEngine::Sprite>, static_cast<size_t>(Difficulty::Count)> difficultySprites_;
-	uint32_t difficultyCursorTextureHandle_ = 0;
 	int selectedIndex_ = 0;
 	uint32_t reticleTextureHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> reticleSprite_;

@@ -2,9 +2,11 @@
 
 #include <KamataEngine.h>
 #include <memory>
+#include <string>
 
 #include "Application/Background/Skydome/Skydome.h"
 #include "Application/Objects/Asteroid/AsteroidField.h"
+#include "Application/UI/Score/Score.h"
 
 #include "Scenes/IScene.h"
 class TitleScene;
@@ -18,7 +20,7 @@ public:
 	/// <summary>
 	/// インストラクタ
 	/// </summary>
-	FinishScene();
+	explicit FinishScene(std::string levelJsonPath = "./Resources/Levels/Tutorial.json", int finalScore = 0);
 
 	/// <summary>
 	/// デストラクタ
@@ -67,6 +69,15 @@ private:
 	std::unique_ptr<KamataEngine::Sprite> finishSprite_;
 	uint32_t returnTextureHandle_ = 0;
 	std::unique_ptr<KamataEngine::Sprite> returnSprite_;
+	std::unique_ptr<KamataEngine::Sprite> retrySprite_;
+	std::unique_ptr<KamataEngine::Sprite> cursorSprite_;
+	uint32_t retryTextureHandle_ = 0;
+	uint32_t whiteTextureHandle_ = 0;
+	Score scoreUI_;
+	std::string levelJsonPath_;
+	int finalScore_ = 0;
+	int selectedIndex_ = 0;
+	bool requestRetry_ = true;
 
 	// 効果音
 	uint32_t changeSEHandle_ = 0;

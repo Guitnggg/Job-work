@@ -16,6 +16,8 @@ namespace {
     constexpr Vector2 kLockBaseSize{ 280.0f, 4.0f };
     constexpr Vector2 kSlotStartPos{ 1040.0f, 648.0f };
     constexpr Vector2 kSlotSize{ 14.0f, 14.0f };
+    constexpr Vector2 kScoreGoalPos{ 1090.0f, 74.0f };
+    constexpr Vector2 kScoreGoalSize{ 160.0f, 8.0f };
     constexpr float kSlotGap = 18.0f;
     constexpr Vector4 kHudGreen{ 0.10f, 1.0f, 0.38f, 0.95f };
     constexpr Vector4 kHudCyan{ 0.10f, 0.82f, 1.0f, 0.95f };
@@ -43,6 +45,8 @@ void UIManager::Initialize(Player* player) {
     homingCooldownBack_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, { 0.1f, 0.1f, 0.1f, 0.9f }));
     homingCooldownFront_.reset(Sprite::Create(homingBarTexHandle_, kCoolPos, kHudCyan));
     lockProgressBar_.reset(Sprite::Create(homingBarTexHandle_, kLockPos, kHudYellow));
+    scoreGoalBack_.reset(Sprite::Create(homingBarTexHandle_, kScoreGoalPos, kHudDim));
+    scoreGoalFront_.reset(Sprite::Create(homingBarTexHandle_, kScoreGoalPos, kHudYellow));
 
     uiBaseSprite_->SetSize(kUiBaseSize);
     normalAttackBack_->SetSize(kNormalSize);
@@ -50,6 +54,8 @@ void UIManager::Initialize(Player* player) {
     homingCooldownBack_->SetSize(kCoolSize);
     homingCooldownFront_->SetSize(kCoolSize);
     lockProgressBar_->SetSize({ 0.0f, kLockBaseSize.y });
+    scoreGoalBack_->SetSize(kScoreGoalSize);
+    scoreGoalFront_->SetSize({ 0.0f, kScoreGoalSize.y });
     for (size_t i = 0; i < homingLockSlots_.size(); ++i) {
         homingLockSlots_[i].reset(Sprite::Create(homingBarTexHandle_, { kSlotStartPos.x + kSlotGap * static_cast<float>(i), kSlotStartPos.y }, kHudDim));
         homingLockSlots_[i]->SetSize(kSlotSize);
@@ -62,6 +68,14 @@ void UIManager::SetHomingLockInfo(int32_t currentLockCount, int32_t maxLockCount
     homingMaxLockCount_ = (std::max)(maxLockCount, 1);
     isHomingLocking_ = isLocking;
     homingLockProgressRate_ = std::clamp(lockProgressRate, 0.0f, 1.0f);
+}
+
+void UIManager::SetScoreGoal(int32_t currentScore, int32_t requiredScore) {
+    if (requiredScore <= 0) {
+        scoreGoalRate_ = 1.0f;
+        return;
+    }
+    scoreGoalRate_ = std::clamp(static_cast<float>(currentScore) / static_cast<float>(requiredScore), 0.0f, 1.0f);
 }
 
 // プレイヤーHP、スコア、ホーミングゲージの表示状態を更新する。
@@ -96,6 +110,11 @@ void UIManager::Update() {
         lockProgressBar_->SetSize({ kLockBaseSize.x * homingLockProgressRate_, kLockBaseSize.y });
     }
 
+    if (scoreGoalFront_) {
+        scoreGoalFront_->SetSize({ kScoreGoalSize.x * scoreGoalRate_, kScoreGoalSize.y });
+        scoreGoalFront_->SetColor(scoreGoalRate_ >= 1.0f ? kHudGreen : kHudYellow);
+    }
+
     for (size_t i = 0; i < homingLockSlots_.size(); ++i) {
         if (!homingLockSlots_[i]) {
             continue;
@@ -121,6 +140,12 @@ void UIManager::Draw() {
     }
     if (score_) {
         score_->Draw();
+    }
+    if (scoreGoalBack_) {
+        scoreGoalBack_->Draw();
+    }
+    if (scoreGoalFront_) {
+        scoreGoalFront_->Draw();
     }
     if (normalAttackBack_) {
         normalAttackBack_->Draw();

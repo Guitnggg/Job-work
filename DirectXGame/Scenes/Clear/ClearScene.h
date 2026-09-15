@@ -71,7 +71,6 @@ private:
 
 	// 効果音
 	uint32_t changeSEHandle_ = 0;
-	uint32_t pointSEHandle_ = 0;
 
 	// 背景（天球 / 小惑星）
 	std::unique_ptr<Skydome> skydome_;

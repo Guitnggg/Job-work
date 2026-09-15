@@ -117,9 +117,6 @@
     <ClCompile Include="Application\Characters\Enemy\TurretEnemy.cpp">
       <Filter>Application\Characters\Enemy</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Characters\Player\Laser.cpp">
-      <Filter>Application\Characters\Player</Filter>
-    </ClCompile>
     <ClCompile Include="Application\Effects\Smoke\GpuSmokeEmitter.cpp">
       <Filter>Application\Effects\Smoke</Filter>
     </ClCompile>
@@ -223,9 +220,6 @@
     </ClInclude>
     <ClInclude Include="Application\Characters\Enemy\TurretEnemy.h">
       <Filter>Application\Characters\Enemy</Filter>
-    </ClInclude>
-    <ClInclude Include="Application\Characters\Player\Laser.h">
-      <Filter>Application\Characters\Player</Filter>
     </ClInclude>
     <ClInclude Include="Application\Effects\Smoke\GpuSmokeEmitter.h">
       <Filter>Application\Effects\Smoke</Filter>

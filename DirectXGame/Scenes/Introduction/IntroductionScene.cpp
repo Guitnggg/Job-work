@@ -8,19 +8,17 @@ using namespace KamataEngine;
 
 namespace {
 constexpr Vector2 kReturnTitlePosition{20.0f, 20.0f};
-constexpr Vector2 kDifficultySpriteSize{512.0f, 128.0f};
+constexpr Vector2 kDifficultySpriteSize{420.0f, 72.0f};
 }
 
 namespace {
 constexpr float kDifficultyBaseX = 700.0f;
 constexpr float kDifficultyBaseY = 300.0f;
-constexpr float kDifficultyStepY = 80.0f;
+constexpr float kDifficultyStepY = 84.0f;
 constexpr float kDifficultyNormalScale = 1.0f;
 constexpr float kDifficultySelectedScale = 1.12f;
 constexpr Vector4 kDifficultyNormalColor = {0.8f, 0.8f, 0.8f, 1.0f};
 constexpr Vector4 kDifficultySelectedColor = {1.0f, 1.0f, 1.0f, 1.0f};
-constexpr Vector4 kDifficultyCursorColor = {1.0f, 1.0f, 0.5f, 1.0f};
-constexpr float kDifficultyCursorOffsetX = -54.0f;
 constexpr Vector2 kReticleSize{32.0f, 32.0f};
 } // namespace
 
@@ -98,6 +96,23 @@ void IntroductionScene::Update() {
 	}
 	if (input_->TriggerKey(DIK_DOWN) || input_->TriggerKey(DIK_S)) {
 		selectedIndex_ = (selectedIndex_ + 1) % difficultyCount;
+	}
+
+	// レティクルを表示しているメニューでは、項目のホバーとクリックにも対応する。
+	const Vector2 mouse = input_->GetMousePosition();
+	for (int i = 0; i < difficultyCount; ++i) {
+		const float top = kDifficultyBaseY + kDifficultyStepY * static_cast<float>(i);
+		const bool isHovered = mouse.x >= kDifficultyBaseX && mouse.x <= kDifficultyBaseX + kDifficultySpriteSize.x && mouse.y >= top && mouse.y <= top + kDifficultySpriteSize.y;
+		if (!isHovered) {
+			continue;
+		}
+		selectedIndex_ = i;
+		if (input_->IsTriggerMouse(0)) {
+			Audio::GetInstance()->PlayWave(changeSEHandle_);
+			nextScene_ = SceneName::InGame;
+			isEnd_ = true;
+			return;
+		}
 	}
 
 	if (input_->TriggerKey(DIK_RETURN) || input_->TriggerKey(DIK_SPACE)) {

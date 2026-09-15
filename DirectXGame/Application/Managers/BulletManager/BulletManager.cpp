@@ -20,6 +20,7 @@ void BulletManager::Initialize() {
     bullets_.clear();
     homingMissiles_.clear();
     lockedTargets_.clear();
+    homingCandidates_.clear();
 
     // Object Pool Pattern:
     // 通常弾は連射で頻繁に生成・破棄されるため、最初に一定数を生成してプールとして保持する。
@@ -124,7 +125,17 @@ void BulletManager::HandleHomingMissile_(KamataEngine::Input* input, Player* pla
 
     ++homingLockFrame_;
     if (homingLockFrame_ >= kHomingLockStartFrame) {
-        lockedTargets_ = enemyManager->GetNearestEnemies(player->GetWorldTranslation(), kHomingMaxLockCount);
+        // ロック開始後は一定間隔で1体ずつ確定させ、スロットUIと音の手応えを一致させる。
+        const int32_t desiredCount = (std::min)(kHomingMaxLockCount, 1 + (homingLockFrame_ - kHomingLockStartFrame) / 8);
+        lockedTargets_.clear();
+        for (CharacterBase* candidate : homingCandidates_) {
+            if (candidate && !candidate->IsDead()) {
+                lockedTargets_.push_back(candidate);
+                if (static_cast<int32_t>(lockedTargets_.size()) >= desiredCount) {
+                    break;
+                }
+            }
+        }
     }
 
     const bool isPressing = input->IsPressMouse(1);
@@ -160,6 +171,8 @@ void BulletManager::HandleHomingMissile_(KamataEngine::Input* input, Player* pla
 
 void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager) {
     if (!enemyManager) {
+        lockedTargets_.clear();
+        homingCandidates_.clear();
         for (auto& m : homingMissiles_) {
             if (m) {
                 m->ClearTarget();
@@ -169,6 +182,13 @@ void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager) {
     }
 
     auto& enemies = enemyManager->GetEnemies();
+    const auto targetExists = [&enemies](CharacterBase* target) {
+        return target && std::any_of(enemies.begin(), enemies.end(), [target](const std::unique_ptr<CharacterBase>& e) { return e && e.get() == target && !e->IsDead(); });
+    };
+
+    lockedTargets_.erase(std::remove_if(lockedTargets_.begin(), lockedTargets_.end(), [&targetExists](CharacterBase* target) { return !targetExists(target); }), lockedTargets_.end());
+    homingCandidates_.erase(std::remove_if(homingCandidates_.begin(), homingCandidates_.end(), [&targetExists](CharacterBase* target) { return !targetExists(target); }), homingCandidates_.end());
+
     for (auto& m : homingMissiles_) {
         if (!m || m->IsDead()) {
             continue;
@@ -179,9 +199,7 @@ void BulletManager::ValidateHomingTargets_(EnemyManager* enemyManager) {
             continue;
         }
 
-        const bool exists = std::any_of(enemies.begin(), enemies.end(), [target](const std::unique_ptr<CharacterBase>& e) { return e && e.get() == target && !e->IsDead(); });
-
-        if (!exists) {
+        if (!targetExists(target)) {
             m->ClearTarget();
         }
     }

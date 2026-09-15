@@ -94,8 +94,6 @@ private:
 	KamataEngine::Input* input_ = nullptr;
 	KamataEngine::Audio* audio_ = nullptr;
 
-	std::unique_ptr<KamataEngine::WorldTransform> worldTransform_;
-	std::unique_ptr<KamataEngine::Model> model_;
 	KamataEngine::Camera camera_;
 
 	// ========== ゲーム状態 ==========
@@ -105,7 +103,6 @@ private:
 	CountDown countDown_;
 
 	// ========== レールカメラ ==========
-	bool isRailCameraActive_ = true;
 	std::unique_ptr<RailCamera> railCamera_;
 
 	// ========== 背景 ==========
@@ -145,7 +142,6 @@ private:
 	struct LockOnMarker {
 		std::unique_ptr<KamataEngine::Sprite> sprite;
 		CharacterBase* target = nullptr;
-		float pulseT = 0.0f;
 	};
 
 	uint32_t lockOnTexHandle_ = 0;
@@ -188,7 +184,6 @@ private:
 
 	// ========== GPUダメージエフェクト ==========
 	std::unordered_map<CharacterBase*, int32_t> prevEnemyHpMap_;
-	int32_t prevPlayerHp_ = 0;
 	static constexpr float kDamageGpuLife = 0.35f;
 	static constexpr float kDamageGpuStartScale = 0.32f;
 	static constexpr float kDamageGpuEndScale = 1.25f;
@@ -233,7 +228,6 @@ private:
 
 	// ========== ポーズ ==========
 	bool isPaused_ = false;
-	bool isDebugUpdatePaused_ = false;
 	std::unique_ptr<PauseMenu> pauseMenu_;
 	std::unique_ptr<KamataEngine::Sprite> pauseTitleSprite_;
 	uint32_t pauseTitleTexHandle_ = 0;
@@ -241,7 +235,6 @@ private:
 	static constexpr float kScreenHeight = 720.0f;
 	static constexpr float kPauseTitlePosX = 20.0f;
 	static constexpr float kPauseTitlePosY = 16.0f;
-	static constexpr float kPauseTitleScale = 0.7f;
 
 	// ========== リトライ・タイトル遷移 ==========
 	bool requestRetry_ = false;
@@ -270,10 +263,6 @@ private:
 	static constexpr float kCountDownScaleStart = 1.2f;
 	static constexpr float kCountDownScaleEnd = 1.0f;
 	static constexpr float kCountDownBackOvershoot = 1.7f;
-	static constexpr float kCameraShakeMin = -1.0f;
-	static constexpr float kCameraShakeMax = 1.0f;
-	static constexpr float kCameraShakeDuration = 1.0f;
-	static constexpr float kCameraInputScale = 40.0f;
 	static constexpr float kBossStartCinematicDuration = 1.5f;
 
 	// ========== シーン遷移 ==========
@@ -281,7 +270,6 @@ private:
 	float transitionTimer_ = 0.0f;
 	float timeScale_ = 1.0f;
 
-	int transitionScoreBonus_ = 0;
 	bool failSecondExplosionDone_ = false;
 
 	uint32_t seExplosionHandle_ = 0;

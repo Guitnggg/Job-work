@@ -109,7 +109,6 @@ private:
 	float baseTransitionSpeed_ = 0.02f;
 	float baseFlashTime_ = 0.16f;
 
-	bool pendingWhiteFlash_ = false;
 
 	std::unique_ptr<KamataEngine::Sprite> fadeSprite_;
 	std::unique_ptr<KamataEngine::Sprite> flashSprite_;

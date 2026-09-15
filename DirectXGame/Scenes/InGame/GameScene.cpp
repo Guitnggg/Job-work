@@ -126,11 +126,7 @@ void GameScene::Initialize() {
     input_ = Input::GetInstance();
     audio_ = Audio::GetInstance();
 
-    worldTransform_ = std::make_unique<WorldTransform>();
-    worldTransform_->Initialize();
     camera_.Initialize();
-
-    model_.reset(Model::Create());
 
     // =====レールカメラ =====
     railCamera_ = std::make_unique<RailCamera>();
@@ -201,7 +197,6 @@ void GameScene::Initialize() {
     missileAfterburnerEmitter_->Initialize(kMissileAfterburnerMaxParticles);
     smokeEmitTimer_ = 0.0f;
     prevEnemyHpMap_.clear();
-    prevPlayerHp_ = player_->GetHP();
 
     // ===== 通常時スモーク =====
     normalSmokeParams_ = {
@@ -236,7 +231,7 @@ void GameScene::Initialize() {
     bulletManager_.Initialize();
     enemyManager_.Initialize();
     bossManager_.Initialize();
-    enemyManager_.LoadEnemyCsv(levelJsonPath_);
+    enemyManager_.LoadEnemyJson(levelJsonPath_);
     const LevelDefaults& levelDefaults = FindLevelDefaults(levelJsonPath_);
     isTutorialLevel_ = levelDefaults.isTutorial;
     isBossStageEnabled_ = kEnableBossStage && levelDefaults.enablesBossStage;
@@ -252,6 +247,15 @@ void GameScene::Initialize() {
     // ===== 照準 =====
     reticleTexHandle_ = TextureManager::Load("./Resources/InGame/Reticle.png");
     lockOnTexHandle_ = TextureManager::Load("./Resources/InGame/Lockon.png");
+    lockOnMarkers_.clear();
+    lockOnMarkers_.reserve(static_cast<size_t>(bulletManager_.GetMaxLockCount()));
+    for (int32_t i = 0; i < bulletManager_.GetMaxLockCount(); ++i) {
+        auto marker = SceneHelper::CreateSprite(lockOnTexHandle_, { 0.0f, 0.0f });
+        if (marker) {
+            marker->SetAnchorPoint({ 0.5f, 0.5f });
+        }
+        lockOnMarkers_.push_back({ std::move(marker), nullptr });
+    }
     reticleSprite_ = SceneHelper::CreateSprite(reticleTexHandle_, reticlePos_);
     if (reticleSprite_) {
         reticleSprite_->SetAnchorPoint({ 0.5f, 0.5f });
@@ -284,7 +288,6 @@ void GameScene::Initialize() {
     transitionPhase_ = SceneTransitionPhase::None;
     transitionTimer_ = 0.0f;
     timeScale_ = 1.0f;
-    transitionScoreBonus_ = 0;
     failSecondExplosionDone_ = false;
     hitStopFrames_ = 0;
     hitStopRequestFrames_ = 0;
@@ -358,7 +361,7 @@ void GameScene::Draw() {
 
             // ロックオン演出
             for (auto& marker : lockOnMarkers_) {
-                if (marker.sprite) {
+                if (marker.sprite && marker.target) {
                     marker.sprite->Draw();
                 }
             }
@@ -427,7 +430,7 @@ void GameScene::Draw() {
         }
 
         // OSカーソルを非表示にしているため、ゲームシーン中は常に最前面へ表示する。
-        if (reticleSprite_) {
+        if (reticleSprite_ && !isPaused_) {
             reticleSprite_->Draw();
         }
 
@@ -450,6 +453,6 @@ std::unique_ptr<IScene> GameScene::NextScene() const {
         return std::make_unique<ClearScene>(clearScore_); // クリア時
     }
     else {
-        return std::make_unique<FinishScene>(); // 失敗時（Fail or None）
+        return std::make_unique<FinishScene>(levelJsonPath_, uiManager_.GetScore()->GetScore()); // 失敗時
     }
 }

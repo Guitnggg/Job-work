@@ -28,6 +28,7 @@ constexpr Vector4 kReticleNormalColor{1.0f, 1.0f, 1.0f, 1.0f};
 constexpr Vector4 kReticleTargetColor{1.0f, 0.2f, 0.2f, 1.0f};
 constexpr Vector4 kReticleLockColor{0.1f, 1.0f, 0.38f, 1.0f};
 constexpr float kReticleTargetRadius = 32.0f;
+constexpr float kMissileCandidateRadius = 260.0f;
 constexpr float kReticleLockSize = 48.0f;
 constexpr float kReticleNormalSize = 32.0f;
 constexpr float kIntroCinematicZoom = -10.0f;
@@ -143,7 +144,6 @@ std::unique_ptr<IPauseMenuCommand> CreatePauseMenuCommand(PauseMenu::Result resu
 
 void GameSceneUpdateExecutor::ExecuteResumeCommand(GameScene& gameScene) {
 	// ポーズ解除処理。
-	gameScene.pauseMenu_->StartCloseAnimation();
 	gameScene.isPaused_ = false;
 }
 
@@ -186,8 +186,6 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 		if (gameScene.isPaused_) {
 			gameScene.pauseMenu_->ResetResult();
 			gameScene.pauseMenu_->StartOpenAnimation();
-		} else {
-			gameScene.pauseMenu_->StartCloseAnimation();
 		}
 	}
 
@@ -203,11 +201,6 @@ void GameSceneUpdateExecutor::Update(GameScene& gameScene) {
 	}
 
 	if (gameScene.state_ == GameState::Playing) {
-		// デバッグ停止中は全更新を止める。
-		if (gameScene.isDebugUpdatePaused_) {
-			return;
-		}
-
 		// ヒットストップ中は表示系だけ保つ。
 		if (gameScene.result_ == GameResult::None && gameScene.hitStopFrames_ > 0) {
 			--gameScene.hitStopFrames_;
@@ -388,9 +381,12 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 					gameScene.audio_->PlayWave(gameScene.seEnemyKillHandle_, false, kEnemyKillSeVolume);
 				}
 
-				const int earnedScore = dynamic_cast<TurretEnemy*>(e.get()) ? kTurretKillScore : gameScene.kScorePerEnemy;
+				const bool isTurret = dynamic_cast<TurretEnemy*>(e.get()) != nullptr;
+				const int baseScore = isTurret ? kTurretKillScore : gameScene.kScorePerEnemy;
+				const int baseHp = isTurret ? 2 : 1;
+				const int earnedScore = baseScore + (std::max)(0, e->GetMaxHP() - baseHp) * gameScene.kScorePerEnemy;
 				earnedScoreTotal += earnedScore;
-				//gameScene.scorePopups_.push_back({deadPos, earnedScore, 0.6f, 0.6f, 1.8f});
+				gameScene.scorePopups_.push_back({deadPos, earnedScore, 0.6f, 0.6f, 1.8f});
 			}
 			gameScene.prevEnemyHpMap_[key] = nowHp;
 		}
@@ -404,6 +400,7 @@ void GameSceneUpdateExecutor::BattleUpdate(GameScene& gameScene, float dt) {
 		gameScene.enemyManager_.RemoveDeadEnemies();
 		CollisionManager::ResolvePlayerEnemyCollisions(gameScene.player_.get(), gameScene.enemyManager_.GetEnemies(), gameScene.countDown_);
 		gameScene.enemyManager_.RemoveDeadEnemies();
+		gameScene.bulletManager_.ValidateHomingTargets(&gameScene.enemyManager_);
 	}
 
 	if (!gameScene.countDown_.IsInputLocked() && gameScene.result_ == GameResult::None && gameScene.bossManager_.IsBattle()) {
@@ -457,6 +454,8 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 	CharacterBase* aimedEnemy = nullptr;
 	float nearestDepth = 1.0f;
 	const float targetRadiusSq = kReticleTargetRadius * kReticleTargetRadius;
+	const float missileRadiusSq = kMissileCandidateRadius * kMissileCandidateRadius;
+	std::vector<std::pair<float, CharacterBase*>> missileCandidates;
 	for (const auto& enemy : gameScene.enemyManager_.GetEnemies()) {
 		if (!enemy || enemy->IsDead()) {
 			continue;
@@ -470,7 +469,11 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 		const Vector2 enemyScreen = {(clip.x * 0.5f + 0.5f) * gameScene.kScreenWidth, (-clip.y * 0.5f + 0.5f) * gameScene.kScreenHeight};
 		const float dx = enemyScreen.x - gameScene.reticlePos_.x;
 		const float dy = enemyScreen.y - gameScene.reticlePos_.y;
-		if (dx * dx + dy * dy <= targetRadiusSq && (!aimedEnemy || clip.z < nearestDepth)) {
+		const float screenDistanceSq = dx * dx + dy * dy;
+		if (screenDistanceSq <= missileRadiusSq) {
+			missileCandidates.emplace_back(screenDistanceSq, enemy.get());
+		}
+		if (screenDistanceSq <= targetRadiusSq && (!aimedEnemy || clip.z < nearestDepth)) {
 			aimedEnemy = enemy.get();
 			nearestDepth = clip.z;
 		}
@@ -484,6 +487,13 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 		gameScene.reticleSprite_->SetColor(isMissileLocking ? kReticleLockColor : (aimedEnemy ? kReticleTargetColor : kReticleNormalColor));
 		gameScene.reticleSprite_->SetSize(isMissileLocking ? Vector2{kReticleLockSize, kReticleLockSize} : Vector2{kReticleNormalSize, kReticleNormalSize});
 	}
+	std::sort(missileCandidates.begin(), missileCandidates.end(), [](const auto& lhs, const auto& rhs) { return lhs.first < rhs.first; });
+	std::vector<CharacterBase*> orderedCandidates;
+	orderedCandidates.reserve((std::min)(missileCandidates.size(), static_cast<size_t>(gameScene.bulletManager_.GetMaxLockCount())));
+	for (size_t i = 0; i < missileCandidates.size() && i < static_cast<size_t>(gameScene.bulletManager_.GetMaxLockCount()); ++i) {
+		orderedCandidates.push_back(missileCandidates[i].second);
+	}
+	gameScene.bulletManager_.SetHomingCandidates(orderedCandidates);
 
 	gameScene.shootDirection_ = MyMath::Normalize(MyMath::Subtract(aimPoint, playerPos));
 	if (gameScene.shootDirection_.z < kMinimumShootDirectionZ) {
@@ -496,6 +506,7 @@ void GameSceneUpdateExecutor::UpdateAimAndReticle(GameScene& gameScene) {
 
 // UI 表示を更新する。
 void GameSceneUpdateExecutor::UIUpdate(GameScene& gameScene) {
+	gameScene.uiManager_.SetScoreGoal(gameScene.uiManager_.GetScore()->GetScore(), gameScene.requiredClearScore_);
 	gameScene.uiManager_.SetNormalAttackCooldownRate(gameScene.bulletManager_.GetNormalAttackCooldownRate());
 	gameScene.uiManager_.SetHomingCooldownRate(gameScene.bulletManager_.GetHomingCooldownRate());
 	gameScene.uiManager_.SetHomingLockInfo(gameScene.bulletManager_.GetCurrentLockCount(), gameScene.bulletManager_.GetMaxLockCount(), gameScene.bulletManager_.IsHomingLocking(), gameScene.bulletManager_.GetHomingLockProgressRate());
@@ -504,7 +515,9 @@ void GameSceneUpdateExecutor::UIUpdate(GameScene& gameScene) {
 
 // ロックオンマーカーを更新する。
 void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
-	gameScene.lockOnMarkers_.clear();
+	for (auto& marker : gameScene.lockOnMarkers_) {
+		marker.target = nullptr;
+	}
 
 	if (gameScene.result_ != GameResult::None || gameScene.state_ != GameState::Playing) {
 		return;
@@ -518,6 +531,7 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 	// ロック対象を画面座標へ変換する。
 	const Matrix4x4 viewProj = MyMath::Multiply(cam->matView, cam->matProjection);
 	const auto& targets = gameScene.bulletManager_.GetLockedTargets();
+	size_t markerIndex = 0;
 	for (CharacterBase* target : targets) {
 		if (!target || target->IsDead()) {
 			continue;
@@ -533,18 +547,19 @@ void GameSceneUpdateExecutor::UpdateLockOnMarkers(GameScene& gameScene) {
 			continue;
 		}
 
-		// 画面内の対象だけマーカーを作る。
-		auto sprite = SceneHelper::CreateSprite(gameScene.lockOnTexHandle_, screenPos);
-		if (!sprite) {
+		if (markerIndex >= gameScene.lockOnMarkers_.size()) {
+			break;
+		}
+		auto& marker = gameScene.lockOnMarkers_[markerIndex++];
+		if (!marker.sprite) {
 			continue;
 		}
 
-		sprite->SetAnchorPoint({0.5f, 0.5f});
 		const float pulse = std::sin(gameScene.smokeEmitTimer_ * kLockMarkerPulseSpeed) * kLockMarkerPulseAmount + 1.0f;
-		sprite->SetSize({kLockMarkerSize * 1.3f * pulse, kLockMarkerSize * 1.3f * pulse});
-		sprite->SetColor({1.0f, 0.25f, 0.25f, 0.95f});
-
-		gameScene.lockOnMarkers_.push_back({std::move(sprite), target, 0.0f});
+		marker.sprite->SetPosition(screenPos);
+		marker.sprite->SetSize({kLockMarkerSize * 1.3f * pulse, kLockMarkerSize * 1.3f * pulse});
+		marker.sprite->SetColor({1.0f, 0.25f, 0.25f, 0.95f});
+		marker.target = target;
 	}
 }
 
@@ -553,10 +568,6 @@ void GameSceneUpdateExecutor::DamageGpuParticlesUpdate(GameScene& gameScene, flo
 	if (gameScene.damageSmokeEmitter_) {
 		gameScene.damageSmokeEmitter_->Update(dt);
 	}
-
-	// HP 差分用の前回値を更新する。
-	const int32_t currentHp = gameScene.player_ ? gameScene.player_->GetHP() : gameScene.prevPlayerHp_;
-	gameScene.prevPlayerHp_ = currentHp;
 
 	// 消えた敵の HP 記録を掃除する。
 	auto& enemies = gameScene.enemyManager_.GetEnemies();
@@ -686,31 +697,25 @@ void GameSceneUpdateExecutor::MissileAfterburnerUpdate(GameScene& gameScene, flo
 
 // カメラを更新する。
 void GameSceneUpdateExecutor::CameraUpdate(GameScene& gameScene) {
-	if (gameScene.isRailCameraActive_) {
-		// 横移動量をレールカメラへ渡す。
-		Vector3 now = gameScene.player_->GetWorldTranslation();
-		float deltaX = now.x - gameScene.previousPlayerPos_.x;
+	// 横移動量をレールカメラへ渡す。
+	Vector3 now = gameScene.player_->GetWorldTranslation();
+	float deltaX = now.x - gameScene.previousPlayerPos_.x;
 	float inputX = MyMath::Clamp(deltaX * kInputSensitivity, -1.0f, 1.0f);
 
-		gameScene.railCamera_->SetMoveInput(inputX);
-		gameScene.railCamera_->Update();
+	gameScene.railCamera_->SetMoveInput(inputX);
+	gameScene.railCamera_->Update();
 
-		// レールカメラ行列を描画カメラへ同期。
-		gameScene.camera_.matView = gameScene.railCamera_->GetCamera()->matView;
-		gameScene.camera_.matProjection = gameScene.railCamera_->GetCamera()->matProjection;
-		gameScene.camera_.TransferMatrix();
+	// レールカメラ行列を描画カメラへ同期。
+	gameScene.camera_.matView = gameScene.railCamera_->GetCamera()->matView;
+	gameScene.camera_.matProjection = gameScene.railCamera_->GetCamera()->matProjection;
+	gameScene.camera_.TransferMatrix();
 
-		gameScene.previousPlayerPos_ = now;
-	} else {
-		gameScene.camera_.UpdateMatrix();
-	}
+	gameScene.previousPlayerPos_ = now;
 }
 
 // スピードラインを更新する。
 void GameSceneUpdateExecutor::SpeedLineUpdate(GameScene& gameScene, float dt) {
-	if (gameScene.isRailCameraActive_) {
-		gameScene.speedLine_.Update(dt, gameScene.railCamera_->GetWorldTransform().translation_);
-	}
+	gameScene.speedLine_.Update(dt, gameScene.railCamera_->GetWorldTransform().translation_);
 }
 
 // リザルトを判定する。

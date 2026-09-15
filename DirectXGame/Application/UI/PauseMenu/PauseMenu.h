@@ -60,11 +60,6 @@ public:
     /// </summary>
     void StartOpenAnimation();
 
-    /// <summary>
-    /// ポーズメニューの閉じるアニメーションを開始する
-    /// </summary>
-    void StartCloseAnimation();
-
 private:
     /// <summary>
     /// 入力ン位応じてカーソル位置を変更する
@@ -113,7 +108,6 @@ private:
     int selectIndex_ = 0;          // 現在選択中の項目番号
 
     bool isOpening_ = false; // 開くアニメーション中か
-    bool isClosing_ = false; // 閉じるアニメーション中か
 
     float animTimer_ = 0.0f; // アニメーションの経過時間
     float scale_ = 1.0f;     // メニュー全体の表示スケール

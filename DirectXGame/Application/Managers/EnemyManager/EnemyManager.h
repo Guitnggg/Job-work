@@ -49,7 +49,7 @@ public:
     /// <summary>
     /// JSON形式の敵出現データを読み込む
     /// </summary>
-    void LoadEnemyCsv(const std::string& path);
+    void LoadEnemyJson(const std::string& path);
 
     /// <summary>
     /// 更新処理
@@ -71,8 +71,6 @@ public:
     /// <summary>
     /// 指定位置から近い順に生存中の敵を取得する。CollisionManager などで使用する
     /// </summary>
-    std::vector<CharacterBase*> GetNearestEnemies(const KamataEngine::Vector3& from, int32_t maxCount) const;
-
     /// <summary>
     /// 死亡した敵をリストから削除する
     /// </summary>
@@ -93,7 +91,7 @@ private:
     /// <summary>
     /// CSVの出現データに基づいて敵を出現させる
     /// </summary>
-    void SpawnEnemiesByCsv(const KamataEngine::Vector3& playerPos);
+    void SpawnEnemiesBySchedule(const KamataEngine::Vector3& playerPos);
 
     /// <summary>
     /// 出現データに基づいて敵を生成する
